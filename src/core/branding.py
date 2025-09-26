@@ -45,29 +45,29 @@ class BrandingManager:
 
     def get_tenant_branding(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
         """
-        Get branding configuration for tenant
+        Get branding configuration for tenant with dynamic logo resolution
 
         Args:
             tenant_id: Optional tenant ID, uses current tenant if None
 
         Returns:
-            Dict containing branding configuration
+            Dict containing branding configuration with logo support
         """
         tenant = get_current_tenant() if not tenant_id else None
         # TODO: Fetch tenant from database if tenant_id provided
 
-        # Check if tenant has custom branding enabled
-        if tenant and getattr(tenant, 'custom_branding', False):
+        # Check if tenant has custom branding or logo
+        if tenant and (getattr(tenant, 'custom_branding', False) or tenant.has_custom_logo):
             return self._get_custom_tenant_branding(tenant)
 
         # Return default BiScheduler branding
         return self._get_default_branding(tenant)
 
     def _get_default_branding(self, tenant=None) -> Dict[str, Any]:
-        """Get default BiScheduler branding"""
+        """Get default BiScheduler branding with tenant logo support"""
         institution_name = tenant.institution_name if tenant else "BiScheduler"
 
-        return {
+        branding = {
             'platform_name': 'BiScheduler',
             'institution_name': institution_name,
             'tagline': 'Multi-Tenant K12 Scheduling for Venezuelan Education',
@@ -75,28 +75,36 @@ class BrandingManager:
             'typography': self.DEFAULT_TYPOGRAPHY.copy(),
             'assets': self.PLATFORM_ASSETS.copy(),
             'is_custom': False,
+            'has_custom_logo': False,
             'venezuelan_compliance': True,
             'bimodal_schedule_support': True
         }
+
+        # Phase 1.8: Check for custom tenant logo even without full custom branding
+        if tenant and hasattr(tenant, 'has_custom_logo') and tenant.has_custom_logo:
+            branding['assets']['institution_logo'] = tenant.logo_url
+            branding['has_custom_logo'] = True
+            branding['logo_display_mode'] = 'dual'  # Show both tenant and BiScheduler logos
+
+        return branding
 
     def _get_custom_tenant_branding(self, tenant) -> Dict[str, Any]:
         """
         Get custom branding for tenant with custom branding enabled
         Maintains BiScheduler foundation with institution customization
+        Phase 1.8 Enhancement: Dynamic logo support
         """
-        # TODO: Implement custom branding logic
-        # This would load tenant-specific:
-        # - Custom colors (while maintaining accessibility)
-        # - Institution logo alongside BiScheduler logo
-        # - Custom taglines and messaging
-        # - Venezuelan compliance indicators
-
         base_branding = self._get_default_branding(tenant)
+
+        # Phase 1.8: Always check for custom logo first
+        if tenant.has_custom_logo:
+            base_branding['assets']['institution_logo'] = tenant.logo_url
+            base_branding['has_custom_logo'] = True
+            base_branding['logo_display_mode'] = 'dual'
 
         # Example customization for UEIPAB
         if tenant.institution_code == 'UEIPAB':
             base_branding.update({
-                'institution_logo': '/static/tenants/ueipab/logo.png',
                 'colors': {
                     **base_branding['colors'],
                     'accent': '#c49b61',  # UEIPAB gold
@@ -105,6 +113,9 @@ class BrandingManager:
                 'tagline': 'Powered by UEIPAB - Venezuelan Military University Excellence',
                 'is_custom': True
             })
+
+        # Additional tenant-specific customizations can be added here
+        # These would be loaded from database configuration in production
 
         return base_branding
 

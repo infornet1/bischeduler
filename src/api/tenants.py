@@ -11,6 +11,7 @@ import logging
 from src.tenants.manager import TenantManager
 from src.tenants.middleware import require_tenant_admin, get_current_tenant
 from src.models.master import InstitutionType, TenantStatus
+from src.core.file_storage import tenant_logo_storage
 
 
 logger = logging.getLogger(__name__)
@@ -288,6 +289,204 @@ def get_current_tenant_info():
             'timezone': 'America/Caracas'
         }
     })
+
+
+@tenants_bp.route('/<tenant_id>/logo', methods=['POST'])
+@require_tenant_admin
+def upload_tenant_logo(tenant_id):
+    """
+    Upload custom logo for tenant (Phase 1.8 Enhancement)
+    Allows Venezuelan K12 schools to maintain institutional identity
+    """
+    try:
+        # Check if tenant exists and user has permission
+        tenant = get_tenant_manager().get_tenant_by_id(tenant_id)
+        if not tenant:
+            return jsonify({
+                'success': False,
+                'error': 'Tenant not found'
+            }), 404
+
+        # Check if file is in request
+        if 'logo' not in request.files:
+            return jsonify({
+                'success': False,
+                'error': 'No logo file provided'
+            }), 400
+
+        file = request.files['logo']
+
+        # Get current user for audit trail
+        uploaded_by = getattr(g, 'current_user', 'admin')  # TODO: Get from JWT
+
+        # Save logo using secure storage
+        file_info = tenant_logo_storage.save_tenant_logo(
+            tenant_id=tenant.tenant_id,
+            file=file,
+            uploaded_by=uploaded_by
+        )
+
+        # Update tenant record with logo information
+        session = get_tenant_manager().SessionLocal()
+        try:
+            # Delete old logo if exists
+            if tenant.logo_filename:
+                tenant_logo_storage.delete_tenant_logo(tenant.tenant_id, tenant.logo_filename)
+
+            # Update tenant with new logo info
+            tenant.logo_filename = file_info['filename']
+            tenant.logo_original_name = file_info['original_name']
+            tenant.logo_file_size = file_info['file_size']
+            tenant.logo_mime_type = file_info['mime_type']
+            tenant.logo_uploaded_at = file_info['uploaded_at']
+            tenant.logo_uploaded_by = file_info['uploaded_by']
+
+            session.commit()
+
+            logger.info(f"Logo uploaded for tenant {tenant.institution_name}")
+
+            return jsonify({
+                'success': True,
+                'message': f'Logo uploaded successfully for {tenant.institution_name}',
+                'logo': {
+                    'url': tenant.logo_url,
+                    'filename': file_info['filename'],
+                    'original_name': file_info['original_name'],
+                    'size': file_info['file_size'],
+                    'uploaded_at': file_info['uploaded_at'].isoformat()
+                }
+            }), 200
+
+        except Exception as e:
+            session.rollback()
+            # Clean up uploaded file on database error
+            tenant_logo_storage.delete_tenant_logo(tenant.tenant_id, file_info['filename'])
+            raise
+        finally:
+            session.close()
+
+    except ValueError as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+    except Exception as e:
+        logger.error(f"Logo upload failed for tenant {tenant_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Logo upload failed',
+            'message': str(e)
+        }), 500
+
+
+@tenants_bp.route('/<tenant_id>/logo', methods=['DELETE'])
+@require_tenant_admin
+def delete_tenant_logo(tenant_id):
+    """
+    Remove custom tenant logo (Phase 1.8 Enhancement)
+    Returns to default BiScheduler branding
+    """
+    try:
+        tenant = get_tenant_manager().get_tenant_by_id(tenant_id)
+        if not tenant:
+            return jsonify({
+                'success': False,
+                'error': 'Tenant not found'
+            }), 404
+
+        if not tenant.logo_filename:
+            return jsonify({
+                'success': False,
+                'error': 'No logo to delete'
+            }), 404
+
+        # Delete physical file
+        deleted = tenant_logo_storage.delete_tenant_logo(
+            tenant.tenant_id,
+            tenant.logo_filename
+        )
+
+        if deleted:
+            # Update tenant record
+            session = get_tenant_manager().SessionLocal()
+            try:
+                tenant.logo_filename = None
+                tenant.logo_original_name = None
+                tenant.logo_file_size = None
+                tenant.logo_mime_type = None
+                tenant.logo_uploaded_at = None
+                tenant.logo_uploaded_by = None
+
+                session.commit()
+
+                logger.info(f"Logo deleted for tenant {tenant.institution_name}")
+
+                return jsonify({
+                    'success': True,
+                    'message': f'Logo removed for {tenant.institution_name}'
+                })
+
+            except Exception as e:
+                session.rollback()
+                raise
+            finally:
+                session.close()
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to delete logo file'
+            }), 500
+
+    except Exception as e:
+        logger.error(f"Logo deletion failed for tenant {tenant_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Logo deletion failed',
+            'message': str(e)
+        }), 500
+
+
+@tenants_bp.route('/<tenant_id>/logo', methods=['GET'])
+def get_tenant_logo_info(tenant_id):
+    """
+    Get tenant logo information (Phase 1.8 Enhancement)
+    Public endpoint for logo display
+    """
+    try:
+        tenant = get_tenant_manager().get_tenant_by_id(tenant_id)
+        if not tenant:
+            return jsonify({
+                'success': False,
+                'error': 'Tenant not found'
+            }), 404
+
+        if tenant.has_custom_logo:
+            return jsonify({
+                'success': True,
+                'has_logo': True,
+                'logo': {
+                    'url': tenant.logo_url,
+                    'filename': tenant.logo_filename,
+                    'original_name': tenant.logo_original_name,
+                    'size': tenant.logo_file_size,
+                    'mime_type': tenant.logo_mime_type,
+                    'uploaded_at': tenant.logo_uploaded_at.isoformat() if tenant.logo_uploaded_at else None
+                }
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'has_logo': False,
+                'default_logo': '/static/branding/logo_concept.svg'
+            })
+
+    except Exception as e:
+        logger.error(f"Failed to get logo info for tenant {tenant_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to retrieve logo information'
+        }), 500
 
 
 @tenants_bp.route('/platform/stats', methods=['GET'])

@@ -68,6 +68,14 @@ class Tenant(Base):
     max_teachers = Column(Integer, default=100)   # Licensing limit
     custom_branding = Column(Boolean, default=False)  # Enable custom logos/colors
 
+    # Logo/branding fields (Phase 1.8 Enhancement)
+    logo_filename = Column(String(255))  # Stored logo filename
+    logo_original_name = Column(String(255))  # Original uploaded filename
+    logo_file_size = Column(Integer)  # File size in bytes
+    logo_mime_type = Column(String(100))  # MIME type for validation
+    logo_uploaded_at = Column(DateTime)  # When logo was uploaded
+    logo_uploaded_by = Column(String(255))  # Admin who uploaded
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     activated_at = Column(DateTime)
@@ -96,6 +104,25 @@ class Tenant(Base):
             InstitutionType.PREESCOLAR
         }
         return self.institution_type in k12_types
+
+    @property
+    def has_custom_logo(self):
+        """Check if tenant has uploaded a custom logo"""
+        return bool(self.logo_filename)
+
+    @property
+    def logo_url(self):
+        """Get the URL for the tenant's logo"""
+        if self.logo_filename:
+            return f"/static/tenants/logos/{self.logo_filename}"
+        return None
+
+    @property
+    def logo_path(self):
+        """Get the filesystem path for the tenant's logo"""
+        if self.logo_filename:
+            return f"static/tenants/logos/{self.logo_filename}"
+        return None
 
 
 class TenantInvitation(Base):
