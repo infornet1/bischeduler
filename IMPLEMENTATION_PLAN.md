@@ -43,6 +43,19 @@
 - ✅ Venezuelan education positioning and messaging
 - ✅ SVG logo assets and comprehensive brand guidelines
 
+### 🎯 **RECOMMENDED ADDITION: Phase 1.8 - Multi-Tenant Logo System** ⭐ **NEW**
+**Status**: Ready to implement (Optional Enhancement)
+**Estimated Duration**: 2-3 hours
+**Focus**: School logo upload and automatic display per tenant
+**Value**: High user adoption boost with minimal development effort
+
+**Key Features**:
+- 🏫 School admins can upload institutional logos
+- 🎨 Automatic logo display based on current tenant context
+- 🔒 Secure file validation and storage system
+- 📱 Responsive logo handling across devices
+- ↩️ Fallback to BiScheduler logo when no custom logo
+
 ### 🎯 **NEXT: Phase 2 - Core Database Schema**
 **Status**: Ready to begin
 **Estimated Duration**: 6-8 hours
@@ -195,6 +208,41 @@ After analyzing the existing `../scheduler/` system, we discovered **valuable da
   - [ ] Create role-based access control (platform_admin, school_admin, teacher, parent)
   - [ ] Add cross-tenant permission management
   - [ ] Create invitation acceptance workflow
+
+### **Phase 1.8: Multi-Tenant Logo System** ⭐ **RECOMMENDED ENHANCEMENT**
+**Duration**: 2-3 hours
+**Priority**: High Value/Low Effort Enhancement
+**Purpose**: Enable school-specific logo branding throughout platform
+
+- [ ] **Database schema enhancement**
+  - [ ] Add logo fields to tenants table (logo_filename, logo_uploaded_at, logo_file_size)
+  - [ ] Update tenant model with logo properties
+- [ ] **File storage system**
+  - [ ] Create secure logo storage directory structure
+  - [ ] Implement file validation (PNG, JPG, SVG, 2MB limit)
+  - [ ] Add logo upload/deletion utilities
+- [ ] **Enhanced branding manager**
+  - [ ] Update branding system for dynamic logo resolution
+  - [ ] Implement tenant-specific logo fallback logic
+  - [ ] Add logo URL generation for tenant context
+- [ ] **API endpoints**
+  - [ ] POST `/api/tenants/{id}/logo` - Upload tenant logo
+  - [ ] DELETE `/api/tenants/{id}/logo` - Remove tenant logo
+  - [ ] GET `/api/tenants/{id}/logo` - Get logo information
+- [ ] **Frontend integration**
+  - [ ] Create logo upload interface for tenant admins
+  - [ ] Implement dynamic logo display in headers
+  - [ ] Add logo preview and management UI
+- [ ] **Security & validation**
+  - [ ] File type and size validation
+  - [ ] Image content verification
+  - [ ] Secure file storage and serving
+
+**Benefits**:
+- 🎯 **Higher School Adoption**: Institutions see their branding
+- 🏫 **Professional Identity**: Each school maintains visual identity
+- 📈 **Competitive Advantage**: Multi-tenant customization capability
+- ⚡ **Quick Implementation**: 2-3 hours for significant UX improvement
 
 ### Phase 2: Enhanced Database Layer
 - [ ] Design master tenant database schema
