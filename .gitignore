@@ -1,0 +1,95 @@
+# BiScheduler .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Database
+*.db
+*.sqlite3
+*.sql
+database/
+backups/
+
+# Configuration & Secrets
+.env
+.env.local
+.env.production
+config/production.py
+secrets/
+*.pem
+*.key
+*.crt
+
+# Logs
+logs/
+*.log
+*.out
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Flask
+instance/
+.webassets-cache
+
+# Testing
+.tox/
+.coverage
+.pytest_cache/
+htmlcov/
+.cache
+
+# Documentation
+docs/_build/
+
+# Deployment
+deployment/production/
+deployment/staging/
+
+# Migration workspace (sensitive data)
+migration_workspace/extracted_data/
+migration_workspace/validation_reports/
+
+# Nginx logs
+access.log
+error.log
+
+# Temporary files
+temp/
+tmp/
+*.tmp
