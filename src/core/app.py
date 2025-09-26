@@ -44,6 +44,13 @@ def create_app(config_name='development'):
     cors.init_app(app)
     limiter.init_app(app)
 
+    # Initialize authentication system
+    from src.auth import JWTService, AuthenticationMiddleware
+    from src.auth.views import auth_bp
+
+    jwt_service = JWTService(app)
+    auth_middleware = AuthenticationMiddleware(app)
+
     # Initialize multi-tenant system
     from src.tenants.manager import TenantManager
     from src.tenants.middleware import MultiTenantMiddleware
@@ -51,17 +58,16 @@ def create_app(config_name='development'):
     tenant_manager = TenantManager(app.config['MASTER_DATABASE_URL'])
     multi_tenant_middleware = MultiTenantMiddleware(app, tenant_manager)
 
-    # Store tenant manager in app context for access in blueprints
+    # Store services in app context for access in blueprints
     app.tenant_manager = tenant_manager
+    app.jwt_service = jwt_service
 
     # Register blueprints
-    from src.api.auth import auth_bp
-    from src.api.tenants import tenants_bp
-    from src.api.scheduling import scheduling_bp
+    app.register_blueprint(auth_bp)
 
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(tenants_bp, url_prefix='/api/tenants')
-    app.register_blueprint(scheduling_bp, url_prefix='/api/schedule')
+    # Import and register scheduling blueprint
+    from src.scheduling.views import scheduling_bp
+    app.register_blueprint(scheduling_bp)
 
     # Health check endpoint
     @app.route('/health')

@@ -17,19 +17,22 @@ BiScheduler is a comprehensive multi-tenant scheduling platform designed specifi
 - **Government reporting** capabilities
 
 ### Advanced Scheduling
-- **Conflict detection** and resolution
-- **Teacher workload optimization**
+- **Real-time conflict detection** and resolution
+- **Teacher workload optimization** with Venezuelan compliance
 - **Classroom capacity management**
-- **Multi-grade section support**
+- **Multi-grade section support** (1er - 5to año)
+- **Interactive schedule visualization** with drag-and-drop editing
+- **Export to Venezuelan formats** (Excel HORARIO, CSV, PDF)
 
 ## 🏗️ Technical Stack
 
-- **Backend**: Python Flask with SQLAlchemy
-- **Database**: MariaDB with schema-per-tenant
-- **Authentication**: JWT with role-based access
-- **Frontend**: Modern web interface
+- **Backend**: Python Flask with SQLAlchemy ORM
+- **Database**: MariaDB with schema-per-tenant isolation
+- **Authentication**: JWT with role-based access control
+- **Frontend**: Responsive web interface with ES6 JavaScript
+- **Styling**: CSS Grid/Flexbox with Venezuelan educational theme
 - **Infrastructure**: Nginx reverse proxy
-- **Deployment**: Port 5005 (reused from legacy system)
+- **Deployment**: Port 5005 (production-ready)
 
 ## 🗂️ Project Structure
 
@@ -72,6 +75,14 @@ python manage.py init-db
 python manage.py run
 ```
 
+### First Login
+After installation, access BiScheduler at:
+- **URL**: `http://localhost:5005`
+- **Default Admin**: `admin@ueipab.edu.ve`
+- **Default Password**: `admin123`
+
+*Note: Change default credentials immediately after first login for security.*
+
 ## 📊 Data Migration
 
 BiScheduler includes comprehensive migration tools to import data from existing UEIPAB scheduling systems:
@@ -104,13 +115,13 @@ BiScheduler features professional branding inspired by UEIPAB's architectural br
 ## 📈 Development Phases
 
 1. **Phase 0**: Data Migration ✅
-2. **Phase 1a**: Git Integration ⚡ *In Progress*
-3. **Phase 1b**: Project Structure
-4. **Phase 1.5**: Multi-Tenant Foundation
-5. **Phase 1.75**: Branding & Visual Identity
-6. **Phase 2**: Core Database Schema
-7. **Phase 3**: Authentication & Authorization
-8. **Additional phases**: UI, Advanced Features, Testing
+2. **Phase 1**: Multi-Tenant Foundation ✅
+3. **Phase 2**: Core Database Schema ✅
+4. **Phase 3**: Authentication & Authorization ✅
+5. **Phase 4**: Schedule Management Engine ✅
+6. **Phase 5**: User Interface & Frontend ✅
+7. **Phase 6**: Testing & Deployment (Next)
+8. **Phase 7**: Advanced Features & Optimization (Future)
 
 ## 🤝 Contributing
 

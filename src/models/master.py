@@ -1,6 +1,7 @@
 """
 BiScheduler Master Database Models
 Tenant management and central coordination for multi-K12 platform
+Enhanced with authentication system integration
 """
 
 from datetime import datetime, timezone

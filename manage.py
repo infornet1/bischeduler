@@ -235,5 +235,317 @@ def platform_stats():
         click.echo(f'❌ Failed to get statistics: {str(e)}')
 
 
+# ============================================================================
+# USER MANAGEMENT COMMANDS
+# ============================================================================
+
+@app.cli.command()
+@click.option('--email', required=True, help='User email address')
+@click.option('--password', required=True, help='User password')
+@click.option('--first-name', required=True, help='User first name')
+@click.option('--last-name', required=True, help='User last name')
+@click.option('--role', default='platform_admin', help='User role (platform_admin, school_admin, teacher, etc.)')
+@click.option('--tenant-id', help='Tenant ID (optional for platform admins)')
+@click.option('--cedula', help='Venezuelan ID number')
+@with_appcontext
+def create_user(email, password, first_name, last_name, role, tenant_id, cedula):
+    """Create a new user account"""
+    click.echo(f'👤 Creating user: {email}')
+
+    try:
+        from src.models.auth import User, UserRole, UserStatus
+        from datetime import datetime, timezone
+
+        # Validate role
+        valid_roles = [r.value for r in UserRole]
+        if role not in valid_roles:
+            click.echo(f"❌ Invalid role: {role}")
+            click.echo(f"   Valid roles: {', '.join(valid_roles)}")
+            return
+
+        # Check if user already exists
+        existing_user = db.session.query(User).filter_by(email=email).first()
+        if existing_user:
+            click.echo(f"❌ User with email {email} already exists")
+            return
+
+        # Check for duplicate cedula
+        if cedula:
+            existing_cedula = db.session.query(User).filter_by(cedula=cedula).first()
+            if existing_cedula:
+                click.echo(f"❌ User with cedula {cedula} already exists")
+                return
+
+        # Create user
+        user = User(
+            email=email.lower().strip(),
+            username=email.split('@')[0],
+            first_name=first_name.strip(),
+            last_name=last_name.strip(),
+            role=role,
+            tenant_id=tenant_id,
+            cedula=cedula,
+            status=UserStatus.ACTIVE.value,
+            email_verified_at=datetime.now(timezone.utc)
+        )
+
+        user.set_password(password)
+
+        db.session.add(user)
+        db.session.commit()
+
+        click.echo(f"✅ User created successfully!")
+        click.echo(f"   ID: {user.id}")
+        click.echo(f"   Email: {user.email}")
+        click.echo(f"   Name: {user.full_name}")
+        click.echo(f"   Role: {user.display_role}")
+        if tenant_id:
+            click.echo(f"   Tenant: {tenant_id}")
+
+    except Exception as e:
+        click.echo(f'❌ Failed to create user: {str(e)}')
+
+
+@app.cli.command()
+@click.argument('email')
+@with_appcontext
+def delete_user(email):
+    """Delete a user account (use with caution)"""
+    if not click.confirm(f'⚠️  Delete user {email}? This action cannot be undone.'):
+        click.echo('❌ User deletion cancelled.')
+        return
+
+    try:
+        from src.models.auth import User
+
+        user = db.session.query(User).filter_by(email=email).first()
+        if not user:
+            click.echo(f"❌ User {email} not found")
+            return
+
+        click.echo(f"Deleting user: {user.full_name} ({user.email})")
+
+        # Delete user and associated data
+        db.session.delete(user)
+        db.session.commit()
+
+        click.echo(f"✅ User {email} deleted successfully")
+
+    except Exception as e:
+        click.echo(f'❌ Failed to delete user: {str(e)}')
+
+
+@app.cli.command()
+@with_appcontext
+def list_users():
+    """List all platform users"""
+    click.echo('👥 BiScheduler Platform Users')
+    click.echo('=' * 50)
+
+    try:
+        from src.models.auth import User
+
+        users = db.session.query(User).order_by(User.created_at.desc()).all()
+
+        if not users:
+            click.echo('No users found.')
+            return
+
+        for user in users:
+            status_icon = '🟢' if user.is_active() else '🔴'
+            click.echo(f"{status_icon} {user.email}")
+            click.echo(f"   Name: {user.full_name}")
+            click.echo(f"   Role: {user.display_role}")
+            click.echo(f"   Tenant: {user.tenant_id or 'Platform-wide'}")
+            click.echo(f"   Status: {user.status}")
+            click.echo(f"   Created: {user.created_at.strftime('%Y-%m-%d %H:%M')}")
+            if user.last_login:
+                click.echo(f"   Last login: {user.last_login.strftime('%Y-%m-%d %H:%M')}")
+            click.echo('')
+
+        click.echo(f"Total users: {len(users)}")
+
+    except Exception as e:
+        click.echo(f'❌ Failed to list users: {str(e)}')
+
+
+@app.cli.command()
+@click.argument('email')
+@click.option('--new-password', required=True, help='New password')
+@with_appcontext
+def reset_password(email, new_password):
+    """Reset user password (admin function)"""
+    click.echo(f'🔑 Resetting password for: {email}')
+
+    try:
+        from src.models.auth import User
+        from datetime import datetime, timezone
+
+        user = db.session.query(User).filter_by(email=email).first()
+        if not user:
+            click.echo(f"❌ User {email} not found")
+            return
+
+        # Update password
+        user.set_password(new_password)
+        user.updated_at = datetime.now(timezone.utc)
+
+        # Force password change on next login if desired
+        # user.status = UserStatus.PASSWORD_RESET_REQUIRED.value
+
+        db.session.commit()
+
+        click.echo(f"✅ Password reset successfully for {email}")
+        click.echo("⚠️  User should change password on next login")
+
+    except Exception as e:
+        click.echo(f'❌ Failed to reset password: {str(e)}')
+
+
+@app.cli.command()
+@click.argument('email')
+@click.option('--status', type=click.Choice(['active', 'inactive', 'suspended']),
+              required=True, help='New user status')
+@with_appcontext
+def set_user_status(email, status):
+    """Change user account status"""
+    click.echo(f'📝 Setting user status: {email} -> {status}')
+
+    try:
+        from src.models.auth import User
+        from datetime import datetime, timezone
+
+        user = db.session.query(User).filter_by(email=email).first()
+        if not user:
+            click.echo(f"❌ User {email} not found")
+            return
+
+        old_status = user.status
+        user.status = status
+        user.updated_at = datetime.now(timezone.utc)
+
+        db.session.commit()
+
+        click.echo(f"✅ User status changed: {old_status} -> {status}")
+
+    except Exception as e:
+        click.echo(f'❌ Failed to set user status: {str(e)}')
+
+
+@app.cli.command()
+@with_appcontext
+def list_user_sessions():
+    """List active user sessions"""
+    click.echo('📱 Active User Sessions')
+    click.echo('=' * 40)
+
+    try:
+        from src.models.auth import UserSession, User
+        from datetime import datetime, timezone
+
+        sessions = db.session.query(UserSession).filter_by(is_active=True)\
+                     .filter(UserSession.expires_at > datetime.now(timezone.utc))\
+                     .order_by(UserSession.last_activity.desc()).all()
+
+        if not sessions:
+            click.echo('No active sessions found.')
+            return
+
+        for session in sessions:
+            user_email = session.user.email if session.user else 'Unknown'
+            click.echo(f"🔐 {user_email}")
+            click.echo(f"   Session: {session.session_token[:8]}...")
+            click.echo(f"   IP: {session.ip_address}")
+            click.echo(f"   Created: {session.created_at.strftime('%Y-%m-%d %H:%M')}")
+            click.echo(f"   Last activity: {session.last_activity.strftime('%Y-%m-%d %H:%M')}")
+            click.echo(f"   Expires: {session.expires_at.strftime('%Y-%m-%d %H:%M')}")
+            click.echo('')
+
+        click.echo(f"Total active sessions: {len(sessions)}")
+
+    except Exception as e:
+        click.echo(f'❌ Failed to list sessions: {str(e)}')
+
+
+@app.cli.command()
+@click.argument('email')
+@with_appcontext
+def revoke_user_sessions(email):
+    """Revoke all sessions for a specific user"""
+    click.echo(f'🔒 Revoking all sessions for: {email}')
+
+    try:
+        from src.models.auth import User, UserSession
+        from src.auth.jwt_service import JWTService
+
+        user = db.session.query(User).filter_by(email=email).first()
+        if not user:
+            click.echo(f"❌ User {email} not found")
+            return
+
+        # Revoke all user sessions
+        jwt_service = JWTService()
+        jwt_service.revoke_all_user_tokens(user.id, 'admin_revocation')
+
+        click.echo(f"✅ All sessions revoked for {email}")
+
+    except Exception as e:
+        click.echo(f'❌ Failed to revoke sessions: {str(e)}')
+
+
+@app.cli.command()
+@with_appcontext
+def audit_summary():
+    """Show user activity audit summary"""
+    click.echo('📊 User Activity Audit Summary')
+    click.echo('=' * 40)
+
+    try:
+        from src.models.auth import UserAuditLog, User
+        from datetime import datetime, timezone, timedelta
+
+        # Last 7 days activity
+        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+
+        total_actions = db.session.query(UserAuditLog)\
+                          .filter(UserAuditLog.created_at >= week_ago).count()
+
+        # Most active users
+        click.echo('🔥 Most Active Users (last 7 days):')
+        active_users = db.session.query(User.email, db.func.count(UserAuditLog.id).label('actions'))\
+                         .join(UserAuditLog)\
+                         .filter(UserAuditLog.created_at >= week_ago)\
+                         .group_by(User.email)\
+                         .order_by(db.func.count(UserAuditLog.id).desc())\
+                         .limit(5).all()
+
+        for email, action_count in active_users:
+            click.echo(f"   {email}: {action_count} actions")
+
+        click.echo('')
+        click.echo(f"Total actions last 7 days: {total_actions}")
+
+        # Recent critical events
+        critical_events = db.session.query(UserAuditLog)\
+                           .filter(UserAuditLog.severity == 'critical')\
+                           .filter(UserAuditLog.created_at >= week_ago)\
+                           .order_by(UserAuditLog.created_at.desc())\
+                           .limit(5).all()
+
+        if critical_events:
+            click.echo('')
+            click.echo('⚠️ Critical Events:')
+            for event in critical_events:
+                user_email = event.user.email if event.user else 'System'
+                click.echo(f"   {event.created_at.strftime('%Y-%m-%d %H:%M')} - {user_email}: {event.action}")
+
+    except Exception as e:
+        click.echo(f'❌ Failed to generate audit summary: {str(e)}')
+
+
 if __name__ == '__main__':
+    # Use Flask CLI
+    import sys
+    import os
+    os.environ['FLASK_APP'] = 'manage.py'
     app.run(host='127.0.0.1', port=5005, debug=True)
