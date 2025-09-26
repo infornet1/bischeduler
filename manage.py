@@ -77,19 +77,162 @@ def import_legacy_data():
     click.echo('📊 Importing legacy UEIPAB data...')
     click.echo('   Source: migration_workspace/extracted_data/')
 
-    # TODO: Implement data import logic
-    files_to_import = [
-        'time_periods.txt',
-        'teachers.txt',
-        'subjects.txt',
-        'classrooms.txt',
-        'sections.txt'
-    ]
+    try:
+        from src.core.database_manager import BiSchedulerDatabaseManager
 
-    for file_name in files_to_import:
-        click.echo(f'   ✅ Imported {file_name}')
+        # Initialize database manager
+        db_manager = BiSchedulerDatabaseManager(app.config['MASTER_DATABASE_URL'])
 
-    click.echo('🎉 Legacy data import completed!')
+        # Import Venezuelan education data for UEIPAB tenant
+        # This assumes UEIPAB tenant already exists, or we create it
+        result = db_manager.setup_ueipab_tenant()
+
+        if result.get('status') == 'success':
+            import_results = result.get('import_results', {})
+            click.echo('✅ UEIPAB tenant setup completed!')
+            click.echo(f"   📊 Time periods: {import_results.get('time_periods', 0)}")
+            click.echo(f"   🏫 Classrooms: {import_results.get('classrooms', 0)}")
+            click.echo(f"   📚 Subjects: {import_results.get('subjects', 0)}")
+            click.echo(f"   👨‍🏫 Teachers: {import_results.get('teachers', 0)}")
+            click.echo(f"   🔗 Teacher-Subject relationships: {import_results.get('teacher_subjects', 0)}")
+            click.echo(f"   ⚖️ Workload records: {import_results.get('teacher_workloads', 0)}")
+            click.echo('🎉 Legacy data import completed!')
+        else:
+            click.echo(f"❌ Import failed: {result.get('message', 'Unknown error')}")
+
+    except Exception as e:
+        click.echo(f'❌ Import failed: {str(e)}')
+
+
+@app.cli.command()
+@with_appcontext
+def setup_database():
+    """Initialize complete BiScheduler database system"""
+    click.echo('🏗️ Setting up BiScheduler database system...')
+
+    try:
+        from src.core.database_manager import BiSchedulerDatabaseManager
+
+        # Initialize database manager
+        db_manager = BiSchedulerDatabaseManager(app.config['MASTER_DATABASE_URL'])
+
+        # Initialize master database
+        if db_manager.initialize_master_database():
+            click.echo('✅ Master database initialized')
+
+            # Setup UEIPAB as primary tenant
+            result = db_manager.setup_ueipab_tenant()
+
+            if result.get('status') == 'success':
+                click.echo('✅ UEIPAB tenant created and configured')
+                click.echo(f"   🆔 Tenant ID: {result.get('tenant_id')}")
+                click.echo(f"   🏛️ Institution: {result.get('institution_name')}")
+                click.echo(f"   💾 Database: {result.get('database_url')}")
+                click.echo('🎉 BiScheduler database system ready!')
+            else:
+                click.echo(f"❌ UEIPAB setup failed: {result.get('message')}")
+        else:
+            click.echo('❌ Master database initialization failed')
+
+    except Exception as e:
+        click.echo(f'❌ Database setup failed: {str(e)}')
+
+
+@app.cli.command()
+@with_appcontext
+def validate_database():
+    """Validate database integrity and relationships"""
+    click.echo('🔍 Validating BiScheduler database integrity...')
+
+    try:
+        from src.core.database_manager import BiSchedulerDatabaseManager
+
+        db_manager = BiSchedulerDatabaseManager(app.config['MASTER_DATABASE_URL'])
+
+        # Get UEIPAB tenant database URL
+        from src.tenants.manager import TenantManager
+        tenant_manager = TenantManager(app.config['MASTER_DATABASE_URL'])
+        ueipab_tenant = tenant_manager.get_tenant_by_domain('ueipab.bischeduler.com')
+
+        tenant_db_url = ueipab_tenant.database_url if ueipab_tenant else None
+
+        # Validate database
+        results = db_manager.validate_database_integrity(tenant_db_url)
+
+        # Display master database results
+        master_db = results.get('master_db', {})
+        if master_db:
+            click.echo('📊 Master Database:')
+            click.echo(f"   👥 Tenants: {master_db.get('tenants', 0)}")
+            click.echo(f"   📧 Invitations: {master_db.get('invitations', 0)}")
+            click.echo(f"   Status: {master_db.get('status', 'unknown')}")
+
+        # Display tenant database results
+        tenant_db = results.get('tenant_db', {})
+        if tenant_db:
+            click.echo('📊 UEIPAB Tenant Database:')
+            click.echo(f"   ⏰ Time periods: {tenant_db.get('time_periods', 0)}")
+            click.echo(f"   🏫 Classrooms: {tenant_db.get('classrooms', 0)}")
+            click.echo(f"   📝 Sections: {tenant_db.get('sections', 0)}")
+            click.echo(f"   📚 Subjects: {tenant_db.get('subjects', 0)}")
+            click.echo(f"   👨‍🏫 Teachers: {tenant_db.get('teachers', 0)}")
+            click.echo(f"   🔗 Teacher-Subject links: {tenant_db.get('teacher_subjects', 0)}")
+            click.echo(f"   ⚖️ Workload records: {tenant_db.get('teacher_workloads', 0)}")
+            click.echo(f"   📅 Schedule assignments: {tenant_db.get('schedule_assignments', 0)}")
+
+            if tenant_db.get('orphaned_assignments', 0) > 0:
+                click.echo(f"   ⚠️ Orphaned assignments: {tenant_db.get('orphaned_assignments')}")
+
+            if tenant_db.get('invalid_workloads', 0) > 0:
+                click.echo(f"   ⚠️ Invalid workloads: {tenant_db.get('invalid_workloads')}")
+
+            click.echo(f"   Status: {tenant_db.get('status', 'unknown')}")
+
+        click.echo('✅ Database validation completed!')
+
+    except Exception as e:
+        click.echo(f'❌ Validation failed: {str(e)}')
+
+
+@app.cli.command()
+@with_appcontext
+def platform_stats():
+    """Show comprehensive platform statistics"""
+    click.echo('📊 BiScheduler Platform Statistics')
+    click.echo('=' * 40)
+
+    try:
+        from src.core.database_manager import BiSchedulerDatabaseManager
+
+        db_manager = BiSchedulerDatabaseManager(app.config['MASTER_DATABASE_URL'])
+        stats = db_manager.get_platform_statistics()
+
+        if 'error' not in stats:
+            platform = stats.get('platform', {})
+            venezuelan = stats.get('venezuelan_education', {})
+            features = stats.get('features', {})
+
+            click.echo('🏛️ Platform Overview:')
+            click.echo(f"   Total tenants: {platform.get('total_tenants', 0)}")
+            click.echo(f"   Active tenants: {platform.get('active_tenants', 0)}")
+            click.echo(f"   Pending invitations: {platform.get('pending_invitations', 0)}")
+
+            click.echo('🇻🇪 Venezuelan Education:')
+            click.echo(f"   K12 institutions: {venezuelan.get('k12_institutions', 0)}")
+            click.echo(f"   Universities: {venezuelan.get('universities', 0)}")
+            click.echo(f"   Compliance ready: {'✅' if venezuelan.get('compliance_ready') else '❌'}")
+
+            click.echo('🚀 Platform Features:')
+            for feature, enabled in features.items():
+                status = '✅' if enabled else '❌'
+                feature_name = feature.replace('_', ' ').title()
+                click.echo(f"   {feature_name}: {status}")
+
+        else:
+            click.echo(f"❌ Error getting statistics: {stats.get('error')}")
+
+    except Exception as e:
+        click.echo(f'❌ Failed to get statistics: {str(e)}')
 
 
 if __name__ == '__main__':
