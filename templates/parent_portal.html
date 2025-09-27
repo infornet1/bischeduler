@@ -316,6 +316,118 @@
             color: var(--text-secondary);
         }
 
+        /* Dark Mode Overrides */
+        [data-theme="dark"] .parent-container {
+            background: linear-gradient(135deg, #2d1b2e 0%, #3e2a3e 100%);
+        }
+
+        [data-theme="dark"] .management-card {
+            background: var(--card-bg, rgba(30, 30, 30, 0.95)) !important;
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .children-selector {
+            background: var(--bg-secondary, rgba(40, 40, 40, 0.8)) !important;
+        }
+
+        [data-theme="dark"] .child-card {
+            background: var(--card-bg, rgba(50, 50, 50, 0.9)) !important;
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .child-card.active {
+            background: rgba(33, 150, 243, 0.2) !important;
+            border-left-color: #2196f3;
+        }
+
+        [data-theme="dark"] .child-info h5 {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .child-details {
+            color: var(--text-secondary, #b0b0b0) !important;
+        }
+
+        [data-theme="dark"] .info-card {
+            background: var(--bg-secondary, rgba(40, 40, 40, 0.8)) !important;
+            border-left-color: #ff9a9e;
+        }
+
+        [data-theme="dark"] .info-title {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .schedule-grid {
+            background: var(--border-color, #555) !important;
+        }
+
+        [data-theme="dark"] .schedule-time {
+            background: var(--bg-secondary, rgba(40, 40, 40, 0.9)) !important;
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .schedule-cell {
+            background: var(--card-bg, rgba(50, 50, 50, 0.9)) !important;
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .schedule-cell.has-class {
+            background: rgba(33, 150, 243, 0.15) !important;
+            border-left-color: #2196f3;
+        }
+
+        [data-theme="dark"] .schedule-subject {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .schedule-teacher {
+            color: var(--text-secondary, #b0b0b0) !important;
+        }
+
+        [data-theme="dark"] .notification-item {
+            border-bottom-color: var(--border-color, #555) !important;
+        }
+
+        [data-theme="dark"] .notification-title {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .notification-time {
+            color: var(--text-secondary, #b0b0b0) !important;
+        }
+
+        [data-theme="dark"] .btn-portal {
+            background: linear-gradient(135deg, #8e24aa 0%, #ad42c4 100%) !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(142, 36, 170, 0.3) !important;
+        }
+
+        [data-theme="dark"] .btn-portal:hover {
+            background: linear-gradient(135deg, #9c27b0 0%, #ba68c8 100%) !important;
+            box-shadow: 0 6px 20px rgba(142, 36, 170, 0.4) !important;
+            color: white !important;
+        }
+
+        /* Dark mode dropdown menu styles */
+        [data-theme="dark"] .dropdown-menu {
+            background: var(--card-bg, rgba(30, 30, 30, 0.98)) !important;
+            border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1)) !important;
+        }
+
+        [data-theme="dark"] .dropdown-item {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .dropdown-item:hover,
+        [data-theme="dark"] .dropdown-item:focus {
+            background: var(--hover-bg, rgba(255, 255, 255, 0.1)) !important;
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .dropdown-divider {
+            border-color: var(--border-color, rgba(255, 255, 255, 0.1)) !important;
+        }
+
         @media (max-width: 768px) {
             .schedule-grid {
                 grid-template-columns: 60px repeat(5, 1fr);
