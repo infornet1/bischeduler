@@ -18,12 +18,25 @@
     --danger-color: #dc3545;
     --info-color: #17a2b8;
 
-    /* Neutral Colors */
+    /* Light Mode Theme Variables */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-inverse: #ffffff;
+    --card-bg: #ffffff;
+    --border-color: #dee2e6;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --shadow-color-lg: rgba(0, 0, 0, 0.15);
+    --hover-bg: rgba(0, 0, 0, 0.05);
+    --input-bg: #ffffff;
+
+    /* Neutral Colors (maintained for compatibility) */
     --white: #ffffff;
     --light-gray: #f8f9fa;
     --medium-gray: #6c757d;
     --dark-gray: #343a40;
-    --border-color: #dee2e6;
 
     /* Typography */
     --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -46,18 +59,45 @@
     --transition: all 0.3s ease;
 }
 
+/* Dark Mode Theme Variables */
+[data-theme="dark"] {
+    /* Dark Mode Background Colors */
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #404040;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
+    --text-inverse: #1a1a1a;
+    --card-bg: #2d2d2d;
+    --border-color: #404040;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --shadow-color-lg: rgba(0, 0, 0, 0.5);
+    --hover-bg: rgba(255, 255, 255, 0.1);
+    --input-bg: #2c2c2c;
+
+    /* Dark mode color adjustments */
+    --primary-color: #4d79a4;      /* Lighter blue for better contrast */
+    --secondary-color: #ffd633;    /* Brighter yellow for visibility */
+    --success-color: #4caf50;      /* Adjusted green */
+    --warning-color: #ff9800;      /* Adjusted orange */
+    --danger-color: #f44336;       /* Adjusted red */
+    --info-color: #29b6f6;         /* Adjusted blue */
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    /* Smooth transitions for dark mode */
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 body {
     font-family: var(--font-family);
     font-size: var(--font-size-base);
     line-height: 1.6;
-    color: var(--dark-gray);
-    background-color: var(--light-gray);
+    color: var(--text-primary);
+    background-color: var(--bg-secondary);
 }
 
 /* =====================================================
@@ -2695,4 +2735,99 @@ body {
         box-shadow: none !important;
         margin-bottom: var(--spacing-md) !important;
     }
+}
+
+/* =====================================================
+   DARK MODE TOGGLE COMPONENT
+   ===================================================== */
+
+.dark-mode-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background-color: var(--card-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.4rem;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px var(--shadow-color-lg);
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.dark-mode-toggle:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px var(--shadow-color-lg);
+    border-color: var(--primary-color);
+}
+
+.dark-mode-toggle:active {
+    transform: translateY(0) scale(0.95);
+}
+
+/* Icon transitions */
+.dark-mode-toggle .icon {
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+/* Light mode - show moon icon */
+.dark-mode-toggle .moon-icon {
+    opacity: 1;
+    transform: rotate(0deg);
+}
+
+.dark-mode-toggle .sun-icon {
+    opacity: 0;
+    transform: rotate(180deg);
+    position: absolute;
+}
+
+/* Dark mode - show sun icon */
+[data-theme="dark"] .dark-mode-toggle .moon-icon {
+    opacity: 0;
+    transform: rotate(-180deg);
+}
+
+[data-theme="dark"] .dark-mode-toggle .sun-icon {
+    opacity: 1;
+    transform: rotate(0deg);
+    position: static;
+}
+
+/* Mobile responsive positioning */
+@media (max-width: 768px) {
+    .dark-mode-toggle {
+        top: 15px;
+        right: 15px;
+        width: 45px;
+        height: 45px;
+        font-size: 1.2rem;
+    }
+}
+
+/* Accessibility improvements */
+.dark-mode-toggle:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Smooth transitions for all themed elements */
+.card,
+.btn,
+.form-control,
+.nav-link,
+.dropdown-menu,
+.modal-content,
+.table,
+.alert,
+.badge {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }

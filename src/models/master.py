@@ -7,11 +7,11 @@ Enhanced with authentication system integration
 from datetime import datetime, timezone
 from enum import Enum
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Enum as SQLEnum
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.mysql import CHAR
 import uuid
 
-Base = declarative_base()
+# Use Flask-SQLAlchemy db instance for proper integration
+from src.core.app import db
 
 
 class TenantStatus(Enum):
@@ -32,7 +32,7 @@ class InstitutionType(Enum):
     PREESCOLAR = "preescolar"            # Preschool
 
 
-class Tenant(Base):
+class Tenant(db.Model):
     """
     Master tenant registry for multi-K12 institutions
     Each tenant gets isolated schema for complete data privacy
@@ -126,7 +126,7 @@ class Tenant(Base):
         return None
 
 
-class TenantInvitation(Base):
+class TenantInvitation(db.Model):
     """
     Invitation system for new Venezuelan schools
     Enables UEIPAB to invite other institutions to join the platform
@@ -169,7 +169,7 @@ class TenantInvitation(Base):
         return self.status == 'sent' and not self.is_expired
 
 
-class TenantUsageMetrics(Base):
+class TenantUsageMetrics(db.Model):
     """
     Track usage metrics for licensing and billing
     Important for platform sustainability and growth monitoring

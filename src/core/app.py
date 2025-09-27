@@ -32,10 +32,17 @@ def create_app(config_name='development'):
     Returns:
         Flask: Configured Flask application instance
     """
-    app = Flask(__name__)
+    app = Flask(__name__,
+                static_folder='../static',
+                template_folder='../../templates',
+                static_url_path='/bischeduler/static')
 
     # Load configuration
     app.config.from_object(f'src.core.config.{config_name.title()}Config')
+
+    # Set application root for URL prefix support
+    app.config['APPLICATION_ROOT'] = '/bischeduler'
+    app.config['PREFERRED_URL_SCHEME'] = 'https'
 
     # Initialize extensions
     db.init_app(app)
@@ -43,6 +50,9 @@ def create_app(config_name='development'):
     jwt.init_app(app)
     cors.init_app(app)
     limiter.init_app(app)
+
+    # Import models to register them with SQLAlchemy
+    import src.models
 
     # Initialize authentication system
     from src.auth import JWTService, AuthenticationMiddleware
@@ -68,6 +78,24 @@ def create_app(config_name='development'):
     # Import and register scheduling blueprint
     from src.scheduling.views import scheduling_bp
     app.register_blueprint(scheduling_bp)
+
+    # Main landing page
+    @app.route('/')
+    def index():
+        from flask import render_template
+        return render_template('index.html')
+
+    # Login page
+    @app.route('/login')
+    def login_page():
+        from flask import render_template
+        return render_template('login.html')
+
+    # Dashboard page (post-login landing)
+    @app.route('/dashboard')
+    def dashboard():
+        from flask import render_template
+        return render_template('dashboard.html')
 
     # Health check endpoint
     @app.route('/health')

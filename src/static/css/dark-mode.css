@@ -1,0 +1,337 @@
+/* BiScheduler Dark Mode CSS */
+
+:root {
+  /* Light mode colors (default) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-muted: #6c757d;
+  --border-color: #dee2e6;
+  --card-bg: #ffffff;
+  --input-bg: #ffffff;
+  --hover-bg: rgba(0, 0, 0, 0.05);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --shadow-color-lg: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] {
+  /* Dark mode colors */
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #404040;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-muted: #888888;
+  --border-color: #404040;
+  --card-bg: #2d2d2d;
+  --input-bg: #404040;
+  --hover-bg: rgba(255, 255, 255, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --shadow-color-lg: rgba(0, 0, 0, 0.5);
+}
+
+/* Apply color variables to elements */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Quick Stats Section - Force Dark Mode */
+.quick-stats {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+[data-theme="dark"] .quick-stats {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+}
+
+/* Stat Values and Labels */
+.stat-value {
+  color: var(--text-primary) !important;
+}
+
+.stat-label {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .stat-value {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .stat-label {
+  color: #b0b0b0 !important;
+}
+
+/* User Bar */
+.user-bar {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .user-bar {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .dropdown-menu {
+  background-color: #2d2d2d !important;
+  border-color: #404040 !important;
+  color: #ffffff !important;
+}
+
+.dropdown-item {
+  color: var(--text-primary) !important;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: var(--hover-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .dropdown-item {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item:focus {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+/* App Tiles */
+.app-tile {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .app-tile {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+  border-color: #404040 !important;
+}
+
+.app-name {
+  color: var(--text-primary) !important;
+}
+
+.app-description {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .app-name {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-description {
+  color: #b0b0b0 !important;
+}
+
+/* Forms */
+.form-control {
+  background-color: var(--input-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .form-control {
+  background-color: #404040 !important;
+  border-color: #404040 !important;
+  color: #ffffff !important;
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Override any remaining white backgrounds in dark mode */
+[data-theme="dark"] * {
+  background-color: var(--card-bg, #2d2d2d);
+}
+
+/* Specific override for stats grid items */
+[data-theme="dark"] .stat-item {
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .stats-grid {
+  background-color: transparent !important;
+}
+
+/* Force stats section in dark mode */
+[data-theme="dark"] div[class*="stat"] {
+  background-color: transparent !important;
+}
+
+/* Bootstrap Custom Switch for Dark Mode */
+.custom-control-input:checked ~ .custom-control-label::before {
+  background: linear-gradient(135deg, #003366 0%, #004080 100%);
+  border-color: transparent;
+}
+
+.custom-control-label::before {
+  background: var(--input-bg, #ffffff);
+  border: 2px solid var(--border-color, #dee2e6);
+  transition: all 0.3s ease;
+}
+
+.custom-control-label::after {
+  transition: all 0.3s ease;
+}
+
+/* Dark mode adjustments for custom switch */
+[data-theme="dark"] .custom-control-input:checked ~ .custom-control-label::before {
+  background: linear-gradient(135deg, #4d79a4 0%, #6ba3d0 100%);
+  border-color: transparent;
+}
+
+[data-theme="dark"] .custom-control-label::before {
+  background: var(--input-bg, #404040);
+  border: 2px solid var(--border-color, #555);
+}
+
+/* Dropdown item text styling */
+.dropdown-item-text {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .dropdown-item-text {
+  color: var(--text-secondary, #b0b0b0) !important;
+}
+
+.dropdown-item-text small {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .dropdown-item-text small {
+  color: var(--text-muted, #888888) !important;
+}
+
+/* Dropdown divider */
+.dropdown-divider {
+  border-color: var(--border-color, rgba(0, 0, 0, 0.1)) !important;
+}
+
+[data-theme="dark"] .dropdown-divider {
+  border-color: var(--border-color, rgba(255, 255, 255, 0.1)) !important;
+}
+
+/* Dark Mode Toggle in dropdown */
+#darkModeToggle {
+  cursor: pointer;
+}
+
+#darkModeToggle:hover {
+  text-decoration: none !important;
+}
+
+/* Login Page Dark Mode Support */
+.login-card {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+[data-theme="dark"] .login-card {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+}
+
+/* Login Form Elements */
+.form-control {
+  background-color: var(--input-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .form-control {
+  background-color: #404040 !important;
+  border-color: #404040 !important;
+  color: #ffffff !important;
+}
+
+.form-control:focus {
+  background-color: var(--input-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .form-control:focus {
+  background-color: #404040 !important;
+  color: #ffffff !important;
+}
+
+/* Form Labels */
+.form-group label {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .form-group label {
+  color: #ffffff !important;
+}
+
+/* Login Header */
+.login-header h1 {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .login-header h1 {
+  color: #ffffff !important;
+}
+
+.login-header p {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .login-header p {
+  color: #b0b0b0 !important;
+}
+
+/* Back link */
+.back-link a {
+  color: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .back-link a {
+  color: #6ba3d0 !important;
+}
+
+/* Alert messages */
+.alert {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .alert {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+  border-color: #404040 !important;
+}
+
+/* Bootstrap override */
+[data-theme="dark"] .text-muted {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .bg-light {
+  background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .border {
+  border-color: var(--border-color) !important;
+}

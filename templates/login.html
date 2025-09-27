@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#003366">
+    <title>Iniciar Sesión - BiScheduler</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/styles.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/dark-mode.css">
+    <style>
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            padding: var(--spacing-lg);
+        }
+        .login-card {
+            background: var(--card-bg, white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow-lg);
+            max-width: 400px;
+            width: 100%;
+            padding: var(--spacing-xl);
+            color: var(--text-primary, #212529);
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto var(--spacing-lg);
+            background: linear-gradient(135deg, #003366, #ffcc00);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            font-weight: bold;
+        }
+        .login-form {
+            width: 100%;
+        }
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-sm);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        .form-control {
+            width: 100%;
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-base);
+            transition: var(--transition);
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.1);
+        }
+        .btn-login {
+            width: 100%;
+            padding: var(--spacing-md);
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-base);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .btn-login:hover {
+            background: #004080;
+        }
+        .btn-login:disabled {
+            background: var(--medium-gray);
+            cursor: not-allowed;
+        }
+        .alert {
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
+            display: none;
+        }
+        .alert.error {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+        }
+        .alert.success {
+            background: rgba(40, 167, 69, 0.1);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            color: var(--medium-gray);
+        }
+        .back-link {
+            text-align: center;
+            margin-top: var(--spacing-lg);
+        }
+        .back-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: var(--font-size-sm);
+        }
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- Dark Mode Toggle -->
+    <div class="dark-mode-toggle" id="darkModeToggle" title="Toggle Dark Mode" role="button" tabindex="0">
+        <span class="icon moon-icon">🌙</span>
+        <span class="icon sun-icon">☀️</span>
+    </div>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo">BS</div>
+                <h1>Iniciar Sesión</h1>
+                <p>Sistema de Gestión de Horarios K12</p>
+            </div>
+
+            <div class="alert" id="alert">
+                <span id="alert-message"></span>
+            </div>
+
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="email">Correo Electrónico</label>
+                    <input type="email" id="email" name="email" class="form-control"
+                           placeholder="admin@ueipab.edu.ve" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password" class="form-control"
+                           placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn-login" id="loginBtn">
+                    Ingresar
+                </button>
+
+                <div class="loading" id="loading">
+                    <p>Iniciando sesión...</p>
+                </div>
+            </form>
+
+            <div class="back-link">
+                <a href="/bischeduler/">&larr; Volver al inicio</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class LoginForm {
+            constructor() {
+                this.form = document.getElementById('loginForm');
+                this.emailInput = document.getElementById('email');
+                this.passwordInput = document.getElementById('password');
+                this.loginBtn = document.getElementById('loginBtn');
+                this.loading = document.getElementById('loading');
+                this.alert = document.getElementById('alert');
+                this.alertMessage = document.getElementById('alert-message');
+
+                this.init();
+            }
+
+            init() {
+                this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+
+                // Pre-fill demo credentials for testing
+                this.emailInput.value = 'admin@ueipab.edu.ve';
+            }
+
+            async handleSubmit(e) {
+                e.preventDefault();
+
+                const email = this.emailInput.value.trim();
+                const password = this.passwordInput.value;
+
+                if (!email || !password) {
+                    this.showAlert('Por favor complete todos los campos', 'error');
+                    return;
+                }
+
+                this.setLoading(true);
+                this.hideAlert();
+
+                try {
+                    const response = await fetch('/bischeduler/api/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            password: password
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        // Store tokens
+                        localStorage.setItem('access_token', data.access_token);
+                        localStorage.setItem('refresh_token', data.refresh_token);
+                        localStorage.setItem('user_info', JSON.stringify(data.user));
+
+                        this.showAlert('Sesión iniciada correctamente', 'success');
+
+                        // Redirect to dashboard
+                        setTimeout(() => {
+                            window.location.href = '/bischeduler/dashboard';
+                        }, 1000);
+
+                    } else {
+                        this.showAlert(data.message || 'Error al iniciar sesión', 'error');
+                    }
+
+                } catch (error) {
+                    console.error('Login error:', error);
+                    this.showAlert('Error de conexión. Intente nuevamente.', 'error');
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+
+            setLoading(isLoading) {
+                this.loginBtn.disabled = isLoading;
+                this.loading.style.display = isLoading ? 'block' : 'none';
+                this.loginBtn.textContent = isLoading ? 'Iniciando...' : 'Ingresar';
+            }
+
+            showAlert(message, type = 'error') {
+                this.alertMessage.textContent = message;
+                this.alert.className = `alert ${type}`;
+                this.alert.style.display = 'block';
+            }
+
+            hideAlert() {
+                this.alert.style.display = 'none';
+            }
+        }
+
+        // Dark Mode Toggle (same as dashboard)
+        class DarkModeToggle {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                const savedTheme = localStorage.getItem('bischeduler-theme');
+                const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+                this.setTheme(initialTheme);
+
+                const toggle = document.getElementById('darkModeToggle');
+                if (toggle) {
+                    toggle.addEventListener('click', () => this.toggleTheme());
+                    toggle.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            this.toggleTheme();
+                        }
+                    });
+                }
+            }
+
+            toggleTheme() {
+                const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                this.setTheme(newTheme);
+                localStorage.setItem('bischeduler-theme', newTheme);
+            }
+
+            setTheme(theme) {
+                document.documentElement.classList.add('theme-transition');
+                document.documentElement.setAttribute('data-theme', theme);
+
+                const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+                if (metaThemeColor) {
+                    metaThemeColor.setAttribute('content', theme === 'dark' ? '#1a1a1a' : '#003366');
+                }
+
+                setTimeout(() => {
+                    document.documentElement.classList.remove('theme-transition');
+                }, 50);
+            }
+        }
+
+        // Initialize login form when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new LoginForm();
+            new DarkModeToggle();
+        });
+    </script>
+
+    <!-- Bootstrap Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

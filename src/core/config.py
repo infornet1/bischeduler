@@ -55,9 +55,9 @@ class DevelopmentConfig(BaseConfig):
     DEBUG = True
     TESTING = False
 
-    # Development database
+    # Development database - use master database for authentication
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'mysql+pymysql://root:Temporal2024!@localhost/bischeduler_dev'
+        'mysql+pymysql://root:Temporal2024!@localhost/bischeduler_master'
 
     # Relaxed CORS for development
     CORS_ORIGINS = ["*"]

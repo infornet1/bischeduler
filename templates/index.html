@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BiScheduler - Sistema de Gestión de Horarios K12</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 90%;
+            padding: 3rem;
+            text-align: center;
+        }
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 2rem;
+            background: linear-gradient(135deg, #003366, #ffcc00);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+            font-weight: bold;
+        }
+        h1 {
+            color: #003366;
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+        .features {
+            text-align: left;
+            margin: 2rem 0;
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+        .features h3 {
+            color: #003366;
+            margin-bottom: 1rem;
+        }
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+        .features li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+        }
+        .features li:before {
+            content: "✓";
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        .actions {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: #003366;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 2px solid #003366;
+        }
+        .btn:hover {
+            background: #004080;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,51,102,0.3);
+        }
+        .btn.secondary {
+            background: white;
+            color: #003366;
+        }
+        .btn.secondary:hover {
+            background: #f8f9fa;
+        }
+        .badge {
+            display: inline-block;
+            background: #ffcc00;
+            color: #003366;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">BS</div>
+        <h1>BiScheduler</h1>
+        <div class="badge">Versión 1.0 - Producción Lista</div>
+        <p class="subtitle">Sistema Multi-Tenant de Gestión de Horarios para Instituciones Educativas Venezolanas K12</p>
+
+        <div class="features">
+            <h3>🇻🇪 Características Venezolanas</h3>
+            <ul>
+                <li>Horario Bimodal (7:00 AM - 2:20 PM)</li>
+                <li>Curriculum Venezolano Auténtico</li>
+                <li>Reportes de Matrícula Gubernamental</li>
+                <li>Gestión de Carga Horaria Docente</li>
+                <li>Detección de Conflictos en Tiempo Real</li>
+                <li>Exportación a Formatos Oficiales</li>
+            </ul>
+        </div>
+
+        <div class="actions">
+            <a href="/bischeduler/login" class="btn">Iniciar Sesión</a>
+            <a href="/bischeduler/info" class="btn secondary">Información del Sistema</a>
+        </div>
+
+        <div class="footer">
+            <p>Desarrollado para UEIPAB y las instituciones educativas venezolanas</p>
+            <p style="margin-top: 0.5rem;">© 2025 BiScheduler - Todos los derechos reservados</p>
+        </div>
+    </div>
+</body>
+</html>

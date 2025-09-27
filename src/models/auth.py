@@ -13,8 +13,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import secrets
 
-# Use the master database Base to ensure all tables are in the same schema
-from src.models.master import Base
+# Use Flask-SQLAlchemy db instance for proper integration
+from src.core.app import db
 
 
 class UserRole(Enum):
@@ -37,7 +37,7 @@ class UserStatus(Enum):
     PASSWORD_RESET_REQUIRED = "password_reset_required"
 
 
-class User(Base):
+class User(db.Model):
     """
     Multi-tenant user model for Venezuelan K12 platform
     Handles authentication across all tenants with role-based access
@@ -208,7 +208,7 @@ class User(Base):
         return role_names.get(self.role, self.role)
 
 
-class UserSession(Base):
+class UserSession(db.Model):
     """
     User session tracking for security and audit
     Supports Venezuelan security requirements
@@ -266,7 +266,7 @@ class UserSession(Base):
         self.last_activity = datetime.now(timezone.utc)
 
 
-class UserAuditLog(Base):
+class UserAuditLog(db.Model):
     """
     Comprehensive audit logging for Venezuelan compliance
     Tracks all user actions for security and regulatory requirements

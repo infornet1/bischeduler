@@ -107,11 +107,14 @@ class MultiTenantMiddleware:
         Skip for health checks, documentation, admin endpoints
         """
         skip_paths = [
+            '/',  # Main landing page
+            '/login',  # Login page
             '/health',
             '/info',
             '/docs',
             '/admin',
             '/api/admin',
+            '/api/auth',  # Authentication endpoints
             '/api/invitations/accept',  # Invitation acceptance before tenant exists
             '/static'
         ]
