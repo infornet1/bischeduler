@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#003366">
+    <title>Gestión de Suplentes - BiScheduler [Fase 5]</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/styles.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/dark-mode.css">
+
+    <style>
+        .substitute-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            padding: var(--spacing-lg);
+        }
+
+        .substitute-card {
+            background: var(--card-bg, rgba(255, 255, 255, 0.95));
+            border-radius: var(--border-radius);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--box-shadow-lg);
+            backdrop-filter: blur(10px);
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .tabs-container {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .nav-tabs {
+            border-bottom: 2px solid var(--primary-color, #003366);
+        }
+
+        .nav-tabs .nav-link {
+            color: var(--text-secondary, #6c757d);
+            border: none;
+            padding: var(--spacing-md) var(--spacing-lg);
+            margin-right: var(--spacing-sm);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            transition: var(--transition);
+        }
+
+        .nav-tabs .nav-link.active {
+            background: var(--primary-color, #003366);
+            color: white;
+            border: none;
+        }
+
+        .nav-tabs .nav-link:hover {
+            background: var(--bg-hover, rgba(0, 51, 102, 0.1));
+            border-color: transparent;
+        }
+
+        .substitute-pool {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .substitute-card-item {
+            background: var(--bg-secondary, #f8f9fa);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            border-left: 4px solid var(--primary-color, #003366);
+            transition: var(--transition);
+        }
+
+        .substitute-card-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--box-shadow);
+        }
+
+        .substitute-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .substitute-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary, #212529);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .substitute-specialization {
+            color: var(--text-secondary, #6c757d);
+            font-size: 0.9rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .substitute-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: var(--spacing-xs);
+            background: var(--bg-tertiary, #ffffff);
+            border-radius: var(--border-radius);
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color, #003366);
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-muted, #6c757d);
+        }
+
+        .substitute-badges {
+            display: flex;
+            gap: var(--spacing-xs);
+            flex-wrap: wrap;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .badge-availability {
+            background: #d4edda;
+            color: #155724;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge-performance {
+            background: #cce7ff;
+            color: #004085;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge-rate {
+            background: #fff3cd;
+            color: #856404;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .absence-workflow {
+            background: var(--bg-secondary, #f8f9fa);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .workflow-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .workflow-step {
+            text-align: center;
+            padding: var(--spacing-md);
+            background: var(--bg-tertiary, #ffffff);
+            border-radius: var(--border-radius);
+            border: 2px solid var(--border-color, #dee2e6);
+        }
+
+        .workflow-step.active {
+            border-color: var(--primary-color, #003366);
+            background: var(--bg-primary-light, rgba(0, 51, 102, 0.1));
+        }
+
+        .step-icon {
+            font-size: 2rem;
+            color: var(--primary-color, #003366);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: var(--text-primary, #212529);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .step-description {
+            font-size: 0.9rem;
+            color: var(--text-secondary, #6c757d);
+        }
+
+        .assignment-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .assignment-item {
+            background: var(--bg-secondary, #f8f9fa);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-sm);
+            border-left: 4px solid var(--warning-color, #ffc107);
+        }
+
+        .assignment-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .assignment-date {
+            font-weight: 600;
+            color: var(--text-primary, #212529);
+        }
+
+        .assignment-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-assigned {
+            background: #cce7ff;
+            color: #004085;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .assignment-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: var(--spacing-sm);
+            font-size: 0.9rem;
+            color: var(--text-secondary, #6c757d);
+        }
+
+        .btn-substitute {
+            background: var(--primary-color, #003366);
+            color: white;
+            border: none;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .btn-substitute:hover {
+            background: #004080;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .btn-substitute-secondary {
+            background: transparent;
+            color: var(--primary-color, #003366);
+            border: 1px solid var(--primary-color, #003366);
+        }
+
+        .btn-substitute-secondary:hover {
+            background: var(--primary-color, #003366);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .substitute-pool {
+                grid-template-columns: 1fr;
+            }
+
+            .workflow-steps {
+                grid-template-columns: 1fr;
+            }
+
+            .substitute-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- User Bar -->
+    <div class="user-bar">
+        <div class="user-info">
+            <span class="user-name">Gestión de Suplentes</span>
+            <span class="user-role">Fase 5: Sistema de Suplencias</span>
+        </div>
+        <div class="user-actions">
+            <div class="dropdown">
+                <button class="user-dropdown-toggle" type="button" data-toggle="dropdown">
+                    <i class="fas fa-user-circle"></i>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <button class="dropdown-item" id="darkModeToggle">
+                        <i class="fas fa-moon" id="darkModeIcon"></i>
+                        <span id="darkModeText">Modo Oscuro</span>
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="/bischeduler/dashboard">
+                        <i class="fas fa-home"></i> Panel Principal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="substitute-container">
+        <div class="substitute-card">
+            <div class="header-section">
+                <div>
+                    <h1><i class="fas fa-user-friends"></i> Gestión de Suplentes</h1>
+                    <p class="text-muted">Sistema automatizado de suplencias para docentes venezolanos</p>
+                </div>
+                <a href="/bischeduler/dashboard" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="tabs-container">
+                <ul class="nav nav-tabs" id="substituteTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="pool-tab" data-toggle="tab" href="#pool" role="tab">
+                            <i class="fas fa-users"></i> Pool de Suplentes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="absences-tab" data-toggle="tab" href="#absences" role="tab">
+                            <i class="fas fa-calendar-times"></i> Gestión de Ausencias
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="assignments-tab" data-toggle="tab" href="#assignments" role="tab">
+                            <i class="fas fa-clipboard-list"></i> Asignaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="portal-tab" data-toggle="tab" href="#portal" role="tab">
+                            <i class="fas fa-user-check"></i> Portal Suplente
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="substituteTabContent">
+                <!-- Pool de Suplentes -->
+                <div class="tab-pane fade show active" id="pool" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-users"></i> Pool de Suplentes Disponibles</h3>
+                        <button class="btn-substitute" onclick="openRegisterModal()">
+                            <i class="fas fa-user-plus"></i> Registrar Suplente
+                        </button>
+                    </div>
+
+                    <div class="substitute-pool" id="substitutePool">
+                        <!-- Substitute cards will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Gestión de Ausencias -->
+                <div class="tab-pane fade" id="absences" role="tabpanel">
+                    <h3><i class="fas fa-calendar-times"></i> Workflow de Ausencias</h3>
+
+                    <div class="absence-workflow">
+                        <h5>Proceso Automatizado de Suplencias</h5>
+                        <div class="workflow-steps">
+                            <div class="workflow-step active">
+                                <div class="step-icon"><i class="fas fa-file-medical"></i></div>
+                                <div class="step-title">Solicitud</div>
+                                <div class="step-description">Docente reporta ausencia</div>
+                            </div>
+                            <div class="workflow-step">
+                                <div class="step-icon"><i class="fas fa-search"></i></div>
+                                <div class="step-title">Búsqueda</div>
+                                <div class="step-description">Sistema encuentra suplente</div>
+                            </div>
+                            <div class="workflow-step">
+                                <div class="step-icon"><i class="fas fa-handshake"></i></div>
+                                <div class="step-title">Asignación</div>
+                                <div class="step-description">Suplente acepta/declina</div>
+                            </div>
+                            <div class="workflow-step">
+                                <div class="step-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                                <div class="step-title">Ejecución</div>
+                                <div class="step-description">Clase cubierta</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Reportar Ausencia</h5>
+                            <form id="absenceForm">
+                                <div class="form-group">
+                                    <label>Docente:</label>
+                                    <select class="form-control" id="absentTeacher">
+                                        <option value="">Seleccionar docente...</option>
+                                        <option value="1">MARIA NIETO - Matemáticas</option>
+                                        <option value="2">FLORMAR HERNANDEZ - Castellano</option>
+                                        <option value="3">STEFANY ROMERO - Inglés</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <div class="col-md-6">
+                                        <label>Fecha Inicio:</label>
+                                        <input type="date" class="form-control" id="startDate" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label>Fecha Fin:</label>
+                                        <input type="date" class="form-control" id="endDate" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Motivo:</label>
+                                    <select class="form-control" id="absenceReason">
+                                        <option value="sick">Enfermedad</option>
+                                        <option value="personal">Personal</option>
+                                        <option value="training">Capacitación</option>
+                                        <option value="emergency">Emergencia</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Detalles:</label>
+                                    <textarea class="form-control" id="absenceDetails" rows="3"></textarea>
+                                </div>
+                                <button type="button" class="btn-substitute" onclick="submitAbsence()">
+                                    <i class="fas fa-paper-plane"></i> Procesar Ausencia
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Ausencias Recientes</h5>
+                            <div class="assignment-list" id="recentAbsences">
+                                <!-- Recent absences will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Asignaciones -->
+                <div class="tab-pane fade" id="assignments" role="tabpanel">
+                    <h3><i class="fas fa-clipboard-list"></i> Asignaciones de Suplencias</h3>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="assignment-list" id="currentAssignments">
+                                <!-- Current assignments will be loaded here -->
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="substitute-card-item">
+                                <h6><i class="fas fa-chart-bar"></i> Estadísticas</h6>
+                                <div class="substitute-metrics">
+                                    <div class="metric-item">
+                                        <div class="metric-value" id="totalAssignments">0</div>
+                                        <div class="metric-label">Asignaciones</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-value" id="pendingAssignments">0</div>
+                                        <div class="metric-label">Pendientes</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-value" id="completedAssignments">0</div>
+                                        <div class="metric-label">Completadas</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-value" id="successRate">0%</div>
+                                        <div class="metric-label">Tasa Éxito</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Portal del Suplente -->
+                <div class="tab-pane fade" id="portal" role="tabpanel">
+                    <h3><i class="fas fa-user-check"></i> Portal del Suplente</h3>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="substitute-card-item">
+                                <h6><i class="fas fa-user"></i> Información del Suplente</h6>
+                                <form id="substituteProfileForm">
+                                    <div class="form-group">
+                                        <label>Seleccionar Suplente:</label>
+                                        <select class="form-control" id="selectedSubstitute" onchange="loadSubstitutePortal()">
+                                            <option value="">Seleccionar suplente...</option>
+                                            <!-- Will be populated dynamically -->
+                                        </select>
+                                    </div>
+                                </form>
+                                <div id="substituteProfile" style="display: none;">
+                                    <!-- Substitute profile info will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="substitute-card-item">
+                                <h6><i class="fas fa-calendar-check"></i> Asignaciones Pendientes</h6>
+                                <div class="assignment-list" id="pendingSubstituteAssignments">
+                                    <!-- Pending assignments for selected substitute -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="substitute-card-item">
+                                <h6><i class="fas fa-money-bill-wave"></i> Ingresos Mensuales</h6>
+                                <div id="substituteEarnings">
+                                    <!-- Earnings data will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="substitute-card-item">
+                                <h6><i class="fas fa-star"></i> Métricas de Rendimiento</h6>
+                                <div id="substitutePerformance">
+                                    <!-- Performance metrics will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize theme
+        function initTheme() {
+            const savedTheme = localStorage.getItem('bischeduler-theme');
+            const theme = savedTheme || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+
+            const icon = document.getElementById('darkModeIcon');
+            const text = document.getElementById('darkModeText');
+            if (theme === 'dark') {
+                icon.className = 'fas fa-sun';
+                text.textContent = 'Modo Claro';
+            }
+        }
+
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('bischeduler-theme', newTheme);
+
+            const icon = document.getElementById('darkModeIcon');
+            const text = document.getElementById('darkModeText');
+            if (newTheme === 'dark') {
+                icon.className = 'fas fa-sun';
+                text.textContent = 'Modo Claro';
+            } else {
+                icon.className = 'fas fa-moon';
+                text.textContent = 'Modo Oscuro';
+            }
+        });
+
+        // Phase 5: Substitute Management JavaScript
+        class SubstituteManagement {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.loadSubstitutePool();
+                this.loadRecentAbsences();
+                this.loadCurrentAssignments();
+                this.loadSubstituteOptions();
+                this.setDefaultDates();
+            }
+
+            // Load substitute pool
+            loadSubstitutePool() {
+                // Mock substitute data for demo
+                const substitutes = [
+                    {
+                        id: 1,
+                        name: 'CARLOS MENDEZ',
+                        specialization: 'Matemáticas y Física',
+                        hourly_rate: 60,
+                        availability_score: 95,
+                        performance_score: 88,
+                        total_assignments: 24,
+                        qualifications: ['MATEMÁTICAS', 'FÍSICA', 'LOGICA MATEMÁTICA']
+                    },
+                    {
+                        id: 2,
+                        name: 'ANA RODRIGUEZ',
+                        specialization: 'Ciencias Naturales',
+                        hourly_rate: 55,
+                        availability_score: 92,
+                        performance_score: 91,
+                        total_assignments: 18,
+                        qualifications: ['QUÍMICA', 'BIOLOGÍA', 'CIENCIAS']
+                    },
+                    {
+                        id: 3,
+                        name: 'LUIS GARCIA',
+                        specialization: 'Humanidades',
+                        hourly_rate: 50,
+                        availability_score: 88,
+                        performance_score: 85,
+                        total_assignments: 31,
+                        qualifications: ['CASTELLANO Y LITERATURA', 'GHC PARA LA SOBERANIA NACIONAL']
+                    }
+                ];
+
+                const container = document.getElementById('substitutePool');
+                container.innerHTML = '';
+
+                substitutes.forEach(sub => {
+                    const card = document.createElement('div');
+                    card.className = 'substitute-card-item';
+                    card.innerHTML = `
+                        <div class="substitute-header">
+                            <div>
+                                <div class="substitute-name">${sub.name}</div>
+                                <div class="substitute-specialization">${sub.specialization}</div>
+                            </div>
+                        </div>
+                        <div class="substitute-metrics">
+                            <div class="metric-item">
+                                <div class="metric-value">${sub.availability_score}%</div>
+                                <div class="metric-label">Disponibilidad</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">${sub.performance_score}%</div>
+                                <div class="metric-label">Rendimiento</div>
+                            </div>
+                        </div>
+                        <div class="substitute-badges">
+                            <span class="badge-availability">Disponible</span>
+                            <span class="badge-performance">Alto Rendimiento</span>
+                            <span class="badge-rate">Bs. ${sub.hourly_rate}/h</span>
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                            <strong>Cualificaciones:</strong><br>
+                            ${sub.qualifications.join(', ')}
+                        </div>
+                        <div style="margin-top: var(--spacing-md);">
+                            <button class="btn-substitute btn-sm" onclick="viewSubstituteDetails(${sub.id})">
+                                <i class="fas fa-eye"></i> Ver Perfil
+                            </button>
+                            <button class="btn-substitute btn-substitute-secondary btn-sm" onclick="assignSubstitute(${sub.id})">
+                                <i class="fas fa-user-plus"></i> Asignar
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+
+            // Load recent absences
+            loadRecentAbsences() {
+                const absences = [
+                    {
+                        teacher: 'MARIA NIETO',
+                        date: '2025-09-27',
+                        reason: 'Enfermedad',
+                        status: 'pending',
+                        substitute: 'CARLOS MENDEZ'
+                    },
+                    {
+                        teacher: 'FLORMAR HERNANDEZ',
+                        date: '2025-09-26',
+                        reason: 'Personal',
+                        status: 'assigned',
+                        substitute: 'ANA RODRIGUEZ'
+                    }
+                ];
+
+                const container = document.getElementById('recentAbsences');
+                container.innerHTML = '';
+
+                absences.forEach(absence => {
+                    const item = document.createElement('div');
+                    item.className = 'assignment-item';
+                    item.innerHTML = `
+                        <div class="assignment-header">
+                            <div class="assignment-date">${absence.date}</div>
+                            <span class="assignment-status status-${absence.status}">
+                                ${absence.status === 'pending' ? 'Pendiente' : 'Asignado'}
+                            </span>
+                        </div>
+                        <div class="assignment-details">
+                            <div><strong>Docente:</strong> ${absence.teacher}</div>
+                            <div><strong>Motivo:</strong> ${absence.reason}</div>
+                            <div><strong>Suplente:</strong> ${absence.substitute}</div>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            // Load current assignments
+            loadCurrentAssignments() {
+                const assignments = [
+                    {
+                        id: 1,
+                        date: '2025-09-27',
+                        time: '7:00 - 7:40',
+                        subject: 'MATEMÁTICAS',
+                        section: '3er año A',
+                        substitute: 'CARLOS MENDEZ',
+                        absent_teacher: 'MARIA NIETO',
+                        status: 'pending'
+                    },
+                    {
+                        id: 2,
+                        date: '2025-09-27',
+                        time: '8:20 - 9:00',
+                        subject: 'QUÍMICA',
+                        section: '4to año B',
+                        substitute: 'ANA RODRIGUEZ',
+                        absent_teacher: 'FLORMAR HERNANDEZ',
+                        status: 'assigned'
+                    }
+                ];
+
+                const container = document.getElementById('currentAssignments');
+                container.innerHTML = '';
+
+                assignments.forEach(assignment => {
+                    const item = document.createElement('div');
+                    item.className = 'assignment-item';
+                    item.innerHTML = `
+                        <div class="assignment-header">
+                            <div class="assignment-date">${assignment.date} - ${assignment.time}</div>
+                            <span class="assignment-status status-${assignment.status}">
+                                ${assignment.status === 'pending' ? 'Pendiente' : 'Asignado'}
+                            </span>
+                        </div>
+                        <div class="assignment-details">
+                            <div><strong>Materia:</strong> ${assignment.subject}</div>
+                            <div><strong>Sección:</strong> ${assignment.section}</div>
+                            <div><strong>Suplente:</strong> ${assignment.substitute}</div>
+                            <div><strong>Ausente:</strong> ${assignment.absent_teacher}</div>
+                        </div>
+                        <div style="margin-top: var(--spacing-sm);">
+                            <button class="btn-substitute btn-sm" onclick="viewAssignmentDetails(${assignment.id})">
+                                <i class="fas fa-eye"></i> Ver Detalles
+                            </button>
+                            ${assignment.status === 'pending' ?
+                                '<button class="btn-substitute btn-substitute-secondary btn-sm" onclick="cancelAssignment(' + assignment.id + ')"><i class="fas fa-times"></i> Cancelar</button>' :
+                                '<button class="btn-substitute btn-substitute-secondary btn-sm" onclick="markCompleted(' + assignment.id + ')"><i class="fas fa-check"></i> Completar</button>'
+                            }
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+
+                // Update statistics
+                document.getElementById('totalAssignments').textContent = assignments.length;
+                document.getElementById('pendingAssignments').textContent = assignments.filter(a => a.status === 'pending').length;
+                document.getElementById('completedAssignments').textContent = assignments.filter(a => a.status === 'completed').length;
+                document.getElementById('successRate').textContent = '95%';
+            }
+
+            // Load substitute options for portal
+            loadSubstituteOptions() {
+                const select = document.getElementById('selectedSubstitute');
+                const substitutes = [
+                    { id: 1, name: 'CARLOS MENDEZ' },
+                    { id: 2, name: 'ANA RODRIGUEZ' },
+                    { id: 3, name: 'LUIS GARCIA' }
+                ];
+
+                substitutes.forEach(sub => {
+                    const option = document.createElement('option');
+                    option.value = sub.id;
+                    option.textContent = sub.name;
+                    select.appendChild(option);
+                });
+            }
+
+            setDefaultDates() {
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(today.getDate() + 1);
+
+                document.getElementById('startDate').value = tomorrow.toISOString().split('T')[0];
+                document.getElementById('endDate').value = tomorrow.toISOString().split('T')[0];
+            }
+        }
+
+        // Global functions
+        window.openRegisterModal = () => {
+            alert('Modal de registro de suplente estará disponible próximamente');
+        };
+
+        window.submitAbsence = () => {
+            const teacher = document.getElementById('absentTeacher').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const reason = document.getElementById('absenceReason').value;
+
+            if (!teacher || !startDate || !endDate) {
+                alert('Por favor complete todos los campos requeridos');
+                return;
+            }
+
+            alert(`Ausencia procesada para ${document.getElementById('absentTeacher').options[document.getElementById('absentTeacher').selectedIndex].text} del ${startDate} al ${endDate}. Sistema buscando suplente automáticamente...`);
+
+            // Reset form
+            document.getElementById('absenceForm').reset();
+            setTimeout(() => window.substituteManagement.loadRecentAbsences(), 1000);
+        };
+
+        window.loadSubstitutePortal = () => {
+            const substituteId = document.getElementById('selectedSubstitute').value;
+            if (!substituteId) {
+                document.getElementById('substituteProfile').style.display = 'none';
+                return;
+            }
+
+            // Mock substitute portal data
+            const portalData = {
+                profile: {
+                    name: 'CARLOS MENDEZ',
+                    specialization: 'Matemáticas y Física',
+                    hourly_rate: 60,
+                    phone: '0414-1234567',
+                    email: 'carlos.mendez@example.com'
+                },
+                earnings: {
+                    current_month_hours: 25,
+                    current_month_earnings: 1500,
+                    pending_payment: 450
+                },
+                performance: {
+                    completion_rate: 95,
+                    punctuality_score: 92,
+                    student_feedback: 4.3
+                }
+            };
+
+            // Show profile
+            document.getElementById('substituteProfile').style.display = 'block';
+            document.getElementById('substituteProfile').innerHTML = `
+                <div class="substitute-metrics">
+                    <div class="metric-item">
+                        <div class="metric-value">Bs. ${portalData.profile.hourly_rate}</div>
+                        <div class="metric-label">Tarifa/Hora</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${portalData.earnings.current_month_hours}h</div>
+                        <div class="metric-label">Horas Mes</div>
+                    </div>
+                </div>
+                <p style="margin-top: var(--spacing-md);">
+                    <strong>Contacto:</strong> ${portalData.profile.phone}<br>
+                    <strong>Email:</strong> ${portalData.profile.email}
+                </p>
+            `;
+
+            // Load earnings
+            document.getElementById('substituteEarnings').innerHTML = `
+                <div class="substitute-metrics">
+                    <div class="metric-item">
+                        <div class="metric-value">Bs. ${portalData.earnings.current_month_earnings}</div>
+                        <div class="metric-label">Ingresos Mes</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">Bs. ${portalData.earnings.pending_payment}</div>
+                        <div class="metric-label">Pendiente Pago</div>
+                    </div>
+                </div>
+            `;
+
+            // Load performance
+            document.getElementById('substitutePerformance').innerHTML = `
+                <div class="substitute-metrics">
+                    <div class="metric-item">
+                        <div class="metric-value">${portalData.performance.completion_rate}%</div>
+                        <div class="metric-label">Tasa Completado</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${portalData.performance.student_feedback}/5</div>
+                        <div class="metric-label">Calificación</div>
+                    </div>
+                </div>
+            `;
+
+            // Load pending assignments
+            document.getElementById('pendingSubstituteAssignments').innerHTML = `
+                <div class="assignment-item">
+                    <div class="assignment-header">
+                        <div class="assignment-date">2025-09-27 - 7:00-7:40</div>
+                        <span class="assignment-status status-pending">Pendiente</span>
+                    </div>
+                    <div class="assignment-details">
+                        <div><strong>Materia:</strong> MATEMÁTICAS</div>
+                        <div><strong>Sección:</strong> 3er año A</div>
+                    </div>
+                    <div style="margin-top: var(--spacing-sm);">
+                        <button class="btn-substitute btn-sm" onclick="acceptAssignment(1)">
+                            <i class="fas fa-check"></i> Aceptar
+                        </button>
+                        <button class="btn-substitute btn-substitute-secondary btn-sm" onclick="declineAssignment(1)">
+                            <i class="fas fa-times"></i> Declinar
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+        // Additional functions
+        window.viewSubstituteDetails = (id) => alert(`Ver detalles del suplente ${id}`);
+        window.assignSubstitute = (id) => alert(`Asignar suplente ${id} manualmente`);
+        window.viewAssignmentDetails = (id) => alert(`Ver detalles de asignación ${id}`);
+        window.cancelAssignment = (id) => alert(`Cancelar asignación ${id}`);
+        window.markCompleted = (id) => alert(`Marcar asignación ${id} como completada`);
+        window.acceptAssignment = (id) => alert(`Suplente acepta asignación ${id}`);
+        window.declineAssignment = (id) => alert(`Suplente declina asignación ${id}`);
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            window.substituteManagement = new SubstituteManagement();
+        });
+    </script>
+</body>
+</html>

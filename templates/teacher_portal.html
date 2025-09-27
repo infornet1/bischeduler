@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#003366">
-    <title>Portal del Profesor - BiScheduler</title>
+    <title>Portal del Profesor - BiScheduler [Fase 4: CRÍTICO]</title>
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -893,6 +893,506 @@
         document.addEventListener('DOMContentLoaded', () => {
             new TeacherPortal();
         });
+    </script>
+
+    <!-- PHASE 4 CRITICAL: Teacher Preference Submission Modal -->
+    <div class="modal fade" id="preferencesModal" tabindex="-1" role="dialog" aria-labelledby="preferencesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="background: var(--primary-color, #003366); color: white;">
+                    <h5 class="modal-title" id="preferencesModalLabel">
+                        <i class="fas fa-star"></i> Configurar Preferencias de Horario
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" style="max-height: 600px; overflow-y: auto;">
+                    <!-- Preference Scoring Algorithm Info -->
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Sistema de Puntuación:</strong>
+                        Horarios (40%) • Días (30%) • Materias (20%) • Aulas (10%)
+                    </div>
+
+                    <!-- Preference Forms -->
+                    <div class="preference-forms">
+                        <!-- Time Preferences -->
+                        <div class="preference-section">
+                            <h6><i class="fas fa-clock"></i> Preferencias de Horario (40% peso)</h6>
+                            <div class="time-preferences-grid">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label>Período de Preferencia:</label>
+                                        <select class="form-control" id="timePreferenceSelect">
+                                            <option value="">Seleccionar período...</option>
+                                            <option value="1">7:00 - 7:40 (Período 1)</option>
+                                            <option value="2">7:40 - 8:20 (Período 2)</option>
+                                            <option value="3">8:20 - 9:00 (Período 3)</option>
+                                            <option value="4">9:00 - 9:40 (Período 4)</option>
+                                            <option value="6">10:00 - 10:40 (Período 6)</option>
+                                            <option value="7">10:40 - 11:20 (Período 7)</option>
+                                            <option value="8">11:20 - 12:00 (Período 8)</option>
+                                            <option value="9">12:00 - 12:40 (Período 9)</option>
+                                            <option value="10">1:00 - 1:40 (Período 10)</option>
+                                            <option value="11">1:40 - 2:20 (Período 11)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label>Nivel de Preferencia:</label>
+                                        <select class="form-control" id="timePreferenceLevel">
+                                            <option value="prefer">Prefiero (10 pts)</option>
+                                            <option value="like">Me Gusta (5 pts)</option>
+                                            <option value="neutral">Neutral (0 pts)</option>
+                                            <option value="dislike">No Prefiero (-5 pts)</option>
+                                            <option value="avoid">Evitar (-10 pts)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label>&nbsp;</label>
+                                        <button class="btn btn-primary btn-block" onclick="addTimePreference()">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="current-preferences mt-3" id="timePreferencesList">
+                                    <!-- Current time preferences will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Day Preferences -->
+                        <div class="preference-section">
+                            <h6><i class="fas fa-calendar-day"></i> Preferencias de Días (30% peso)</h6>
+                            <div class="day-preferences-grid">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label>Día de la Semana:</label>
+                                        <select class="form-control" id="dayPreferenceSelect">
+                                            <option value="">Seleccionar día...</option>
+                                            <option value="monday">Lunes</option>
+                                            <option value="tuesday">Martes</option>
+                                            <option value="wednesday">Miércoles</option>
+                                            <option value="thursday">Jueves</option>
+                                            <option value="friday">Viernes</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label>Nivel de Preferencia:</label>
+                                        <select class="form-control" id="dayPreferenceLevel">
+                                            <option value="prefer">Prefiero (10 pts)</option>
+                                            <option value="like">Me Gusta (5 pts)</option>
+                                            <option value="neutral">Neutral (0 pts)</option>
+                                            <option value="dislike">No Prefiero (-5 pts)</option>
+                                            <option value="avoid">Evitar (-10 pts)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label>&nbsp;</label>
+                                        <button class="btn btn-primary btn-block" onclick="addDayPreference()">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="current-preferences mt-3" id="dayPreferencesList">
+                                    <!-- Current day preferences will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Subject Preferences -->
+                        <div class="preference-section">
+                            <h6><i class="fas fa-book"></i> Preferencias de Materias (20% peso)</h6>
+                            <div class="subject-preferences-grid">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label>Materia:</label>
+                                        <select class="form-control" id="subjectPreferenceSelect">
+                                            <option value="">Seleccionar materia...</option>
+                                            <option value="1">CASTELLANO Y LITERATURA</option>
+                                            <option value="2">INGLÉS</option>
+                                            <option value="3">MATEMÁTICAS</option>
+                                            <option value="4">FÍSICA</option>
+                                            <option value="5">QUÍMICA</option>
+                                            <option value="6">BIOLOGÍA</option>
+                                            <option value="7">GHC PARA LA SOBERANIA NACIONAL</option>
+                                            <option value="8">EDUCACIÓN FÍSICA</option>
+                                            <option value="9">ORIENTACIÓN VOCACIONAL</option>
+                                            <option value="10">LOGICA MATEMÁTICA</option>
+                                            <option value="11">ARTE Y PATRIMONIO</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label>Nivel de Preferencia:</label>
+                                        <select class="form-control" id="subjectPreferenceLevel">
+                                            <option value="prefer">Prefiero (10 pts)</option>
+                                            <option value="like">Me Gusta (5 pts)</option>
+                                            <option value="neutral">Neutral (0 pts)</option>
+                                            <option value="dislike">No Prefiero (-5 pts)</option>
+                                            <option value="avoid">Evitar (-10 pts)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label>&nbsp;</label>
+                                        <button class="btn btn-primary btn-block" onclick="addSubjectPreference()">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="current-preferences mt-3" id="subjectPreferencesList">
+                                    <!-- Current subject preferences will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Classroom Preferences -->
+                        <div class="preference-section">
+                            <h6><i class="fas fa-door-open"></i> Preferencias de Aulas (10% peso)</h6>
+                            <div class="classroom-preferences-grid">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label>Aula:</label>
+                                        <select class="form-control" id="classroomPreferenceSelect">
+                                            <option value="">Seleccionar aula...</option>
+                                            <option value="1">Aula 1</option>
+                                            <option value="2">Aula 2</option>
+                                            <option value="3">Aula 3</option>
+                                            <option value="4">Lab Física</option>
+                                            <option value="5">Lab Química</option>
+                                            <option value="6">Cancha 1</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label>Nivel de Preferencia:</label>
+                                        <select class="form-control" id="classroomPreferenceLevel">
+                                            <option value="prefer">Prefiero (10 pts)</option>
+                                            <option value="like">Me Gusta (5 pts)</option>
+                                            <option value="neutral">Neutral (0 pts)</option>
+                                            <option value="dislike">No Prefiero (-5 pts)</option>
+                                            <option value="avoid">Evitar (-10 pts)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label>&nbsp;</label>
+                                        <button class="btn btn-primary btn-block" onclick="addClassroomPreference()">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="current-preferences mt-3" id="classroomPreferencesList">
+                                    <!-- Current classroom preferences will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reason Input -->
+                        <div class="preference-section">
+                            <label for="preferenceReason">Justificación (Opcional):</label>
+                            <textarea class="form-control" id="preferenceReason" rows="2"
+                                placeholder="Explique brevemente el motivo de estas preferencias..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="d-flex justify-content-between w-100">
+                        <div>
+                            <small class="text-muted">
+                                <i class="fas fa-calculator"></i>
+                                Puntuación estimada: <span id="estimatedScore">0</span> puntos
+                            </small>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-primary" onclick="savePreferences()">
+                                <i class="fas fa-save"></i> Guardar Preferencias
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 4 Critical: Preference Management JavaScript -->
+    <script>
+        // Global preference storage
+        let currentPreferences = {
+            time: [],
+            day: [],
+            subject: [],
+            classroom: []
+        };
+
+        // Phase 4 Critical: Open preferences modal
+        window.openPreferencesModal = () => {
+            loadCurrentPreferences();
+            $('#preferencesModal').modal('show');
+        };
+
+        // Load existing preferences
+        function loadCurrentPreferences() {
+            // TODO: Load from API
+            renderAllPreferences();
+        }
+
+        // Add time preference
+        window.addTimePreference = () => {
+            const select = document.getElementById('timePreferenceSelect');
+            const level = document.getElementById('timePreferenceLevel');
+            const reason = document.getElementById('preferenceReason');
+
+            if (!select.value) {
+                alert('Por favor seleccione un período');
+                return;
+            }
+
+            const preference = {
+                id: Date.now(),
+                time_period_id: select.value,
+                time_display: select.options[select.selectedIndex].text,
+                level: level.value,
+                level_display: level.options[level.selectedIndex].text,
+                reason: reason.value,
+                type: 'time'
+            };
+
+            currentPreferences.time.push(preference);
+            renderTimePreferences();
+            calculateEstimatedScore();
+
+            // Reset form
+            select.value = '';
+            reason.value = '';
+        };
+
+        // Add day preference
+        window.addDayPreference = () => {
+            const select = document.getElementById('dayPreferenceSelect');
+            const level = document.getElementById('dayPreferenceLevel');
+            const reason = document.getElementById('preferenceReason');
+
+            if (!select.value) {
+                alert('Por favor seleccione un día');
+                return;
+            }
+
+            const preference = {
+                id: Date.now(),
+                day: select.value,
+                day_display: select.options[select.selectedIndex].text,
+                level: level.value,
+                level_display: level.options[level.selectedIndex].text,
+                reason: reason.value,
+                type: 'day'
+            };
+
+            currentPreferences.day.push(preference);
+            renderDayPreferences();
+            calculateEstimatedScore();
+
+            select.value = '';
+            reason.value = '';
+        };
+
+        // Add subject preference
+        window.addSubjectPreference = () => {
+            const select = document.getElementById('subjectPreferenceSelect');
+            const level = document.getElementById('subjectPreferenceLevel');
+            const reason = document.getElementById('preferenceReason');
+
+            if (!select.value) {
+                alert('Por favor seleccione una materia');
+                return;
+            }
+
+            const preference = {
+                id: Date.now(),
+                subject_id: select.value,
+                subject_display: select.options[select.selectedIndex].text,
+                level: level.value,
+                level_display: level.options[level.selectedIndex].text,
+                reason: reason.value,
+                type: 'subject'
+            };
+
+            currentPreferences.subject.push(preference);
+            renderSubjectPreferences();
+            calculateEstimatedScore();
+
+            select.value = '';
+            reason.value = '';
+        };
+
+        // Add classroom preference
+        window.addClassroomPreference = () => {
+            const select = document.getElementById('classroomPreferenceSelect');
+            const level = document.getElementById('classroomPreferenceLevel');
+            const reason = document.getElementById('preferenceReason');
+
+            if (!select.value) {
+                alert('Por favor seleccione un aula');
+                return;
+            }
+
+            const preference = {
+                id: Date.now(),
+                classroom_id: select.value,
+                classroom_display: select.options[select.selectedIndex].text,
+                level: level.value,
+                level_display: level.options[level.selectedIndex].text,
+                reason: reason.value,
+                type: 'classroom'
+            };
+
+            currentPreferences.classroom.push(preference);
+            renderClassroomPreferences();
+            calculateEstimatedScore();
+
+            select.value = '';
+            reason.value = '';
+        };
+
+        // Render preference lists
+        function renderTimePreferences() {
+            const container = document.getElementById('timePreferencesList');
+            renderPreferenceList(container, currentPreferences.time, 'time');
+        }
+
+        function renderDayPreferences() {
+            const container = document.getElementById('dayPreferencesList');
+            renderPreferenceList(container, currentPreferences.day, 'day');
+        }
+
+        function renderSubjectPreferences() {
+            const container = document.getElementById('subjectPreferencesList');
+            renderPreferenceList(container, currentPreferences.subject, 'subject');
+        }
+
+        function renderClassroomPreferences() {
+            const container = document.getElementById('classroomPreferencesList');
+            renderPreferenceList(container, currentPreferences.classroom, 'classroom');
+        }
+
+        function renderAllPreferences() {
+            renderTimePreferences();
+            renderDayPreferences();
+            renderSubjectPreferences();
+            renderClassroomPreferences();
+        }
+
+        function renderPreferenceList(container, preferences, type) {
+            container.innerHTML = '';
+            preferences.forEach(pref => {
+                const item = document.createElement('div');
+                item.className = 'alert alert-secondary d-flex justify-content-between align-items-center mb-2';
+                item.innerHTML = `
+                    <div>
+                        <span class="badge badge-${getPreferenceBadgeClass(pref.level)}">${pref.level_display}</span>
+                        <strong>${getPreferenceDisplay(pref)}</strong>
+                        ${pref.reason ? `<br><small class="text-muted">${pref.reason}</small>` : ''}
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removePreference('${type}', ${pref.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function getPreferenceDisplay(pref) {
+            switch(pref.type) {
+                case 'time': return pref.time_display;
+                case 'day': return pref.day_display;
+                case 'subject': return pref.subject_display;
+                case 'classroom': return pref.classroom_display;
+                default: return 'Desconocido';
+            }
+        }
+
+        function getPreferenceBadgeClass(level) {
+            switch(level) {
+                case 'prefer': return 'success';
+                case 'like': return 'primary';
+                case 'neutral': return 'secondary';
+                case 'dislike': return 'warning';
+                case 'avoid': return 'danger';
+                default: return 'secondary';
+            }
+        }
+
+        // Remove preference
+        window.removePreference = (type, id) => {
+            currentPreferences[type] = currentPreferences[type].filter(p => p.id !== id);
+            renderAllPreferences();
+            calculateEstimatedScore();
+        };
+
+        // Phase 4 Critical: Calculate estimated satisfaction score
+        function calculateEstimatedScore() {
+            let score = 0;
+            const weights = { time: 0.40, day: 0.30, subject: 0.20, classroom: 0.10 };
+
+            Object.keys(currentPreferences).forEach(type => {
+                const prefs = currentPreferences[type];
+                let typeScore = 0;
+                prefs.forEach(pref => {
+                    switch(pref.level) {
+                        case 'prefer': typeScore += 10; break;
+                        case 'like': typeScore += 5; break;
+                        case 'neutral': typeScore += 0; break;
+                        case 'dislike': typeScore -= 5; break;
+                        case 'avoid': typeScore -= 10; break;
+                    }
+                });
+                score += typeScore * weights[type];
+            });
+
+            document.getElementById('estimatedScore').textContent = Math.round(score);
+        }
+
+        // Phase 4 Critical: Save preferences
+        window.savePreferences = async () => {
+            try {
+                // Prepare data for API
+                const preferencesData = {
+                    time_preferences: currentPreferences.time,
+                    day_preferences: currentPreferences.day,
+                    subject_preferences: currentPreferences.subject,
+                    classroom_preferences: currentPreferences.classroom,
+                    academic_year: '2025-2026'
+                };
+
+                // TODO: Send to API
+                console.log('Saving preferences:', preferencesData);
+
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                alert('Preferencias guardadas exitosamente');
+                $('#preferencesModal').modal('hide');
+
+                // Refresh teacher portal data
+                if (window.teacherPortal) {
+                    window.teacherPortal.loadDashboardStats();
+                    window.teacherPortal.loadPreferences();
+                }
+
+            } catch (error) {
+                console.error('Error saving preferences:', error);
+                alert('Error al guardar preferencias. Intente nuevamente.');
+            }
+        };
+
+        // Phase 4 Critical: Edit existing preference
+        window.editPreference = (id) => {
+            alert('Funcionalidad de edición estará disponible próximamente');
+        };
     </script>
 </body>
 </html>

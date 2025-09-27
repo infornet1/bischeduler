@@ -1,9 +1,16 @@
 """
 BiScheduler Teacher Portal Service Layer
-Phase 6: Teacher Self-Service Portal and Advanced Scheduling Features
+Phase 4: Teacher Self-Service Portal (CRITICAL)
 
 Handles teacher preferences, availability, schedule viewing, and change requests
 with Venezuelan K12 compliance and preference scoring algorithms.
+
+Key Features:
+- Preference scoring algorithm (40% time, 30% day, 20% subject, 10% classroom)
+- Teacher dashboard with personal schedule viewer
+- Preference submission and management system
+- Change request workflow
+- Workload statistics and satisfaction metrics
 """
 
 from datetime import datetime, timezone, time, timedelta
