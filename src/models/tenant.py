@@ -645,7 +645,7 @@ class ScheduleChangeRequest(Base):
     updated_at = Column(DateTime, onupdate=datetime.now(timezone.utc))
 
     # Relationships
-    teacher = relationship("Teacher", backref="change_requests")
+    teacher = relationship("Teacher", foreign_keys=[teacher_id], backref="change_requests")
     assignment = relationship("ScheduleAssignment", backref="change_requests")
     proposed_time_period = relationship("TimePeriod", backref="change_requests")
     proposed_classroom = relationship("Classroom", backref="change_requests")

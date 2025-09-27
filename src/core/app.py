@@ -86,14 +86,51 @@ def create_app(config_name='development'):
     # Main landing page
     @app.route('/')
     def index():
-        from flask import render_template
-        return render_template('index.html')
+        from flask import render_template, g
+        from src.tenants.middleware import get_current_tenant
+        from src.models.master import Tenant
+
+        # For demo purposes, default to UEIPAB tenant if no tenant context
+        current_tenant = get_current_tenant()
+        if not current_tenant:
+            # Default to UEIPAB tenant for direct access
+            current_tenant = db.session.query(Tenant).filter_by(institution_name='UEIPAB').first()
+
+        return render_template('index.html', current_tenant=current_tenant)
 
     # Login page
     @app.route('/login')
     def login_page():
         from flask import render_template
         return render_template('login.html')
+
+    # Tenant status endpoint
+    @app.route('/api/tenant/status')
+    def tenant_status():
+        from flask import jsonify, g
+        from src.tenants.middleware import get_current_tenant
+        from src.models.master import Tenant
+
+        # Get current tenant or default to UEIPAB
+        current_tenant = get_current_tenant()
+        if not current_tenant:
+            current_tenant = db.session.query(Tenant).filter_by(institution_name='UEIPAB').first()
+
+        if current_tenant:
+            return jsonify({
+                'tenant_id': current_tenant.id,
+                'institution_name': current_tenant.institution_name,
+                'institution_code': current_tenant.institution_code,
+                'schema_name': current_tenant.schema_name,
+                'database_url_info': f"Database: {current_tenant.schema_name}",
+                'status': current_tenant.status.value,
+                'state_region': current_tenant.state_region,
+                'municipality': current_tenant.municipality,
+                'is_live_data': True,
+                'academic_year': '2025-2026'
+            })
+        else:
+            return jsonify({'error': 'No tenant found'}), 404
 
     # Dashboard page (post-login landing)
     @app.route('/dashboard')

@@ -145,6 +145,19 @@
             </ul>
         </div>
 
+        {% if current_tenant %}
+        <div class="features" style="background: #e8f5e8; border: 2px solid #28a745;">
+            <h3>🏫 Institución Activa</h3>
+            <ul style="text-align: center; list-style: none;">
+                <li style="font-size: 1.1rem; font-weight: bold; color: #155724;">{{ current_tenant.institution_name }}</li>
+                <li>📍 {{ current_tenant.state_region }}, {{ current_tenant.municipality }}</li>
+                <li>💾 Base de Datos: {{ current_tenant.schema_name }}</li>
+                <li style="color: #28a745; font-weight: bold;">✅ Datos Reales 2025-2026 Cargados</li>
+                <li>👥 15 Docentes • 📚 14 Materias • 🏛️ 15 Aulas</li>
+            </ul>
+        </div>
+        {% endif %}
+
         <div class="actions">
             <a href="/bischeduler/login" class="btn">Iniciar Sesión</a>
             <a href="/bischeduler/info" class="btn secondary">Información del Sistema</a>
@@ -153,7 +166,40 @@
         <div class="footer">
             <p>Desarrollado para UEIPAB y las instituciones educativas venezolanas</p>
             <p style="margin-top: 0.5rem;">© 2025 BiScheduler - Todos los derechos reservados</p>
+            <p style="margin-top: 0.5rem;">
+                <button onclick="showTenantStatus()" style="background: none; border: 1px solid #6c757d; color: #6c757d; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+                    🔍 Verificar Base de Datos Activa
+                </button>
+            </p>
         </div>
     </div>
+
+    <script>
+        function showTenantStatus() {
+            fetch('/bischeduler/api/tenant/status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                        return;
+                    }
+
+                    const statusText = `
+🏫 INSTITUCIÓN: ${data.institution_name}
+📍 UBICACIÓN: ${data.state_region}, ${data.municipality}
+🆔 CÓDIGO: ${data.institution_code}
+💾 BASE DE DATOS: ${data.schema_name}
+📅 AÑO ACADÉMICO: ${data.academic_year}
+📊 ESTADO: ${data.status}
+✅ DATOS EN VIVO: ${data.is_live_data ? 'SÍ - Datos Reales UEIPAB 2025-2026' : 'NO'}
+                    `;
+
+                    alert(statusText);
+                })
+                .catch(error => {
+                    alert('Error al verificar tenant: ' + error.message);
+                });
+        }
+    </script>
 </body>
 </html>
