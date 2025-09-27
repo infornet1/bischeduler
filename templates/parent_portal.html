@@ -404,18 +404,22 @@
         }
 
         /* Schedule Modal Styles */
-        .schedule-modal .modal-dialog {
-            max-width: 95%;
-            width: 1200px;
-            margin: 1rem auto;
+        #scheduleModal {
+            z-index: 1050;
         }
 
-        .schedule-modal .modal-body {
+        .schedule-modal-dialog {
+            max-width: 95% !important;
+            width: 1200px !important;
+            margin: 1rem auto !important;
+        }
+
+        #scheduleModal .modal-body {
             padding: 1rem;
             overflow-x: auto;
         }
 
-        .schedule-modal .modal-content {
+        #scheduleModal .modal-content {
             min-height: 80vh;
         }
 
@@ -695,13 +699,13 @@
             }
 
             /* Mobile modal adjustments */
-            .schedule-modal .modal-dialog {
-                max-width: 98%;
-                width: auto;
-                margin: 0.5rem;
+            .schedule-modal-dialog {
+                max-width: 98% !important;
+                width: auto !important;
+                margin: 0.5rem !important;
             }
 
-            .schedule-modal .modal-content {
+            #scheduleModal .modal-content {
                 min-height: 90vh;
             }
 
@@ -1077,7 +1081,37 @@
 
         // Schedule modal function
         function openScheduleModal() {
-            $('#scheduleModal').modal('show');
+            console.log('Opening schedule modal...');
+            try {
+                $('#scheduleModal').modal('show');
+            } catch (error) {
+                console.error('Error opening modal:', error);
+                // Fallback for manual modal opening
+                const modal = document.getElementById('scheduleModal');
+                modal.style.display = 'block';
+                modal.classList.add('show');
+                document.body.classList.add('modal-open');
+
+                // Add backdrop
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                backdrop.id = 'modal-backdrop';
+                document.body.appendChild(backdrop);
+            }
+        }
+
+        // Manual modal close function
+        function closeScheduleModal() {
+            const modal = document.getElementById('scheduleModal');
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+
+            // Remove backdrop
+            const backdrop = document.getElementById('modal-backdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
         }
 
         // Initialize on page load
@@ -1086,14 +1120,14 @@
     </script>
 
     <!-- Schedule Modal -->
-    <div class="modal fade schedule-modal" id="scheduleModal" tabindex="-1" role="dialog" aria-labelledby="scheduleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
+    <div class="modal fade" id="scheduleModal" tabindex="-1" role="dialog" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+        <div class="modal-dialog schedule-modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header" style="background: var(--primary-color, #003366); color: white;">
                     <h5 class="modal-title" id="scheduleModalLabel">
                         <i class="fas fa-calendar-week"></i> Horario Semanal - María González Rodríguez
                     </h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white;">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white;" onclick="closeScheduleModal()">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -1285,7 +1319,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="closeScheduleModal()">Cerrar</button>
                     <button type="button" class="btn btn-primary" onclick="printSchedule()">
                         <i class="fas fa-print"></i> Imprimir
                     </button>
