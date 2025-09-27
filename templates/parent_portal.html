@@ -403,30 +403,41 @@
             box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
         }
 
-        /* Schedule Modal Styles */
+        /* Schedule Modal Styles - Force override Bootstrap */
         #scheduleModal {
-            z-index: 1050;
+            z-index: 1050 !important;
         }
 
-        .schedule-modal-dialog {
+        #scheduleModal .modal-dialog {
             max-width: 98% !important;
             width: 1400px !important;
-            margin: 0.5rem auto !important;
-            max-height: 95vh !important;
-        }
-
-        #scheduleModal .modal-body {
-            padding: 1rem;
-            overflow-x: auto;
-            overflow-y: auto;
-            max-height: 75vh;
+            margin: 1rem auto !important;
+            height: 90vh !important;
+            max-height: 90vh !important;
         }
 
         #scheduleModal .modal-content {
-            min-height: 90vh;
-            max-height: 95vh;
-            display: flex;
-            flex-direction: column;
+            height: 100% !important;
+            min-height: 90vh !important;
+            max-height: 90vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        #scheduleModal .modal-body {
+            padding: 1rem !important;
+            overflow-x: auto !important;
+            overflow-y: auto !important;
+            flex: 1 !important;
+            max-height: none !important;
+        }
+
+        #scheduleModal .modal-header {
+            flex-shrink: 0 !important;
+        }
+
+        #scheduleModal .modal-footer {
+            flex-shrink: 0 !important;
         }
 
         .schedule-modal-grid {
@@ -705,18 +716,23 @@
             }
 
             /* Mobile modal adjustments */
-            .schedule-modal-dialog {
+            #scheduleModal .modal-dialog {
                 max-width: 98% !important;
                 width: auto !important;
                 margin: 0.5rem !important;
+                height: 95vh !important;
+                max-height: 95vh !important;
             }
 
             #scheduleModal .modal-content {
-                min-height: 95vh;
+                height: 100% !important;
+                min-height: 95vh !important;
+                max-height: 95vh !important;
             }
 
             #scheduleModal .modal-body {
-                max-height: 80vh;
+                flex: 1 !important;
+                max-height: none !important;
             }
 
             .schedule-modal-grid {
@@ -1132,8 +1148,8 @@
 
     <!-- Schedule Modal -->
     <div class="modal fade" id="scheduleModal" tabindex="-1" role="dialog" aria-labelledby="scheduleModalLabel" aria-hidden="true">
-        <div class="modal-dialog schedule-modal-dialog" role="document">
-            <div class="modal-content">
+        <div class="modal-dialog" role="document" style="max-width: 98%; width: 1400px; height: 90vh; max-height: 90vh; margin: 1rem auto;">
+            <div class="modal-content" style="height: 100%; display: flex; flex-direction: column;">
                 <div class="modal-header" style="background: var(--primary-color, #003366); color: white;">
                     <h5 class="modal-title" id="scheduleModalLabel">
                         <i class="fas fa-calendar-week"></i> Horario Semanal - María González Rodríguez
@@ -1142,7 +1158,7 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="flex: 1; overflow-x: auto; overflow-y: auto; padding: 1rem;">
                     <div class="schedule-modal-grid">
                         <!-- Headers -->
                         <div class="schedule-modal-header">Hora</div>
