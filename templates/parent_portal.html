@@ -409,9 +409,9 @@
         }
 
         .schedule-modal-dialog {
-            max-width: 95% !important;
-            width: 1200px !important;
-            margin: 1rem auto !important;
+            max-width: 98% !important;
+            width: 1400px !important;
+            margin: 0.5rem auto !important;
         }
 
         #scheduleModal .modal-body {
@@ -420,18 +420,19 @@
         }
 
         #scheduleModal .modal-content {
-            min-height: 80vh;
+            min-height: 75vh;
+            max-height: 90vh;
         }
 
         .schedule-modal-grid {
             display: grid;
-            grid-template-columns: 120px repeat(5, 1fr);
-            gap: 2px;
+            grid-template-columns: 140px repeat(5, 1fr);
+            gap: 3px;
             background: var(--border-color, #dee2e6);
             border-radius: var(--border-radius);
             overflow: hidden;
             width: 100%;
-            min-width: 800px;
+            min-width: 1200px;
         }
 
         .schedule-modal-header {
@@ -449,14 +450,14 @@
 
         .schedule-modal-time {
             background: var(--bg-secondary, #f8f9fa);
-            padding: 1rem;
+            padding: 1.2rem;
             text-align: center;
             font-weight: 600;
             color: var(--text-primary);
             display: flex;
             flex-direction: column;
             justify-content: center;
-            min-height: 100px;
+            min-height: 120px;
         }
 
         .schedule-modal-time strong {
@@ -471,8 +472,8 @@
 
         .schedule-modal-cell {
             background: white;
-            padding: 1rem;
-            min-height: 100px;
+            padding: 1.2rem;
+            min-height: 120px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -710,9 +711,10 @@
             }
 
             .schedule-modal-grid {
-                grid-template-columns: 80px repeat(5, 1fr);
-                min-width: 600px;
+                grid-template-columns: 100px repeat(5, 1fr);
+                min-width: 900px;
                 font-size: 0.9rem;
+                gap: 2px;
             }
 
             .schedule-modal-header {
