@@ -412,16 +412,21 @@
             max-width: 98% !important;
             width: 1400px !important;
             margin: 0.5rem auto !important;
+            max-height: 95vh !important;
         }
 
         #scheduleModal .modal-body {
             padding: 1rem;
             overflow-x: auto;
+            overflow-y: auto;
+            max-height: 75vh;
         }
 
         #scheduleModal .modal-content {
-            min-height: 75vh;
-            max-height: 90vh;
+            min-height: 90vh;
+            max-height: 95vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .schedule-modal-grid {
@@ -438,11 +443,11 @@
         .schedule-modal-header {
             background: var(--primary-color, #003366);
             color: white;
-            padding: 1rem;
+            padding: 1.2rem;
             text-align: center;
             font-weight: 600;
             font-size: 1.1rem;
-            min-height: 60px;
+            min-height: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -450,14 +455,14 @@
 
         .schedule-modal-time {
             background: var(--bg-secondary, #f8f9fa);
-            padding: 1.2rem;
+            padding: 1.5rem;
             text-align: center;
             font-weight: 600;
             color: var(--text-primary);
             display: flex;
             flex-direction: column;
             justify-content: center;
-            min-height: 120px;
+            min-height: 140px;
         }
 
         .schedule-modal-time strong {
@@ -472,8 +477,8 @@
 
         .schedule-modal-cell {
             background: white;
-            padding: 1.2rem;
-            min-height: 120px;
+            padding: 1.5rem;
+            min-height: 140px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -707,7 +712,11 @@
             }
 
             #scheduleModal .modal-content {
-                min-height: 90vh;
+                min-height: 95vh;
+            }
+
+            #scheduleModal .modal-body {
+                max-height: 80vh;
             }
 
             .schedule-modal-grid {
@@ -737,8 +746,8 @@
             }
 
             .schedule-modal-cell {
-                padding: 0.8rem;
-                min-height: 80px;
+                padding: 1rem;
+                min-height: 100px;
             }
 
             .schedule-modal-subject {
