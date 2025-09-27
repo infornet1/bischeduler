@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#003366">
+    <title>Gestión de Estudiantes - BiScheduler</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/styles.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/dark-mode.css">
+
+    <style>
+        .students-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            padding: var(--spacing-lg);
+        }
+
+        .management-card {
+            background: var(--card-bg, rgba(255, 255, 255, 0.95));
+            border-radius: var(--border-radius);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--box-shadow-lg);
+            backdrop-filter: blur(10px);
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .stat-card {
+            background: var(--bg-secondary, #f8f9fa);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            text-align: center;
+            border-left: 4px solid var(--primary-color, #003366);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color, #003366);
+        }
+
+        .stat-label {
+            color: var(--text-secondary, #6c757d);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- User Bar -->
+    <div class="user-bar">
+        <div class="user-info">
+            <span class="user-name">Gestión de Estudiantes</span>
+            <span class="user-role">Registro K12</span>
+        </div>
+        <div class="user-actions">
+            <div class="dropdown">
+                <button class="user-dropdown-toggle" type="button" data-toggle="dropdown">
+                    <i class="fas fa-user-circle"></i>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <button class="dropdown-item" id="darkModeToggle">
+                        <i class="fas fa-moon" id="darkModeIcon"></i>
+                        <span id="darkModeText">Modo Oscuro</span>
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="/bischeduler/dashboard">
+                        <i class="fas fa-home"></i> Panel Principal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="students-container">
+        <div class="management-card">
+            <div class="header-section">
+                <div>
+                    <h1><i class="fas fa-user-graduate"></i> Gestión de Estudiantes</h1>
+                    <p class="text-muted">Registro y administración de estudiantes K12</p>
+                </div>
+                <a href="/bischeduler/dashboard" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-number">245</div>
+                    <div class="stat-label">Total Estudiantes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">6</div>
+                    <div class="stat-label">Secciones Activas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">95%</div>
+                    <div class="stat-label">Asistencia Promedio</div>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Sistema de Estudiantes:</strong> Esta funcionalidad estará disponible en las próximas fases.
+                Actualmente puedes acceder al <a href="/bischeduler/student-exams">Panel del Estudiante</a> para ver exámenes.
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card" onclick="goToFeature('/bischeduler/student-exams')">
+                    <div class="feature-icon"><i class="fas fa-calendar-check"></i></div>
+                    <div class="feature-title">Panel del Estudiante</div>
+                    <div class="feature-description">Dashboard de exámenes y notificaciones</div>
+                    <span class="feature-status status-implemented">Implementado</span>
+                </div>
+
+                <div class="feature-card" onclick="alertComingSoon('Registro de Estudiantes')">
+                    <div class="feature-icon"><i class="fas fa-user-plus"></i></div>
+                    <div class="feature-title">Registro</div>
+                    <div class="feature-description">Inscripción y datos de estudiantes</div>
+                    <span class="feature-status status-planned">Fase 7</span>
+                </div>
+
+                <div class="feature-card" onclick="alertComingSoon('Historial Académico')">
+                    <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="feature-title">Historial Académico</div>
+                    <div class="feature-description">Seguimiento de calificaciones y progreso</div>
+                    <span class="feature-status status-planned">Fase 8</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function initTheme() {
+            const savedTheme = localStorage.getItem('bischeduler-theme');
+            const theme = savedTheme || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+
+            const icon = document.getElementById('darkModeIcon');
+            const text = document.getElementById('darkModeText');
+            if (theme === 'dark') {
+                icon.className = 'fas fa-sun';
+                text.textContent = 'Modo Claro';
+            }
+        }
+
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('bischeduler-theme', newTheme);
+
+            const icon = document.getElementById('darkModeIcon');
+            const text = document.getElementById('darkModeText');
+            if (newTheme === 'dark') {
+                icon.className = 'fas fa-sun';
+                text.textContent = 'Modo Claro';
+            } else {
+                icon.className = 'fas fa-moon';
+                text.textContent = 'Modo Oscuro';
+            }
+        });
+
+        function goToFeature(url) { window.location.href = url; }
+        function alertComingSoon(feature) { alert(`${feature} estará disponible próximamente.`); }
+        initTheme();
+    </script>
+</body>
+</html>

@@ -97,6 +97,141 @@ def create_app(config_name='development'):
         from flask import render_template
         return render_template('dashboard.html')
 
+    # Teacher portal page (Phase 4 - Teacher Self-Service)
+    @app.route('/teacher-portal')
+    def teacher_portal():
+        from flask import render_template
+        return render_template('teacher_portal.html')
+
+    # Exam calendar page (Phase 6 - Exam Scheduling)
+    @app.route('/exam-calendar')
+    def exam_calendar():
+        from flask import render_template
+        return render_template('exam_calendar.html')
+
+    # Student exam dashboard (Phase 6 - Student exam alerts)
+    @app.route('/student-exams')
+    def student_exam_dashboard():
+        from flask import render_template
+        return render_template('student_exam_dashboard.html')
+
+    # Core Management Routes (Should exist from Phases 1-4)
+    @app.route('/schedules')
+    def schedules():
+        from flask import render_template
+        return render_template('schedules.html')
+
+    @app.route('/students')
+    def students():
+        from flask import render_template
+        return render_template('students.html')
+
+    @app.route('/teachers')
+    def teachers():
+        from flask import render_template
+        return render_template('teachers.html')
+
+    @app.route('/classrooms')
+    def classrooms():
+        from flask import render_template
+        return render_template('classrooms.html')
+
+    # Future Phase Routes (Placeholder pages)
+    @app.route('/bimodal')
+    def bimodal():
+        from flask import render_template
+        return render_template('coming_soon.html',
+                             feature_name="Gestión Bimodal",
+                             feature_description="Horarios presencial/virtual",
+                             phase="Fase 7")
+
+    @app.route('/matricula')
+    def matricula():
+        from flask import render_template
+        return render_template('coming_soon.html',
+                             feature_name="Reportes de Matrícula",
+                             feature_description="Informes oficiales MINED",
+                             phase="Fase 8")
+
+    @app.route('/reports')
+    def reports():
+        from flask import render_template
+        return render_template('coming_soon.html',
+                             feature_name="Sistema de Reportes",
+                             feature_description="Informes académicos y administrativos",
+                             phase="Fase 9")
+
+    @app.route('/admin')
+    def admin():
+        from flask import render_template
+        return render_template('coming_soon.html',
+                             feature_name="Panel de Administración",
+                             feature_description="Configuración del sistema",
+                             phase="Fase 10")
+
+    # Teacher portal API routes
+    @app.route('/api/teacher/dashboard/<int:teacher_id>')
+    def teacher_dashboard_api(teacher_id):
+        from flask import jsonify
+        from src.services.teacher_portal import TeacherPortalService
+        from src.models.tenant import get_tenant_session
+
+        try:
+            # Get tenant session (assuming current tenant context)
+            db_session = get_tenant_session()
+            service = TeacherPortalService(db_session)
+
+            stats = service.get_teacher_dashboard_stats(teacher_id)
+            return jsonify(stats)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/teacher/schedule/<int:teacher_id>')
+    def teacher_schedule_api(teacher_id):
+        from flask import jsonify, request
+        from src.services.teacher_portal import TeacherPortalService
+        from src.models.tenant import get_tenant_session
+
+        try:
+            week_offset = request.args.get('week', 0, type=int)
+            db_session = get_tenant_session()
+            service = TeacherPortalService(db_session)
+
+            schedule = service.get_teacher_schedule(teacher_id, week_offset)
+            return jsonify(schedule)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/teacher/preferences/<int:teacher_id>')
+    def teacher_preferences_api(teacher_id):
+        from flask import jsonify
+        from src.services.teacher_portal import TeacherPortalService
+        from src.models.tenant import get_tenant_session
+
+        try:
+            db_session = get_tenant_session()
+            service = TeacherPortalService(db_session)
+
+            preferences = service.get_teacher_preferences(teacher_id)
+            return jsonify(preferences)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/teacher/reference-data')
+    def teacher_reference_data_api():
+        from flask import jsonify
+        from src.services.teacher_portal import TeacherPortalService
+        from src.models.tenant import get_tenant_session
+
+        try:
+            db_session = get_tenant_session()
+            service = TeacherPortalService(db_session)
+
+            data = service.get_portal_reference_data()
+            return jsonify(data)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
     # Health check endpoint
     @app.route('/health')
     def health_check():
