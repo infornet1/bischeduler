@@ -79,6 +79,10 @@ def create_app(config_name='development'):
     from src.scheduling.views import scheduling_bp
     app.register_blueprint(scheduling_bp)
 
+    # Import and register schedule optimizer blueprint (Phase 8)
+    from src.api.schedule_optimizer import schedule_optimizer_bp
+    app.register_blueprint(schedule_optimizer_bp)
+
     # Main landing page
     @app.route('/')
     def index():
@@ -156,6 +160,12 @@ def create_app(config_name='development'):
     def parent_portal():
         from flask import render_template
         return render_template('parent_portal.html')
+
+    # Phase 8: Schedule Optimizer
+    @app.route('/schedule-optimizer')
+    def schedule_optimizer():
+        from flask import render_template
+        return render_template('schedule_optimizer.html')
 
     # Future Phase Routes (Placeholder pages)
     @app.route('/bimodal')

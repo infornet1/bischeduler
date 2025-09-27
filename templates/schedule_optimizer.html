@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#003366">
+    <title>Optimizador de Horarios - BiScheduler</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/styles.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/dark-mode.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body data-theme="dark">
+    <div class="app-container">
+        <!-- User Bar (consistent with other pages) -->
+        <div class="user-bar">
+            <div class="user-name">Administrador UEIPAB</div>
+            <div class="dropdown">
+                <button class="btn user-dropdown-toggle" type="button" id="userDropdown"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-user-circle"></i>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
+                    <a class="dropdown-item" href="/bischeduler/dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Panel de Control
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#" id="themeToggle">
+                        <i class="fas fa-moon theme-icon"></i> <span class="theme-text">Modo Oscuro</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="/bischeduler/login">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header Section -->
+        <div class="header-section">
+            <h1><i class="fas fa-brain"></i> Optimizador de Horarios</h1>
+            <p>Algoritmos avanzados para la generación automática de horarios académicos</p>
+        </div>
+
+        <!-- Main Content -->
+        <main class="optimizer-container">
+            <!-- Configuration Section -->
+            <section class="config-section glass-card">
+                <h2>Optimization Configuration</h2>
+
+                <div class="config-grid">
+                    <!-- Algorithm Selection -->
+                    <div class="config-group">
+                        <label for="algorithm">Algorithm</label>
+                        <select id="algorithm" class="form-control">
+                            <option value="genetic">Genetic Algorithm</option>
+                            <option value="constraint">Constraint Solver</option>
+                            <option value="hybrid">Hybrid Approach</option>
+                        </select>
+                        <p class="help-text" id="algorithmDescription">
+                            Evolutionary optimization using natural selection
+                        </p>
+                    </div>
+
+                    <!-- Parameters -->
+                    <div class="config-group" id="geneticParams">
+                        <h3>Genetic Algorithm Parameters</h3>
+                        <div class="param-grid">
+                            <div class="param-item">
+                                <label>Population Size</label>
+                                <input type="number" id="populationSize" value="100" min="10" max="1000">
+                            </div>
+                            <div class="param-item">
+                                <label>Generations</label>
+                                <input type="number" id="generations" value="500" min="10" max="5000">
+                            </div>
+                            <div class="param-item">
+                                <label>Mutation Rate</label>
+                                <input type="number" id="mutationRate" value="0.02" min="0.001" max="0.5" step="0.001">
+                            </div>
+                            <div class="param-item">
+                                <label>Crossover Rate</label>
+                                <input type="number" id="crossoverRate" value="0.8" min="0.1" max="1.0" step="0.1">
+                            </div>
+                            <div class="param-item">
+                                <label>Elitism Rate</label>
+                                <input type="number" id="elitismRate" value="0.1" min="0.01" max="0.5" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-group" id="constraintParams" style="display: none;">
+                        <h3>Constraint Solver Parameters</h3>
+                        <div class="param-grid">
+                            <div class="param-item">
+                                <label>Iterations</label>
+                                <input type="number" id="iterations" value="100" min="10" max="1000">
+                            </div>
+                            <div class="param-item">
+                                <label>Backtrack Limit</label>
+                                <input type="number" id="backtrackLimit" value="10000" min="100" max="100000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Weights Configuration -->
+                    <div class="config-group">
+                        <h3>Optimization Weights</h3>
+                        <div class="weight-grid">
+                            <div class="weight-item">
+                                <label>Teacher Preferences</label>
+                                <input type="range" id="weightPreferences" min="0" max="100" value="40">
+                                <span class="weight-value">40%</span>
+                            </div>
+                            <div class="weight-item">
+                                <label>Workload Balance</label>
+                                <input type="range" id="weightWorkload" min="0" max="100" value="20">
+                                <span class="weight-value">20%</span>
+                            </div>
+                            <div class="weight-item">
+                                <label>Conflict Resolution</label>
+                                <input type="range" id="weightConflicts" min="0" max="100" value="30">
+                                <span class="weight-value">30%</span>
+                            </div>
+                            <div class="weight-item">
+                                <label>Subject Continuity</label>
+                                <input type="range" id="weightContinuity" min="0" max="100" value="10">
+                                <span class="weight-value">10%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Constraints -->
+                    <div class="config-group">
+                        <h3>Venezuelan K12 Constraints</h3>
+                        <div class="constraint-grid">
+                            <div class="constraint-item">
+                                <label>Max Daily Hours (Teacher)</label>
+                                <input type="number" id="maxDailyTeacher" value="6" min="1" max="10">
+                            </div>
+                            <div class="constraint-item">
+                                <label>Max Weekly Hours (Teacher)</label>
+                                <input type="number" id="maxWeeklyTeacher" value="30" min="10" max="40">
+                            </div>
+                            <div class="constraint-item">
+                                <label>Max Consecutive Hours</label>
+                                <input type="number" id="maxConsecutive" value="3" min="1" max="6">
+                            </div>
+                            <div class="constraint-item">
+                                <label>Max Daily Hours (Section)</label>
+                                <input type="number" id="maxDailySection" value="8" min="4" max="10">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button id="startOptimization" class="btn-primary">
+                        Start Optimization
+                    </button>
+                    <button id="loadDefaults" class="btn-secondary">
+                        Load Defaults
+                    </button>
+                </div>
+            </section>
+
+            <!-- Progress Section -->
+            <section class="progress-section glass-card" id="progressSection" style="display: none;">
+                <h2>Optimization Progress</h2>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">Initializing...</p>
+                </div>
+                <div class="progress-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Generation:</span>
+                        <span class="stat-value" id="currentGeneration">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Best Fitness:</span>
+                        <span class="stat-value" id="bestFitness">0.000</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Time Elapsed:</span>
+                        <span class="stat-value" id="timeElapsed">00:00</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section glass-card" id="resultsSection" style="display: none;">
+                <h2>Optimization Results</h2>
+
+                <div class="results-summary">
+                    <div class="summary-card success">
+                        <h3>Success Metrics</h3>
+                        <div class="metric-item">
+                            <span>Final Fitness Score:</span>
+                            <strong id="finalFitness">0.00</strong>
+                        </div>
+                        <div class="metric-item">
+                            <span>Assignments Created:</span>
+                            <strong id="assignmentCount">0</strong>
+                        </div>
+                        <div class="metric-item">
+                            <span>Preference Satisfaction:</span>
+                            <strong id="prefSatisfaction">0%</strong>
+                        </div>
+                    </div>
+
+                    <div class="summary-card warning">
+                        <h3>Violations</h3>
+                        <ul id="violationsList" class="violations-list">
+                            <!-- Violations will be added here -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Preview Schedule -->
+                <div class="preview-section">
+                    <h3>Schedule Preview</h3>
+                    <div id="schedulePreview" class="schedule-grid">
+                        <!-- Schedule preview will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="result-actions">
+                    <button id="applySchedule" class="btn-success">
+                        Apply Schedule
+                    </button>
+                    <button id="exportResults" class="btn-secondary">
+                        Export Results
+                    </button>
+                    <button id="reoptimize" class="btn-warning">
+                        Re-optimize
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>Optimizing schedule...</p>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Schedule Applied Successfully!</h2>
+            <p>The optimized schedule has been applied as the active schedule.</p>
+            <button onclick="window.location.href='/bischeduler/schedule-management'" class="btn-primary">
+                View Schedule
+            </button>
+        </div>
+    </div>
+
+    <style>
+        /* Base Layout */
+        body {
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header-section h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-section p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        /* User Bar Styles */
+        .user-bar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg, rgba(255, 255, 255, 0.95));
+            border-radius: 25px;
+            padding: 8px 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-bar .user-name {
+            color: var(--text-primary, #212529);
+            font-weight: 500;
+        }
+
+        .user-dropdown-toggle {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            color: var(--text-primary) !important;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        .dropdown-menu {
+            background: var(--card-bg, rgba(255, 255, 255, 0.98));
+            border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Schedule Optimizer Styles */
+        .optimizer-container {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .glass-card {
+            background: var(--glass-bg, rgba(255, 255, 255, 0.95));
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.2));
+            padding: 2rem;
+        }
+
+        .config-section, .progress-section, .results-section {
+            margin-bottom: 2rem;
+        }
+
+        .config-grid {
+            display: grid;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .config-group {
+            background: var(--card-bg, rgba(255, 255, 255, 0.8));
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+        }
+
+        .config-group h3 {
+            margin-bottom: 1rem;
+            color: var(--primary-color, #003366);
+        }
+
+        .param-grid, .constraint-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .param-item, .constraint-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .param-item label, .constraint-item label {
+            font-size: 0.9rem;
+            color: var(--text-secondary, #666);
+            font-weight: 500;
+        }
+
+        .param-item input, .constraint-item input, .form-control {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 8px;
+            background: var(--input-bg, #fff);
+            color: var(--text-primary, #333);
+            font-size: 0.95rem;
+        }
+
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary, #666);
+            margin-top: 0.5rem;
+        }
+
+        .weight-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .weight-item {
+            display: grid;
+            grid-template-columns: 200px 1fr 60px;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .weight-item input[type="range"] {
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border-color, #ddd);
+        }
+
+        .weight-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary-color, #003366);
+            cursor: pointer;
+        }
+
+        .weight-value {
+            text-align: right;
+            font-weight: bold;
+            color: var(--primary-color, #003366);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: center;
+        }
+
+        /* Progress Section */
+        .progress-container {
+            margin: 2rem 0;
+        }
+
+        .progress-bar {
+            height: 30px;
+            background: var(--border-color, #ddd);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color, #003366), var(--success-color, #4CAF50));
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 1rem;
+            color: var(--text-secondary, #666);
+        }
+
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            display: block;
+            color: var(--text-secondary, #666);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color, #003366);
+        }
+
+        /* Results Section */
+        .results-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .summary-card {
+            padding: 1.5rem;
+            border-radius: 12px;
+        }
+
+        .summary-card.success {
+            background: rgba(76, 175, 80, 0.1);
+            border: 2px solid #4CAF50;
+        }
+
+        .summary-card.warning {
+            background: rgba(255, 152, 0, 0.1);
+            border: 2px solid #FF9800;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color, #ddd);
+        }
+
+        .metric-item:last-child {
+            border-bottom: none;
+        }
+
+        .violations-list {
+            list-style: none;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .violations-list li {
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            background: var(--card-bg, rgba(255, 255, 255, 0.8));
+            border-radius: 6px;
+            border-left: 3px solid #FF9800;
+        }
+
+        .preview-section {
+            margin-top: 2rem;
+        }
+
+        .schedule-grid {
+            background: var(--card-bg, rgba(255, 255, 255, 0.8));
+            padding: 1rem;
+            border-radius: 12px;
+            overflow-x: auto;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border-color, #ddd);
+            border-top: 4px solid var(--primary-color, #003366);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-overlay p {
+            margin-top: 1rem;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        /* Buttons */
+        .btn-primary, .btn-secondary, .btn-success, .btn-warning {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--primary-color, #003366);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover, #002244);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: #FF9800;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e68900;
+            transform: translateY(-2px);
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .modal-content {
+            background: var(--card-bg, white);
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 400px;
+            margin: 1rem;
+        }
+
+        .modal-content h2 {
+            color: var(--primary-color, #003366);
+            margin-bottom: 1rem;
+        }
+
+        /* Dark Mode Theme Variables */
+        [data-theme="dark"] {
+            --glass-bg: rgba(30, 30, 46, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --card-bg: rgba(42, 42, 62, 0.9);
+            --input-bg: #2a2a3e;
+            --border-color: #3a3a4e;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0c0;
+            --primary-color: #4A90E2;
+            --primary-hover: #3a7bc8;
+            --success-color: #4CAF50;
+        }
+
+        [data-theme="light"] {
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --input-bg: #ffffff;
+            --border-color: #dddddd;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --primary-color: #003366;
+            --primary-hover: #002244;
+            --success-color: #28a745;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .optimizer-container {
+                padding: 1rem;
+            }
+
+            .config-grid {
+                gap: 1rem;
+            }
+
+            .param-grid, .constraint-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .weight-item {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .results-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .progress-stats {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+    </style>
+
+    <!-- Bootstrap and jQuery Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Theme Management (consistent with other pages)
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('biSchedulerTheme') || 'dark';
+            document.body.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const themeIcon = document.querySelector('.theme-icon');
+            const themeText = document.querySelector('.theme-text');
+
+            if (theme === 'dark') {
+                themeIcon.className = 'fas fa-sun theme-icon';
+                themeText.textContent = 'Modo Claro';
+            } else {
+                themeIcon.className = 'fas fa-moon theme-icon';
+                themeText.textContent = 'Modo Oscuro';
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            document.body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('biSchedulerTheme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTheme();
+
+            // Theme toggle event
+            document.getElementById('themeToggle').addEventListener('click', function(e) {
+                e.preventDefault();
+                toggleTheme();
+            });
+        });
+    </script>
+
+    <script src="{{ url_for('static', filename='js/schedule-optimizer.js') }}"></script>
+</body>
+</html>

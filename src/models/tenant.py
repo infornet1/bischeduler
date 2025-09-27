@@ -308,6 +308,42 @@ class TeacherWorkload(Base):
 # CORE SCHEDULING MODEL (Enhanced)
 # ============================================================================
 
+class Schedule(Base):
+    """
+    Schedule container for organizing assignments by academic period
+    """
+    __tablename__ = 'schedules'
+
+    id = Column(Integer, primary_key=True)
+    tenant_id = Column(Integer, nullable=False)
+    name = Column(String(100), nullable=False)
+    description = Column(Text)
+    academic_year = Column(Integer, nullable=False)
+    semester = Column(Integer, nullable=False)
+    status = Column(String(20), default='draft')  # draft, active, archived
+    created_by = Column(String(100))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    meta_data = Column(Text)  # JSON string for additional data
+
+    # Relationships
+    assignments = relationship("ScheduleAssignment", back_populates="schedule")
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'academic_year': self.academic_year,
+            'semester': self.semester,
+            'status': self.status,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'metadata': self.meta_data
+        }
+
+
 class ScheduleAssignment(Base):
     """
     Core schedule assignment with classroom tracking
@@ -316,6 +352,10 @@ class ScheduleAssignment(Base):
     __tablename__ = 'schedule_assignments'
 
     id = Column(Integer, primary_key=True)
+
+    # Link to parent schedule
+    schedule_id = Column(Integer, ForeignKey('schedules.id'), nullable=True)
+    tenant_id = Column(Integer, nullable=False)
 
     # Core scheduling components
     time_period_id = Column(Integer, ForeignKey('time_periods.id'), nullable=False)
@@ -346,6 +386,7 @@ class ScheduleAssignment(Base):
     updated_at = Column(DateTime, onupdate=datetime.now(timezone.utc))
 
     # Relationships
+    schedule = relationship("Schedule", back_populates="assignments")
     time_period = relationship("TimePeriod", backref="assignments")
     teacher = relationship("Teacher", backref="schedule_assignments")
     subject = relationship("Subject", backref="schedule_assignments")
