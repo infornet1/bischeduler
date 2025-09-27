@@ -17,7 +17,76 @@
     <link rel="stylesheet" href="/bischeduler/static/css/dark-mode.css">
 
     <style>
-        .student-dashboard {
+                /* User Bar Styles */
+        .user-bar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg, rgba(255, 255, 255, 0.95));
+            border-radius: 25px;
+            padding: 8px 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .user-info .user-name {
+            color: var(--text-primary, #212529);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .user-info .user-role {
+            color: var(--text-secondary, #6c757d);
+            font-size: 0.75rem;
+        }
+
+        .user-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-dropdown-toggle {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            color: var(--text-primary) !important;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .user-dropdown-toggle:hover,
+        .user-dropdown-toggle:focus,
+        .user-dropdown-toggle:active {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: var(--text-primary) !important;
+        }
+
+        .user-dropdown-toggle .fas {
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .user-dropdown-toggle[aria-expanded="true"] .fa-chevron-down {
+            transform: rotate(180deg);
+        }
+
+.student-dashboard {
             min-height: 100vh;
             background: linear-gradient(135deg, #003366 0%, #004080 100%);
             padding: var(--spacing-lg);
