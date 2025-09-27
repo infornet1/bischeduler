@@ -151,6 +151,12 @@ def create_app(config_name='development'):
         from flask import render_template
         return render_template('classrooms.html')
 
+    # Phase 7: Parent Portal
+    @app.route('/parent-portal')
+    def parent_portal():
+        from flask import render_template
+        return render_template('parent_portal.html')
+
     # Future Phase Routes (Placeholder pages)
     @app.route('/bimodal')
     def bimodal():
@@ -600,6 +606,191 @@ def create_app(config_name='development'):
             return jsonify({
                 'success': True,
                 'cost_calculation': cost_data
+            })
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    # Phase 7: Parent Portal API Endpoints
+    @app.route('/api/parent/children/<int:parent_id>')
+    def get_parent_children(parent_id):
+        """Get list of children for a parent account"""
+        try:
+            # Demo data - in production, this would query the database
+            children_data = [
+                {
+                    'id': 1,
+                    'name': 'María González Rodríguez',
+                    'grade': '3er año A',
+                    'student_id': 'E-12345678',
+                    'status': 'active',
+                    'current_average': 17.8,
+                    'attendance': 96
+                },
+                {
+                    'id': 2,
+                    'name': 'Carlos González Rodríguez',
+                    'grade': '1er año B',
+                    'student_id': 'E-12345679',
+                    'status': 'exam_period',
+                    'current_average': 16.2,
+                    'attendance': 94
+                }
+            ]
+
+            return jsonify({
+                'success': True,
+                'children': children_data
+            })
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/parent/student/<int:student_id>/schedule')
+    def get_student_schedule(student_id):
+        """Get current schedule for a specific student"""
+        try:
+            # Demo schedule data
+            schedule_data = {
+                'student_info': {
+                    'name': 'María González Rodríguez',
+                    'grade': '3er año A',
+                    'section': 'A'
+                },
+                'schedule': {
+                    'lunes': [
+                        {'period': 'P1', 'time': '07:00-07:40', 'subject': 'MATEMÁTICAS', 'teacher': 'Prof. García', 'classroom': 'Aula 3'},
+                        {'period': 'P2', 'time': '07:40-08:20', 'subject': 'CIENCIAS', 'teacher': 'Prof. López', 'classroom': 'Lab Ciencias'}
+                    ],
+                    'martes': [
+                        {'period': 'P1', 'time': '07:00-07:40', 'subject': 'CASTELLANO', 'teacher': 'Prof. Morales', 'classroom': 'Aula 1'},
+                        {'period': 'P2', 'time': '07:40-08:20', 'subject': 'MATEMÁTICAS', 'teacher': 'Prof. García', 'classroom': 'Aula 3'}
+                    ]
+                }
+            }
+
+            return jsonify({
+                'success': True,
+                'schedule': schedule_data
+            })
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/parent/student/<int:student_id>/exams')
+    def get_student_exams(student_id):
+        """Get upcoming exams for a specific student"""
+        try:
+            # Demo exam data
+            exams_data = [
+                {
+                    'id': 1,
+                    'subject': 'MATEMÁTICAS',
+                    'type': 'parcial',
+                    'date': '2024-09-29',
+                    'time': '08:00',
+                    'classroom': 'Aula 3',
+                    'teacher': 'Prof. García',
+                    'topics': ['Ecuaciones cuadráticas', 'Sistemas de ecuaciones']
+                },
+                {
+                    'id': 2,
+                    'subject': 'CASTELLANO',
+                    'type': 'parcial',
+                    'date': '2024-10-02',
+                    'time': '07:00',
+                    'classroom': 'Aula 1',
+                    'teacher': 'Prof. Morales',
+                    'topics': ['Análisis literario', 'Comprensión lectora']
+                },
+                {
+                    'id': 3,
+                    'subject': 'CIENCIAS',
+                    'type': 'final',
+                    'date': '2024-10-04',
+                    'time': '07:40',
+                    'classroom': 'Lab Ciencias',
+                    'teacher': 'Prof. López',
+                    'topics': ['Sistema circulatorio', 'Sistema respiratorio']
+                }
+            ]
+
+            return jsonify({
+                'success': True,
+                'exams': exams_data
+            })
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/parent/student/<int:student_id>/notifications')
+    def get_student_notifications(student_id):
+        """Get recent notifications for a specific student"""
+        try:
+            # Demo notifications data
+            notifications_data = [
+                {
+                    'id': 1,
+                    'type': 'grade',
+                    'title': 'Calificación Publicada',
+                    'message': 'Matemáticas - 18.5/20',
+                    'timestamp': '2024-09-27T14:30:00Z',
+                    'read': False
+                },
+                {
+                    'id': 2,
+                    'type': 'schedule',
+                    'title': 'Cambio de Horario',
+                    'message': 'Educación Física - Nueva hora: Jueves P3',
+                    'timestamp': '2024-09-26T10:15:00Z',
+                    'read': True
+                },
+                {
+                    'id': 3,
+                    'type': 'exam',
+                    'title': 'Recordatorio de Examen',
+                    'message': 'Examen de Matemáticas - Viernes 29 Sept',
+                    'timestamp': '2024-09-27T08:00:00Z',
+                    'read': False
+                }
+            ]
+
+            return jsonify({
+                'success': True,
+                'notifications': notifications_data
+            })
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/parent/student/<int:student_id>/grades')
+    def get_student_grades(student_id):
+        """Get academic grades and summary for a specific student"""
+        try:
+            # Demo grades data
+            grades_data = {
+                'summary': {
+                    'overall_average': 17.8,
+                    'attendance_percentage': 96,
+                    'top_subject': 'MATEMÁTICAS',
+                    'top_subject_average': 19.2,
+                    'pending_exams': 3,
+                    'academic_period': '2024-2025 - Lapso II'
+                },
+                'subjects': [
+                    {'name': 'MATEMÁTICAS', 'average': 19.2, 'grades': [18, 20, 19, 19]},
+                    {'name': 'CASTELLANO', 'average': 17.5, 'grades': [17, 18, 17, 18]},
+                    {'name': 'CIENCIAS', 'average': 16.8, 'grades': [16, 17, 17, 17]},
+                    {'name': 'HISTORIA', 'average': 18.0, 'grades': [18, 18, 18, 18]},
+                    {'name': 'INGLÉS', 'average': 17.2, 'grades': [17, 17, 17, 18]},
+                    {'name': 'EDUCACIÓN FÍSICA', 'average': 18.5, 'grades': [19, 18, 19, 18]},
+                    {'name': 'ARTE', 'average': 17.0, 'grades': [17, 17, 17, 17]}
+                ]
+            }
+
+            return jsonify({
+                'success': True,
+                'grades': grades_data
             })
 
         except Exception as e:

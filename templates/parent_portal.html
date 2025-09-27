@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#003366">
+    <title>Portal de Padres - BiScheduler</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/styles.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/dark-mode.css">
+
+    <style>
+        /* User Bar Styles */
+        .user-bar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg, rgba(255, 255, 255, 0.95));
+            border-radius: 25px;
+            padding: 8px 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .user-info .user-name {
+            color: var(--text-primary, #212529);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .user-info .user-role {
+            color: var(--text-secondary, #6c757d);
+            font-size: 0.75rem;
+        }
+
+        .user-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-dropdown-toggle {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            color: var(--text-primary) !important;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .user-dropdown-toggle:hover,
+        .user-dropdown-toggle:focus,
+        .user-dropdown-toggle:active {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: var(--text-primary) !important;
+        }
+
+        .user-dropdown-toggle .fas {
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .user-dropdown-toggle[aria-expanded="true"] .fa-chevron-down {
+            transform: rotate(180deg);
+        }
+
+        .parent-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            padding: var(--spacing-lg);
+        }
+
+        .management-card {
+            background: var(--card-bg, rgba(255, 255, 255, 0.95));
+            border-radius: var(--border-radius);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--box-shadow-lg);
+            backdrop-filter: blur(10px);
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-xl);
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+        }
+
+        .children-selector {
+            background: var(--bg-secondary, #f8f9fa);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .child-card {
+            background: var(--card-bg, white);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            border-left: 4px solid #ff9a9e;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .child-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--box-shadow-md);
+        }
+
+        .child-card.active {
+            border-left-color: #003366;
+            background: #e3f2fd;
+        }
+
+        .child-info h5 {
+            margin: 0 0 5px 0;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .child-details {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .child-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-active { background: #d4edda; color: #155724; }
+        .status-exam { background: #fff3cd; color: #856404; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .info-card {
+            background: var(--bg-secondary, #f8f9fa);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            border-left: 4px solid #ff9a9e;
+        }
+
+        .info-card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .info-icon {
+            font-size: 1.5rem;
+            margin-right: var(--spacing-sm);
+            color: #ff9a9e;
+        }
+
+        .info-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(5, 1fr);
+            gap: 2px;
+            margin-top: var(--spacing-md);
+            background: var(--border-color, #dee2e6);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .schedule-header {
+            background: var(--primary-color, #003366);
+            color: white;
+            padding: var(--spacing-sm);
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .schedule-time {
+            background: var(--bg-secondary, #f8f9fa);
+            padding: var(--spacing-sm);
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .schedule-cell {
+            background: white;
+            padding: var(--spacing-sm);
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .schedule-cell.has-class {
+            background: #e3f2fd;
+            border-left: 3px solid #2196f3;
+        }
+
+        .schedule-subject {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .schedule-teacher {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .btn-portal {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(255, 154, 158, 0.3);
+        }
+
+        .btn-portal:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 154, 158, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+
+        .notification-item {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-sm);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: var(--spacing-sm);
+            font-size: 1.2rem;
+        }
+
+        .notification-exam { background: #fff3cd; color: #856404; }
+        .notification-schedule { background: #d4edda; color: #155724; }
+        .notification-grade { background: #cce7ff; color: #004085; }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .notification-time {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .schedule-grid {
+                grid-template-columns: 60px repeat(5, 1fr);
+                font-size: 0.7rem;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- User Bar -->
+    <div class="user-bar">
+        <div class="user-info">
+            <span class="user-name">Portal de Padres</span>
+            <span class="user-role">Familia González</span>
+        </div>
+        <div class="user-actions">
+            <div class="dropdown">
+                <button class="user-dropdown-toggle" type="button" data-toggle="dropdown">
+                    <i class="fas fa-user-circle"></i>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <button class="dropdown-item" id="darkModeToggle">
+                        <i class="fas fa-moon" id="darkModeIcon"></i>
+                        <span id="darkModeText">Modo Oscuro</span>
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="/bischeduler/dashboard">
+                        <i class="fas fa-home"></i> Panel Principal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="parent-container">
+        <div class="management-card">
+            <div class="header-section">
+                <div>
+                    <h1><i class="fas fa-users"></i> Portal de Padres</h1>
+                    <p class="text-muted">Información académica de sus hijos</p>
+                </div>
+                <a href="/bischeduler/dashboard" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+
+            <!-- Children Selector -->
+            <div class="children-selector">
+                <h4><i class="fas fa-child"></i> Seleccionar Hijo/a</h4>
+                <div id="childrenList">
+                    <div class="child-card active" onclick="selectChild('maria')">
+                        <div class="child-info">
+                            <h5>María González Rodríguez</h5>
+                            <div class="child-details">3er año A • Cédula Escolar: E-12345678</div>
+                        </div>
+                        <span class="child-status status-active">Activa</span>
+                    </div>
+                    <div class="child-card" onclick="selectChild('carlos')">
+                        <div class="child-info">
+                            <h5>Carlos González Rodríguez</h5>
+                            <div class="child-details">1er año B • Cédula Escolar: E-12345679</div>
+                        </div>
+                        <span class="child-status status-exam">Período de Exámenes</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Information Grid -->
+            <div class="info-grid">
+                <!-- Current Schedule -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="fas fa-calendar-alt info-icon"></i>
+                        <span class="info-title">Horario Actual</span>
+                    </div>
+                    <div id="currentSchedule">
+                        <div class="schedule-grid">
+                            <div class="schedule-header">Hora</div>
+                            <div class="schedule-header">Lunes</div>
+                            <div class="schedule-header">Martes</div>
+                            <div class="schedule-header">Miércoles</div>
+                            <div class="schedule-header">Jueves</div>
+                            <div class="schedule-header">Viernes</div>
+
+                            <div class="schedule-time">07:00<br>07:40</div>
+                            <div class="schedule-cell has-class">
+                                <div class="schedule-subject">MATEMÁTICAS</div>
+                                <div class="schedule-teacher">Prof. García</div>
+                            </div>
+                            <div class="schedule-cell has-class">
+                                <div class="schedule-subject">CASTELLANO</div>
+                                <div class="schedule-teacher">Prof. Morales</div>
+                            </div>
+                            <div class="schedule-cell has-class">
+                                <div class="schedule-subject">INGLÉS</div>
+                                <div class="schedule-teacher">Prof. Smith</div>
+                            </div>
+                            <div class="schedule-cell has-class">
+                                <div class="schedule-subject">CIENCIAS</div>
+                                <div class="schedule-teacher">Prof. López</div>
+                            </div>
+                            <div class="schedule-cell has-class">
+                                <div class="schedule-subject">HISTORIA</div>
+                                <div class="schedule-teacher">Prof. Pérez</div>
+                            </div>
+
+                            <div class="schedule-time">07:40<br>08:20</div>
+                            <div class="schedule-cell has-class">
+                                <div class="schedule-subject">CIENCIAS</div>
+                                <div class="schedule-teacher">Prof. López</div>
+                            </div>
+                            <div class="schedule-cell has-class">
+                                <div class="schedule-subject">MATEMÁTICAS</div>
+                                <div class="schedule-teacher">Prof. García</div>
+                            </div>
+                            <div class="schedule-cell has-class">
+                                <div class="schedule-subject">EDUCACIÓN FÍSICA</div>
+                                <div class="schedule-teacher">Prof. Vargas</div>
+                            </div>
+                            <div class="schedule-cell has-class">
+                                <div class="schedule-subject">CASTELLANO</div>
+                                <div class="schedule-teacher">Prof. Morales</div>
+                            </div>
+                            <div class="schedule-cell has-class">
+                                <div class="schedule-subject">ARTE</div>
+                                <div class="schedule-teacher">Prof. Díaz</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upcoming Exams -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="fas fa-clipboard-check info-icon"></i>
+                        <span class="info-title">Próximos Exámenes</span>
+                    </div>
+                    <div id="upcomingExams">
+                        <div class="notification-item">
+                            <div class="notification-icon notification-exam">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-title">Examen de Matemáticas</div>
+                                <div class="notification-time">Viernes 29 Sept - 08:00 AM</div>
+                            </div>
+                        </div>
+                        <div class="notification-item">
+                            <div class="notification-icon notification-exam">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-title">Examen de Castellano</div>
+                                <div class="notification-time">Lunes 2 Oct - 07:00 AM</div>
+                            </div>
+                        </div>
+                        <div class="notification-item">
+                            <div class="notification-icon notification-exam">
+                                <i class="fas fa-flask"></i>
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-title">Examen de Ciencias</div>
+                                <div class="notification-time">Miércoles 4 Oct - 07:40 AM</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Notifications -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="fas fa-bell info-icon"></i>
+                        <span class="info-title">Notificaciones Recientes</span>
+                    </div>
+                    <div id="recentNotifications">
+                        <div class="notification-item">
+                            <div class="notification-icon notification-grade">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-title">Calificación Publicada</div>
+                                <div class="notification-time">Matemáticas - 18.5/20 - Hace 2 horas</div>
+                            </div>
+                        </div>
+                        <div class="notification-item">
+                            <div class="notification-icon notification-schedule">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-title">Cambio de Horario</div>
+                                <div class="notification-time">Educación Física - Nueva hora - Ayer</div>
+                            </div>
+                        </div>
+                        <div class="notification-item">
+                            <div class="notification-icon notification-exam">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-title">Recordatorio de Examen</div>
+                                <div class="notification-time">Matemáticas - Viernes - Hace 6 horas</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Academic Summary -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="fas fa-chart-line info-icon"></i>
+                        <span class="info-title">Resumen Académico</span>
+                    </div>
+                    <div id="academicSummary">
+                        <div style="margin-bottom: 15px;">
+                            <strong>Promedio General:</strong> <span style="color: #28a745; font-weight: 600;">17.8/20</span>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong>Asistencia:</strong> <span style="color: #17a2b8;">96%</span>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong>Materia Destacada:</strong> <span style="color: #007bff;">Matemáticas (19.2)</span>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong>Exámenes Pendientes:</strong> <span style="color: #ffc107;">3</span>
+                        </div>
+                        <div>
+                            <strong>Período Académico:</strong> <span>2024-2025 - Lapso II</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <a href="#" class="btn-portal" onclick="contactTeacher()">
+                    <i class="fas fa-comment"></i>
+                    Contactar Profesores
+                </a>
+                <a href="#" class="btn-portal" onclick="viewGrades()">
+                    <i class="fas fa-chart-bar"></i>
+                    Ver Calificaciones
+                </a>
+                <a href="#" class="btn-portal" onclick="scheduleAppointment()">
+                    <i class="fas fa-calendar-plus"></i>
+                    Agendar Cita
+                </a>
+                <a href="#" class="btn-portal" onclick="downloadReport()">
+                    <i class="fas fa-download"></i>
+                    Descargar Reporte
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Dark mode initialization
+        function initTheme() {
+            const savedTheme = localStorage.getItem('bischeduler-theme');
+            const theme = savedTheme || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+
+            const icon = document.getElementById('darkModeIcon');
+            const text = document.getElementById('darkModeText');
+            if (theme === 'dark') {
+                icon.className = 'fas fa-sun';
+                text.textContent = 'Modo Claro';
+            }
+        }
+
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('bischeduler-theme', newTheme);
+
+            const icon = document.getElementById('darkModeIcon');
+            const text = document.getElementById('darkModeText');
+            if (newTheme === 'dark') {
+                icon.className = 'fas fa-sun';
+                text.textContent = 'Modo Claro';
+            } else {
+                icon.className = 'fas fa-moon';
+                text.textContent = 'Modo Oscuro';
+            }
+        });
+
+        // Child selection functionality
+        function selectChild(childId) {
+            // Remove active class from all cards
+            document.querySelectorAll('.child-card').forEach(card => {
+                card.classList.remove('active');
+            });
+
+            // Add active class to selected card
+            event.currentTarget.classList.add('active');
+
+            // Load child-specific data
+            loadChildData(childId);
+        }
+
+        function loadChildData(childId) {
+            // TODO: Load actual data from API
+            console.log('Loading data for child:', childId);
+
+            if (childId === 'carlos') {
+                // Update for Carlos (1er año B)
+                updateScheduleDisplay('carlos');
+                updateExamsDisplay('carlos');
+                updateNotificationsDisplay('carlos');
+                updateAcademicSummary('carlos');
+            } else {
+                // Default to María (3er año A)
+                updateScheduleDisplay('maria');
+                updateExamsDisplay('maria');
+                updateNotificationsDisplay('maria');
+                updateAcademicSummary('maria');
+            }
+        }
+
+        function updateScheduleDisplay(childId) {
+            // For demo purposes, keep the same schedule
+            // In real implementation, this would load different schedules
+        }
+
+        function updateExamsDisplay(childId) {
+            // Update exam information based on selected child
+            // This would connect to the exam scheduling system
+        }
+
+        function updateNotificationsDisplay(childId) {
+            // Update notifications specific to the selected child
+        }
+
+        function updateAcademicSummary(childId) {
+            // Update academic summary for the selected child
+        }
+
+        // Action button functions
+        function contactTeacher() {
+            alert('Funcionalidad de contacto con profesores - Próximamente disponible');
+        }
+
+        function viewGrades() {
+            alert('Sistema de calificaciones detalladas - Próximamente disponible');
+        }
+
+        function scheduleAppointment() {
+            alert('Sistema de citas con profesores - Próximamente disponible');
+        }
+
+        function downloadReport() {
+            alert('Descarga de reportes académicos - Próximamente disponible');
+        }
+
+        // Initialize on page load
+        initTheme();
+        loadChildData('maria'); // Load default child data
+    </script>
+</body>
+</html>
