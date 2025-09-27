@@ -273,6 +273,13 @@
             filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.1));
         }
 
+        /* Dark mode icon fallback */
+        [data-theme="dark"] .app-icon {
+            -webkit-text-fill-color: var(--icon-gradient-start, #ffffff);
+            color: var(--icon-gradient-start, #ffffff);
+            background: none;
+        }
+
         .app-name {
             font-size: 0.95rem;
             font-weight: 600;
