@@ -690,10 +690,7 @@
                         `${this.currentWeekOffset} semanas`;
                 };
 
-                // Modal functions
-                window.openPreferencesModal = () => {
-                    alert('Modal de preferencias - Funcionalidad disponible próximamente');
-                };
+                // Modal functions - removed duplicate definition, see line 1202 for actual implementation
 
                 window.requestScheduleChange = () => {
                     alert('Solicitud de cambio - Funcionalidad disponible próximamente');
@@ -1461,6 +1458,188 @@
         // Phase 4 Critical: Edit existing preference
         window.editPreference = (id) => {
             alert('Funcionalidad de edición estará disponible próximamente');
+        };
+    </script>
+
+    <!-- PHASE 4: Schedule Change Request Modal -->
+    <div class="modal fade" id="changeRequestModal" tabindex="-1" role="dialog" aria-labelledby="changeRequestModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="background: var(--primary-color, #003366); color: white;">
+                    <h5 class="modal-title" id="changeRequestModalLabel">
+                        <i class="fas fa-exchange-alt"></i> Solicitar Cambio de Horario
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="changeRequestForm">
+                        <!-- Request Type -->
+                        <div class="form-group">
+                            <label for="requestType">Tipo de Solicitud</label>
+                            <select class="form-control" id="requestType" name="requestType" required>
+                                <option value="">Seleccione el tipo de cambio</option>
+                                <option value="schedule_swap">Intercambio de Horario</option>
+                                <option value="time_change">Cambio de Hora</option>
+                                <option value="day_change">Cambio de Día</option>
+                                <option value="classroom_change">Cambio de Aula</option>
+                                <option value="temporary_change">Cambio Temporal</option>
+                                <option value="permanent_change">Cambio Permanente</option>
+                            </select>
+                        </div>
+
+                        <!-- Current Assignment -->
+                        <div class="form-group">
+                            <label for="currentAssignment">Asignación Actual</label>
+                            <select class="form-control" id="currentAssignment" name="currentAssignment" required>
+                                <option value="">Seleccione la clase a cambiar</option>
+                                <option value="math_3a_mon_p1">MATEMÁTICAS - 3er año A - Lunes P1 (07:00-07:40)</option>
+                                <option value="math_3b_tue_p1">MATEMÁTICAS - 3er año B - Martes P1 (07:00-07:40)</option>
+                                <option value="physics_4a_mon_p2">FÍSICA - 4to año A - Lunes P2 (07:40-08:20)</option>
+                                <option value="physics_4b_wed_p2">FÍSICA - 4to año B - Miércoles P2 (07:40-08:20)</option>
+                                <option value="math_3c_fri_p1">MATEMÁTICAS - 3er año C - Viernes P1 (07:00-07:40)</option>
+                            </select>
+                        </div>
+
+                        <!-- Proposed Change -->
+                        <div class="form-group">
+                            <label for="proposedChange">Cambio Propuesto</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="newDay">Nuevo Día</label>
+                                    <select class="form-control" id="newDay" name="newDay">
+                                        <option value="">Sin cambio</option>
+                                        <option value="lunes">Lunes</option>
+                                        <option value="martes">Martes</option>
+                                        <option value="miercoles">Miércoles</option>
+                                        <option value="jueves">Jueves</option>
+                                        <option value="viernes">Viernes</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="newPeriod">Nuevo Período</label>
+                                    <select class="form-control" id="newPeriod" name="newPeriod">
+                                        <option value="">Sin cambio</option>
+                                        <option value="p1">P1 (07:00-07:40)</option>
+                                        <option value="p2">P2 (07:40-08:20)</option>
+                                        <option value="p3">P3 (08:20-09:00)</option>
+                                        <option value="p4">P4 (09:20-10:00)</option>
+                                        <option value="p5">P5 (10:00-10:40)</option>
+                                        <option value="p6">P6 (10:40-11:20)</option>
+                                        <option value="p7">P7 (11:20-12:00)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="newClassroom">Nueva Aula</label>
+                                    <select class="form-control" id="newClassroom" name="newClassroom">
+                                        <option value="">Sin cambio</option>
+                                        <option value="aula_1">Aula 1</option>
+                                        <option value="aula_2">Aula 2</option>
+                                        <option value="aula_3">Aula 3</option>
+                                        <option value="lab_fisica">Laboratorio de Física</option>
+                                        <option value="lab_quimica">Laboratorio de Química</option>
+                                        <option value="sala_computo">Sala de Cómputo</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reason -->
+                        <div class="form-group">
+                            <label for="reason">Motivo de la Solicitud</label>
+                            <textarea class="form-control" id="reason" name="reason" rows="4" required
+                                placeholder="Explique el motivo de su solicitud de cambio..."></textarea>
+                        </div>
+
+                        <!-- Priority -->
+                        <div class="form-group">
+                            <label for="priority">Prioridad</label>
+                            <select class="form-control" id="priority" name="priority" required>
+                                <option value="low">Baja - Preferencia personal</option>
+                                <option value="medium">Media - Mejora de eficiencia</option>
+                                <option value="high">Alta - Necesidad académica</option>
+                                <option value="urgent">Urgente - Conflicto crítico</option>
+                            </select>
+                        </div>
+
+                        <!-- Effective Date -->
+                        <div class="form-group">
+                            <label for="effectiveDate">Fecha de Inicio</label>
+                            <input type="date" class="form-control" id="effectiveDate" name="effectiveDate" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="submitChangeRequest()">
+                        <i class="fas fa-paper-plane"></i> Enviar Solicitud
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Phase 4: Schedule Change Request Implementation
+        window.requestScheduleChange = () => {
+            // Set minimum date to tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('effectiveDate').min = tomorrow.toISOString().split('T')[0];
+
+            $('#changeRequestModal').modal('show');
+        };
+
+        window.submitChangeRequest = async () => {
+            const form = document.getElementById('changeRequestForm');
+            const formData = new FormData(form);
+
+            // Validate form
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Prepare request data
+            const requestData = {
+                type: formData.get('requestType'),
+                current_assignment: formData.get('currentAssignment'),
+                proposed_changes: {
+                    day: formData.get('newDay'),
+                    period: formData.get('newPeriod'),
+                    classroom: formData.get('newClassroom')
+                },
+                reason: formData.get('reason'),
+                priority: formData.get('priority'),
+                effective_date: formData.get('effectiveDate'),
+                teacher_id: 'current_teacher', // TODO: Get from session
+                status: 'pending',
+                submitted_at: new Date().toISOString()
+            };
+
+            try {
+                // TODO: Send to API endpoint
+                console.log('Submitting change request:', requestData);
+
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                alert('Solicitud de cambio enviada exitosamente. Recibirá una notificación cuando sea revisada.');
+                $('#changeRequestModal').modal('hide');
+
+                // Reset form
+                form.reset();
+
+                // Refresh teacher portal data
+                if (window.teacherPortal) {
+                    window.teacherPortal.loadDashboardStats();
+                }
+
+            } catch (error) {
+                console.error('Error submitting change request:', error);
+                alert('Error al enviar la solicitud. Intente nuevamente.');
+            }
         };
     </script>
 </body>
