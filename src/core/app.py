@@ -121,6 +121,21 @@ def create_app(config_name='development'):
         from flask import render_template
         return render_template('schedules.html')
 
+    @app.route('/schedule-management')
+    def schedule_management():
+        from flask import render_template
+        return render_template('schedule_management.html')
+
+    @app.route('/section-schedules')
+    def section_schedules():
+        from flask import render_template
+        return render_template('section_schedules.html')
+
+    @app.route('/conflict-resolution')
+    def conflict_resolution():
+        from flask import render_template
+        return render_template('conflict_resolution.html')
+
     @app.route('/students')
     def students():
         from flask import render_template

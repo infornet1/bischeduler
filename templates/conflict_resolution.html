@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#003366">
+    <title>Resolución de Conflictos - BiScheduler</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/styles.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/dark-mode.css">
+
+    <style>
+        .conflict-resolution {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            padding: var(--spacing-lg);
+        }
+
+        .resolution-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .resolution-header {
+            background: var(--card-bg, rgba(255, 255, 255, 0.95));
+            border-radius: var(--border-radius);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--box-shadow-lg);
+            backdrop-filter: blur(10px);
+        }
+
+        .conflicts-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .conflict-stat {
+            background: var(--card-bg, white);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            text-align: center;
+            box-shadow: var(--box-shadow);
+            border-left: 4px solid var(--danger-color, #dc3545);
+        }
+
+        .conflict-stat.warning {
+            border-left-color: var(--warning-color, #ffc107);
+        }
+
+        .conflict-stat.info {
+            border-left-color: var(--info-color, #17a2b8);
+        }
+
+        .conflict-stat.success {
+            border-left-color: var(--success-color, #28a745);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .stat-value.critical { color: var(--danger-color, #dc3545); }
+        .stat-value.warning { color: var(--warning-color, #856404); }
+        .stat-value.info { color: var(--info-color, #17a2b8); }
+        .stat-value.success { color: var(--success-color, #28a745); }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary, #6c757d);
+        }
+
+        .conflicts-dashboard {
+            background: var(--card-bg, rgba(255, 255, 255, 0.95));
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow-lg);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .dashboard-header {
+            background: var(--danger-color, #dc3545);
+            color: white;
+            padding: var(--spacing-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dashboard-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .dashboard-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .action-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: 0.85rem;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            cursor: pointer;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+
+        .conflicts-filters {
+            background: var(--bg-secondary, #f8f9fa);
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color, #dee2e6);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+            align-items: end;
+        }
+
+        .conflicts-list {
+            padding: var(--spacing-lg);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .conflict-item {
+            background: var(--card-bg, white);
+            border: 1px solid var(--border-color, #dee2e6);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-md);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .conflict-item:hover {
+            box-shadow: var(--box-shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .conflict-header {
+            padding: var(--spacing-md);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .conflict-header.critical {
+            background: rgba(220, 53, 69, 0.1);
+            border-left: 4px solid var(--danger-color, #dc3545);
+        }
+
+        .conflict-header.warning {
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid var(--warning-color, #ffc107);
+        }
+
+        .conflict-info {
+            flex: 1;
+        }
+
+        .conflict-type {
+            font-weight: 600;
+            color: var(--text-primary, #212529);
+            margin-bottom: 4px;
+        }
+
+        .conflict-description {
+            font-size: 0.9rem;
+            color: var(--text-secondary, #6c757d);
+            margin-bottom: 4px;
+        }
+
+        .conflict-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted, #6c757d);
+        }
+
+        .conflict-severity {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .severity-critical {
+            background: var(--danger-color, #dc3545);
+            color: white;
+        }
+
+        .severity-warning {
+            background: var(--warning-color, #ffc107);
+            color: #856404;
+        }
+
+        .severity-info {
+            background: var(--info-color, #17a2b8);
+            color: white;
+        }
+
+        .conflict-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .conflict-details {
+            padding: var(--spacing-lg);
+            background: var(--bg-secondary, #f8f9fa);
+            border-top: 1px solid var(--border-color, #dee2e6);
+            display: none;
+        }
+
+        .conflict-details.show {
+            display: block;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .detail-section {
+            background: var(--card-bg, white);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color, #dee2e6);
+        }
+
+        .detail-title {
+            font-weight: 600;
+            color: var(--primary-color, #003366);
+            margin-bottom: var(--spacing-sm);
+            font-size: 0.9rem;
+        }
+
+        .detail-content {
+            font-size: 0.85rem;
+            color: var(--text-primary, #212529);
+        }
+
+        .resolution-options {
+            background: var(--card-bg, white);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color, #dee2e6);
+        }
+
+        .resolution-btn {
+            background: var(--primary-color, #003366);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: 0.85rem;
+            margin-right: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .resolution-btn:hover {
+            background: #004080;
+            color: white;
+        }
+
+        .resolution-btn.danger {
+            background: var(--danger-color, #dc3545);
+        }
+
+        .resolution-btn.danger:hover {
+            background: #c82333;
+        }
+
+        .resolution-btn.success {
+            background: var(--success-color, #28a745);
+        }
+
+        .resolution-btn.success:hover {
+            background: #218838;
+        }
+
+        .bulk-actions {
+            background: var(--card-bg, rgba(255, 255, 255, 0.95));
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            margin-top: var(--spacing-lg);
+            box-shadow: var(--box-shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .bulk-actions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .bulk-buttons {
+            display: flex;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        .bulk-btn {
+            background: var(--warning-color, #ffc107);
+            color: #856404;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .bulk-btn:hover {
+            background: #e0a800;
+            color: #856404;
+        }
+
+        .bulk-btn.danger {
+            background: var(--danger-color, #dc3545);
+            color: white;
+        }
+
+        .bulk-btn.danger:hover {
+            background: #c82333;
+        }
+
+        .bulk-btn.success {
+            background: var(--success-color, #28a745);
+            color: white;
+        }
+
+        .bulk-btn.success:hover {
+            background: #218838;
+        }
+
+        .no-conflicts {
+            text-align: center;
+            padding: var(--spacing-xl);
+            color: var(--text-secondary, #6c757d);
+        }
+
+        .no-conflicts i {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-md);
+            opacity: 0.5;
+        }
+
+        /* Dark mode adjustments */
+        [data-theme="dark"] .conflict-resolution {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        }
+
+        [data-theme="dark"] .conflicts-filters {
+            background: #2d2d2d;
+        }
+
+        [data-theme="dark"] .conflict-header.critical {
+            background: rgba(220, 53, 69, 0.2);
+        }
+
+        [data-theme="dark"] .conflict-header.warning {
+            background: rgba(255, 193, 7, 0.2);
+        }
+
+        [data-theme="dark"] .conflict-details {
+            background: #2d2d2d;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .conflicts-overview {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                gap: var(--spacing-md);
+                text-align: center;
+            }
+
+            .dashboard-actions {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .conflict-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--spacing-sm);
+            }
+
+            .conflict-actions {
+                align-self: stretch;
+                justify-content: center;
+            }
+
+            .bulk-buttons {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- User Bar -->
+    <div class="user-bar">
+        <div class="user-info">
+            <span class="user-name">Resolución de Conflictos</span>
+            <span class="user-role">Sistema Avanzado</span>
+        </div>
+        <div class="user-actions">
+            <div class="dropdown">
+                <button class="user-dropdown-toggle" type="button" data-toggle="dropdown">
+                    <i class="fas fa-user-circle"></i>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <button class="dropdown-item" id="darkModeToggle">
+                        <i class="fas fa-moon" id="darkModeIcon"></i>
+                        <span id="darkModeText">Modo Oscuro</span>
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="/bischeduler/dashboard">
+                        <i class="fas fa-home"></i> Panel Principal
+                    </a>
+                    <a class="dropdown-item" href="/bischeduler/schedules">
+                        <i class="fas fa-calendar-alt"></i> Gestión de Horarios
+                    </a>
+                    <a class="dropdown-item" href="/bischeduler/schedule-management">
+                        <i class="fas fa-calendar-plus"></i> Editor de Horarios
+                    </a>
+                    <button class="dropdown-item" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="conflict-resolution">
+        <div class="resolution-container">
+            <!-- Header Section -->
+            <div class="resolution-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1><i class="fas fa-exclamation-triangle text-danger"></i> Resolución de Conflictos</h1>
+                        <p class="text-muted mb-0">Detectar, analizar y resolver conflictos en horarios académicos</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="scanForConflicts()">
+                            <i class="fas fa-search"></i> Escanear Conflictos
+                        </button>
+                        <a href="/bischeduler/schedules" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conflicts Overview -->
+            <div class="conflicts-overview">
+                <div class="conflict-stat">
+                    <div class="stat-value critical" id="criticalConflicts">5</div>
+                    <div class="stat-label">Conflictos Críticos</div>
+                </div>
+                <div class="conflict-stat warning">
+                    <div class="stat-value warning" id="warningConflicts">12</div>
+                    <div class="stat-label">Conflictos de Advertencia</div>
+                </div>
+                <div class="conflict-stat info">
+                    <div class="stat-value info" id="infoConflicts">3</div>
+                    <div class="stat-label">Conflictos de Info</div>
+                </div>
+                <div class="conflict-stat success">
+                    <div class="stat-value success" id="resolvedConflicts">28</div>
+                    <div class="stat-label">Conflictos Resueltos</div>
+                </div>
+                <div class="conflict-stat">
+                    <div class="stat-value" id="totalScheduleItems">156</div>
+                    <div class="stat-label">Asignaciones Totales</div>
+                </div>
+            </div>
+
+            <!-- Conflicts Dashboard -->
+            <div class="conflicts-dashboard">
+                <div class="dashboard-header">
+                    <h3 class="dashboard-title">
+                        <i class="fas fa-list"></i> Lista de Conflictos Activos
+                    </h3>
+                    <div class="dashboard-actions">
+                        <button class="action-btn" onclick="refreshConflicts()">
+                            <i class="fas fa-sync-alt"></i> Actualizar
+                        </button>
+                        <button class="action-btn" onclick="exportConflicts()">
+                            <i class="fas fa-file-excel"></i> Exportar
+                        </button>
+                        <button class="action-btn" onclick="generateReport()">
+                            <i class="fas fa-file-pdf"></i> Reporte
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="conflicts-filters">
+                    <div class="filter-grid">
+                        <div class="form-group mb-0">
+                            <label class="mb-1">Tipo de Conflicto</label>
+                            <select class="form-control form-control-sm" id="conflictTypeFilter">
+                                <option value="">Todos los tipos</option>
+                                <option value="teacher_double_booking">Profesor Duplicado</option>
+                                <option value="classroom_conflict">Conflicto de Aula</option>
+                                <option value="section_overlap">Solapamiento de Sección</option>
+                                <option value="workload_violation">Violación de Carga</option>
+                                <option value="time_period_invalid">Período Inválido</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-0">
+                            <label class="mb-1">Severidad</label>
+                            <select class="form-control form-control-sm" id="severityFilter">
+                                <option value="">Todas las severidades</option>
+                                <option value="critical">Crítico</option>
+                                <option value="warning">Advertencia</option>
+                                <option value="info">Información</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-0">
+                            <label class="mb-1">Estado</label>
+                            <select class="form-control form-control-sm" id="statusFilter">
+                                <option value="">Todos los estados</option>
+                                <option value="active">Activo</option>
+                                <option value="ignored">Ignorado</option>
+                                <option value="resolved">Resuelto</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-0">
+                            <label class="mb-1">Búsqueda</label>
+                            <input type="text" class="form-control form-control-sm" id="searchFilter"
+                                   placeholder="Buscar profesor, aula, sección...">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conflicts List -->
+                <div class="conflicts-list" id="conflictsList">
+                    <!-- Conflicts will be populated here -->
+                </div>
+            </div>
+
+            <!-- Bulk Actions -->
+            <div class="bulk-actions">
+                <div class="bulk-actions-header">
+                    <h5><i class="fas fa-cogs"></i> Acciones Masivas</h5>
+                    <small class="text-muted">Seleccione conflictos para aplicar acciones en lote</small>
+                </div>
+                <div class="bulk-buttons">
+                    <button class="bulk-btn success" onclick="resolveSelectedConflicts()">
+                        <i class="fas fa-check"></i> Resolver Seleccionados
+                    </button>
+                    <button class="bulk-btn" onclick="ignoreSelectedConflicts()">
+                        <i class="fas fa-eye-slash"></i> Ignorar Seleccionados
+                    </button>
+                    <button class="bulk-btn danger" onclick="deleteSelectedConflicts()">
+                        <i class="fas fa-trash"></i> Eliminar Seleccionados
+                    </button>
+                    <button class="bulk-btn" onclick="autoResolveAll()">
+                        <i class="fas fa-magic"></i> Resolución Automática
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Conflict Resolution System
+        class ConflictResolutionManager {
+            constructor() {
+                this.conflicts = [];
+                this.selectedConflicts = [];
+                this.filters = {
+                    type: '',
+                    severity: '',
+                    status: '',
+                    search: ''
+                };
+                this.init();
+            }
+
+            init() {
+                this.initializeTheme();
+                this.generateSampleConflicts();
+                this.setupEventListeners();
+                this.renderConflictsList();
+                this.updateStatistics();
+            }
+
+            initializeTheme() {
+                const savedTheme = localStorage.getItem('bischeduler-theme');
+                const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+                this.updateThemeToggle(theme);
+            }
+
+            updateThemeToggle(theme) {
+                const icon = document.getElementById('darkModeIcon');
+                const text = document.getElementById('darkModeText');
+                if (icon && text) {
+                    if (theme === 'dark') {
+                        icon.className = 'fas fa-sun';
+                        text.textContent = 'Modo Claro';
+                    } else {
+                        icon.className = 'fas fa-moon';
+                        text.textContent = 'Modo Oscuro';
+                    }
+                }
+            }
+
+            setupEventListeners() {
+                // Dark mode toggle
+                document.getElementById('darkModeToggle').addEventListener('click', () => {
+                    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('bischeduler-theme', newTheme);
+                    this.updateThemeToggle(newTheme);
+                });
+
+                // Filter listeners
+                ['conflictTypeFilter', 'severityFilter', 'statusFilter', 'searchFilter'].forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.addEventListener('change', () => this.applyFilters());
+                        if (id === 'searchFilter') {
+                            element.addEventListener('input', () => this.applyFilters());
+                        }
+                    }
+                });
+            }
+
+            generateSampleConflicts() {
+                // Generate realistic conflict data for demonstration
+                this.conflicts = [
+                    {
+                        id: 1,
+                        type: 'teacher_double_booking',
+                        severity: 'critical',
+                        status: 'active',
+                        title: 'Profesor Asignado Simultáneamente',
+                        description: 'PROF. MARIA NIETO tiene dos clases asignadas al mismo tiempo',
+                        details: {
+                            teacher: 'PROF. MARIA NIETO',
+                            day: 'Lunes',
+                            period: 'P3 (08:20 - 09:00)',
+                            assignments: [
+                                { section: '3er año A', subject: 'MATEMÁTICAS', classroom: 'Aula 3' },
+                                { section: '3er año B', subject: 'MATEMÁTICAS', classroom: 'Aula 5' }
+                            ]
+                        },
+                        created_at: '2024-09-27 09:15:00',
+                        last_updated: '2024-09-27 09:15:00'
+                    },
+                    {
+                        id: 2,
+                        type: 'classroom_conflict',
+                        severity: 'critical',
+                        status: 'active',
+                        title: 'Conflicto de Aula',
+                        description: 'Aula 3 está reservada para dos clases diferentes',
+                        details: {
+                            classroom: 'Aula 3',
+                            day: 'Martes',
+                            period: 'P2 (07:40 - 08:20)',
+                            assignments: [
+                                { section: '2do año A', subject: 'CASTELLANO', teacher: 'PROF. ANA RODRIGUEZ' },
+                                { section: '4to año B', subject: 'FÍSICA', teacher: 'PROF. JUAN PEREZ' }
+                            ]
+                        },
+                        created_at: '2024-09-27 08:30:00',
+                        last_updated: '2024-09-27 08:30:00'
+                    },
+                    {
+                        id: 3,
+                        type: 'workload_violation',
+                        severity: 'warning',
+                        status: 'active',
+                        title: 'Exceso de Carga Horaria',
+                        description: 'PROF. CARLOS MENDEZ excede las 40 horas semanales',
+                        details: {
+                            teacher: 'PROF. CARLOS MENDEZ',
+                            current_hours: 42,
+                            max_hours: 40,
+                            excess_hours: 2,
+                            violations: [
+                                { day: 'Viernes', period: 'P9', section: '5to año A', subject: 'HISTORIA' },
+                                { day: 'Viernes', period: 'P10', section: '5to año B', subject: 'HISTORIA' }
+                            ]
+                        },
+                        created_at: '2024-09-27 07:45:00',
+                        last_updated: '2024-09-27 07:45:00'
+                    },
+                    {
+                        id: 4,
+                        type: 'section_overlap',
+                        severity: 'warning',
+                        status: 'active',
+                        title: 'Solapamiento de Sección',
+                        description: '1er año A tiene clases consecutivas sin descanso',
+                        details: {
+                            section: '1er año A',
+                            day: 'Miércoles',
+                            periods: ['P7 (10:40 - 11:20)', 'P8 (11:20 - 12:00)', 'P9 (13:00 - 13:40)'],
+                            consecutive_count: 3,
+                            recommended_max: 2
+                        },
+                        created_at: '2024-09-26 16:20:00',
+                        last_updated: '2024-09-26 16:20:00'
+                    },
+                    {
+                        id: 5,
+                        type: 'time_period_invalid',
+                        severity: 'info',
+                        status: 'active',
+                        title: 'Período de Tiempo Inválido',
+                        description: 'Clase programada durante período de recreo',
+                        details: {
+                            period: 'Recreo (09:40 - 10:00)',
+                            day: 'Jueves',
+                            assignment: {
+                                section: '2do año B',
+                                subject: 'EDUCACIÓN FÍSICA',
+                                teacher: 'PROF. MIGUEL TORRES',
+                                classroom: 'Cancha 1'
+                            },
+                            note: 'Educación Física puede realizarse durante recreo con autorización'
+                        },
+                        created_at: '2024-09-26 14:10:00',
+                        last_updated: '2024-09-26 14:10:00'
+                    }
+                ];
+            }
+
+            applyFilters() {
+                this.filters = {
+                    type: document.getElementById('conflictTypeFilter').value,
+                    severity: document.getElementById('severityFilter').value,
+                    status: document.getElementById('statusFilter').value,
+                    search: document.getElementById('searchFilter').value.toLowerCase()
+                };
+                this.renderConflictsList();
+            }
+
+            getFilteredConflicts() {
+                return this.conflicts.filter(conflict => {
+                    // Type filter
+                    if (this.filters.type && conflict.type !== this.filters.type) {
+                        return false;
+                    }
+
+                    // Severity filter
+                    if (this.filters.severity && conflict.severity !== this.filters.severity) {
+                        return false;
+                    }
+
+                    // Status filter
+                    if (this.filters.status && conflict.status !== this.filters.status) {
+                        return false;
+                    }
+
+                    // Search filter
+                    if (this.filters.search) {
+                        const searchText = [
+                            conflict.title,
+                            conflict.description,
+                            JSON.stringify(conflict.details)
+                        ].join(' ').toLowerCase();
+
+                        if (!searchText.includes(this.filters.search)) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                });
+            }
+
+            renderConflictsList() {
+                const container = document.getElementById('conflictsList');
+                const filteredConflicts = this.getFilteredConflicts();
+
+                if (filteredConflicts.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-conflicts">
+                            <i class="fas fa-check-circle"></i>
+                            <h5>No se encontraron conflictos</h5>
+                            <p>No hay conflictos que coincidan con los filtros seleccionados.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                filteredConflicts.forEach(conflict => {
+                    const conflictElement = this.createConflictElement(conflict);
+                    container.appendChild(conflictElement);
+                });
+            }
+
+            createConflictElement(conflict) {
+                const element = document.createElement('div');
+                element.className = 'conflict-item';
+                element.innerHTML = `
+                    <div class="conflict-header ${conflict.severity}" onclick="conflictManager.toggleConflictDetails(${conflict.id})">
+                        <div class="conflict-info">
+                            <div class="conflict-type">${conflict.title}</div>
+                            <div class="conflict-description">${conflict.description}</div>
+                            <div class="conflict-meta">
+                                <i class="fas fa-clock"></i> ${conflict.created_at} •
+                                <i class="fas fa-sync-alt"></i> ${conflict.last_updated}
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="conflict-severity severity-${conflict.severity}">${this.getSeverityLabel(conflict.severity)}</span>
+                            <div class="conflict-actions" onclick="event.stopPropagation();">
+                                <input type="checkbox" class="conflict-checkbox" data-conflict-id="${conflict.id}"
+                                       onchange="conflictManager.toggleConflictSelection(${conflict.id}, this.checked)">
+                                <button class="btn btn-sm btn-outline-primary" onclick="conflictManager.toggleConflictDetails(${conflict.id})">
+                                    <i class="fas fa-chevron-down" id="chevron-${conflict.id}"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="conflict-details" id="details-${conflict.id}">
+                        ${this.createConflictDetails(conflict)}
+                    </div>
+                `;
+                return element;
+            }
+
+            createConflictDetails(conflict) {
+                let detailsHtml = '<div class="details-grid">';
+
+                // Conflict Information
+                detailsHtml += `
+                    <div class="detail-section">
+                        <div class="detail-title">Información del Conflicto</div>
+                        <div class="detail-content">
+                            <strong>Tipo:</strong> ${this.getTypeLabel(conflict.type)}<br>
+                            <strong>Severidad:</strong> ${this.getSeverityLabel(conflict.severity)}<br>
+                            <strong>Estado:</strong> ${this.getStatusLabel(conflict.status)}<br>
+                            <strong>ID:</strong> #${conflict.id}
+                        </div>
+                    </div>
+                `;
+
+                // Specific details based on conflict type
+                if (conflict.type === 'teacher_double_booking') {
+                    detailsHtml += `
+                        <div class="detail-section">
+                            <div class="detail-title">Detalles del Profesor</div>
+                            <div class="detail-content">
+                                <strong>Profesor:</strong> ${conflict.details.teacher}<br>
+                                <strong>Día:</strong> ${conflict.details.day}<br>
+                                <strong>Período:</strong> ${conflict.details.period}<br>
+                                <strong>Asignaciones Conflictivas:</strong><br>
+                                ${conflict.details.assignments.map(a =>
+                                    `• ${a.section} - ${a.subject} (${a.classroom})`
+                                ).join('<br>')}
+                            </div>
+                        </div>
+                    `;
+                } else if (conflict.type === 'classroom_conflict') {
+                    detailsHtml += `
+                        <div class="detail-section">
+                            <div class="detail-title">Detalles del Aula</div>
+                            <div class="detail-content">
+                                <strong>Aula:</strong> ${conflict.details.classroom}<br>
+                                <strong>Día:</strong> ${conflict.details.day}<br>
+                                <strong>Período:</strong> ${conflict.details.period}<br>
+                                <strong>Asignaciones Conflictivas:</strong><br>
+                                ${conflict.details.assignments.map(a =>
+                                    `• ${a.section} - ${a.subject} (${a.teacher})`
+                                ).join('<br>')}
+                            </div>
+                        </div>
+                    `;
+                } else if (conflict.type === 'workload_violation') {
+                    detailsHtml += `
+                        <div class="detail-section">
+                            <div class="detail-title">Detalles de Carga Horaria</div>
+                            <div class="detail-content">
+                                <strong>Profesor:</strong> ${conflict.details.teacher}<br>
+                                <strong>Horas Actuales:</strong> ${conflict.details.current_hours}<br>
+                                <strong>Máximo Permitido:</strong> ${conflict.details.max_hours}<br>
+                                <strong>Exceso:</strong> ${conflict.details.excess_hours} horas<br>
+                                <strong>Clases Excedentes:</strong><br>
+                                ${conflict.details.violations.map(v =>
+                                    `• ${v.day} ${v.period} - ${v.section} (${v.subject})`
+                                ).join('<br>')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Resolution Options
+                detailsHtml += `
+                    <div class="resolution-options">
+                        <div class="detail-title">Opciones de Resolución</div>
+                        <div class="detail-content">
+                            ${this.getResolutionOptions(conflict)}
+                        </div>
+                    </div>
+                `;
+
+                detailsHtml += '</div>';
+                return detailsHtml;
+            }
+
+            getResolutionOptions(conflict) {
+                let options = '';
+
+                switch (conflict.type) {
+                    case 'teacher_double_booking':
+                        options = `
+                            <button class="resolution-btn" onclick="conflictManager.resolveConflict(${conflict.id}, 'move_assignment')">
+                                <i class="fas fa-arrows-alt"></i> Mover Asignación
+                            </button>
+                            <button class="resolution-btn" onclick="conflictManager.resolveConflict(${conflict.id}, 'find_substitute')">
+                                <i class="fas fa-user-plus"></i> Buscar Sustituto
+                            </button>
+                            <button class="resolution-btn danger" onclick="conflictManager.resolveConflict(${conflict.id}, 'delete_assignment')">
+                                <i class="fas fa-trash"></i> Eliminar Asignación
+                            </button>
+                        `;
+                        break;
+                    case 'classroom_conflict':
+                        options = `
+                            <button class="resolution-btn" onclick="conflictManager.resolveConflict(${conflict.id}, 'move_to_available_room')">
+                                <i class="fas fa-door-open"></i> Cambiar Aula
+                            </button>
+                            <button class="resolution-btn" onclick="conflictManager.resolveConflict(${conflict.id}, 'reschedule_class')">
+                                <i class="fas fa-clock"></i> Reprogramar
+                            </button>
+                        `;
+                        break;
+                    case 'workload_violation':
+                        options = `
+                            <button class="resolution-btn" onclick="conflictManager.resolveConflict(${conflict.id}, 'redistribute_hours')">
+                                <i class="fas fa-balance-scale"></i> Redistribuir Horas
+                            </button>
+                            <button class="resolution-btn" onclick="conflictManager.resolveConflict(${conflict.id}, 'assign_to_other_teacher')">
+                                <i class="fas fa-user-friends"></i> Asignar a Otro Profesor
+                            </button>
+                        `;
+                        break;
+                    default:
+                        options = `
+                            <button class="resolution-btn success" onclick="conflictManager.resolveConflict(${conflict.id}, 'mark_resolved')">
+                                <i class="fas fa-check"></i> Marcar como Resuelto
+                            </button>
+                        `;
+                }
+
+                options += `
+                    <button class="resolution-btn" onclick="conflictManager.ignoreConflict(${conflict.id})">
+                        <i class="fas fa-eye-slash"></i> Ignorar
+                    </button>
+                `;
+
+                return options;
+            }
+
+            toggleConflictDetails(conflictId) {
+                const details = document.getElementById(`details-${conflictId}`);
+                const chevron = document.getElementById(`chevron-${conflictId}`);
+
+                if (details.classList.contains('show')) {
+                    details.classList.remove('show');
+                    chevron.className = 'fas fa-chevron-down';
+                } else {
+                    details.classList.add('show');
+                    chevron.className = 'fas fa-chevron-up';
+                }
+            }
+
+            toggleConflictSelection(conflictId, selected) {
+                if (selected) {
+                    if (!this.selectedConflicts.includes(conflictId)) {
+                        this.selectedConflicts.push(conflictId);
+                    }
+                } else {
+                    this.selectedConflicts = this.selectedConflicts.filter(id => id !== conflictId);
+                }
+            }
+
+            resolveConflict(conflictId, resolutionType) {
+                const conflict = this.conflicts.find(c => c.id === conflictId);
+                if (conflict) {
+                    alert(`Resolviendo conflicto: ${conflict.title}\nAcción: ${resolutionType}`);
+                    // In production, this would call the backend API
+                    this.updateConflictStatus(conflictId, 'resolved');
+                }
+            }
+
+            ignoreConflict(conflictId) {
+                this.updateConflictStatus(conflictId, 'ignored');
+            }
+
+            updateConflictStatus(conflictId, newStatus) {
+                const conflict = this.conflicts.find(c => c.id === conflictId);
+                if (conflict) {
+                    conflict.status = newStatus;
+                    this.renderConflictsList();
+                    this.updateStatistics();
+                }
+            }
+
+            updateStatistics() {
+                const critical = this.conflicts.filter(c => c.severity === 'critical' && c.status === 'active').length;
+                const warning = this.conflicts.filter(c => c.severity === 'warning' && c.status === 'active').length;
+                const info = this.conflicts.filter(c => c.severity === 'info' && c.status === 'active').length;
+                const resolved = this.conflicts.filter(c => c.status === 'resolved').length;
+
+                document.getElementById('criticalConflicts').textContent = critical;
+                document.getElementById('warningConflicts').textContent = warning;
+                document.getElementById('infoConflicts').textContent = info;
+                document.getElementById('resolvedConflicts').textContent = resolved;
+            }
+
+            getSeverityLabel(severity) {
+                const labels = {
+                    'critical': 'Crítico',
+                    'warning': 'Advertencia',
+                    'info': 'Información'
+                };
+                return labels[severity] || severity;
+            }
+
+            getTypeLabel(type) {
+                const labels = {
+                    'teacher_double_booking': 'Profesor Duplicado',
+                    'classroom_conflict': 'Conflicto de Aula',
+                    'section_overlap': 'Solapamiento de Sección',
+                    'workload_violation': 'Violación de Carga',
+                    'time_period_invalid': 'Período Inválido'
+                };
+                return labels[type] || type;
+            }
+
+            getStatusLabel(status) {
+                const labels = {
+                    'active': 'Activo',
+                    'ignored': 'Ignorado',
+                    'resolved': 'Resuelto'
+                };
+                return labels[status] || status;
+            }
+        }
+
+        // Global functions
+        const conflictManager = new ConflictResolutionManager();
+
+        function scanForConflicts() {
+            alert('Escaneando sistema en busca de nuevos conflictos...\nConectando con motor de detección de conflictos.');
+            // In production, this would trigger a backend scan
+        }
+
+        function refreshConflicts() {
+            conflictManager.renderConflictsList();
+            conflictManager.updateStatistics();
+        }
+
+        function exportConflicts() {
+            alert('Exportando lista de conflictos a Excel...');
+        }
+
+        function generateReport() {
+            alert('Generando reporte PDF de conflictos...');
+        }
+
+        function resolveSelectedConflicts() {
+            if (conflictManager.selectedConflicts.length === 0) {
+                alert('Por favor seleccione al menos un conflicto.');
+                return;
+            }
+            alert(`Resolviendo ${conflictManager.selectedConflicts.length} conflictos seleccionados...`);
+        }
+
+        function ignoreSelectedConflicts() {
+            if (conflictManager.selectedConflicts.length === 0) {
+                alert('Por favor seleccione al menos un conflicto.');
+                return;
+            }
+            alert(`Ignorando ${conflictManager.selectedConflicts.length} conflictos seleccionados...`);
+        }
+
+        function deleteSelectedConflicts() {
+            if (conflictManager.selectedConflicts.length === 0) {
+                alert('Por favor seleccione al menos un conflicto.');
+                return;
+            }
+            if (confirm(`¿Está seguro de eliminar ${conflictManager.selectedConflicts.length} conflictos?`)) {
+                alert('Conflictos eliminados.');
+            }
+        }
+
+        function autoResolveAll() {
+            if (confirm('¿Desea intentar resolver automáticamente todos los conflictos? Esta acción puede modificar horarios existentes.')) {
+                alert('Iniciando resolución automática de conflictos...\nEsto puede tomar varios minutos.');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user_info');
+            window.location.href = '/bischeduler/login';
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Conflict Resolution System initialized');
+        });
+    </script>
+</body>
+</html>
