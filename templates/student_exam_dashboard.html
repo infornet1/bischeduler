@@ -536,16 +536,28 @@
         }
 
         [data-theme="dark"] .alert-banner {
-            background: linear-gradient(135deg, #dc3545, #a02532);
+            background: linear-gradient(135deg, #dc3545, #a02532) !important;
+            color: #ffffff !important;
+            border: 2px solid #dc3545 !important;
+        }
+
+        [data-theme="dark"] .alert-banner * {
             color: #ffffff !important;
         }
 
         [data-theme="dark"] .alert-banner strong,
-        [data-theme="dark"] .alert-banner span {
+        [data-theme="dark"] .alert-banner span,
+        [data-theme="dark"] .alert-banner div {
             color: #ffffff !important;
         }
 
-        [data-theme="dark"] .alert-icon {
+        [data-theme="dark"] .alert-icon,
+        [data-theme="dark"] .alert-icon i {
+            color: #ffffff !important;
+        }
+
+        /* Ensure alert message text is always white in dark mode */
+        [data-theme="dark"] #alertMessage {
             color: #ffffff !important;
         }
 
@@ -642,6 +654,11 @@
         /* Fix span elements in dark mode */
         [data-theme="dark"] span {
             color: var(--text-primary, #e9ecef) !important;
+        }
+
+        /* Alert banner spans override - must be white */
+        [data-theme="dark"] .alert-banner span {
+            color: #ffffff !important;
         }
 
         /* Fix small text elements */
