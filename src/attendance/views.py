@@ -224,53 +224,27 @@ def api_sections():
             }), 400
 
     try:
-        # For now, return mock data since we don't have real sections yet
-        mock_sections = [
-            {
-                'id': 1,
-                'name': '1er Grado A',
-                'grade_level': 1,
-                'student_count': 25
-            },
-            {
-                'id': 2,
-                'name': '1er Grado B',
-                'grade_level': 1,
-                'student_count': 23
-            },
-            {
-                'id': 3,
-                'name': '2do Grado A',
-                'grade_level': 2,
-                'student_count': 27
-            },
-            {
-                'id': 4,
-                'name': '3er Grado A',
-                'grade_level': 3,
-                'student_count': 24
-            },
-            {
-                'id': 5,
-                'name': '4to Grado A',
-                'grade_level': 4,
-                'student_count': 26
-            },
-            {
-                'id': 6,
-                'name': '5to Grado A',
-                'grade_level': 5,
-                'student_count': 22
-            },
-            {
-                'id': 7,
-                'name': '6to Grado A',
-                'grade_level': 6,
-                'student_count': 28
-            }
-        ]
+        # Return real sections from database
+        sections = db.session.query(Section).filter_by(
+            academic_year='2025-2026', is_active=True
+        ).order_by(Section.grade_level, Section.section_letter).all()
 
-        return jsonify(mock_sections)
+        sections_data = []
+        for section in sections:
+            # Count students in this section
+            student_count = db.session.query(Student).filter_by(
+                section_id=section.id, is_active=True
+            ).count()
+
+            sections_data.append({
+                'id': section.id,
+                'name': section.name,
+                'grade_level': section.grade_level,
+                'section_letter': section.section_letter,
+                'student_count': student_count
+            })
+
+        return jsonify(sections_data)
 
     except Exception as e:
         return jsonify({

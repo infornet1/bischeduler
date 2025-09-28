@@ -185,13 +185,13 @@
         }
 
         .exam-item.urgent {
-            border-left-color: #dc3545;
-            background: rgba(220, 53, 69, 0.1);
+            border-left-color: var(--danger-color, #dc3545);
+            background: var(--danger-bg, rgba(220, 53, 69, 0.1));
         }
 
         .exam-item.warning {
-            border-left-color: #ffc107;
-            background: rgba(255, 193, 7, 0.1);
+            border-left-color: var(--warning-color, #ffc107);
+            background: var(--warning-bg, rgba(255, 193, 7, 0.1));
         }
 
         .exam-header {
@@ -406,9 +406,9 @@
             flex-shrink: 0;
         }
 
-        .notification-icon.info { background: #17a2b8; }
-        .notification-icon.warning { background: #ffc107; color: #212529; }
-        .notification-icon.success { background: #28a745; }
+        .notification-icon.info { background: var(--info-color, #17a2b8); }
+        .notification-icon.warning { background: var(--warning-color, #ffc107); color: var(--warning-text, #212529); }
+        .notification-icon.success { background: var(--success-color, #28a745); }
 
         .notification-content {
             flex: 1;
@@ -432,30 +432,176 @@
             flex-shrink: 0;
         }
 
-        /* Dark mode adjustments */
+        /* Dark Mode CSS Variables */
+        [data-theme="dark"] {
+            --card-bg: rgba(30, 30, 30, 0.95);
+            --bg-secondary: #2a2a2a;
+            --text-primary: #e9ecef;
+            --text-secondary: #adb5bd;
+            --border-color: #495057;
+            --primary-color: #0056b3;
+            --danger-color: #dc3545;
+            --danger-bg: rgba(220, 53, 69, 0.2);
+            --warning-color: #ffc107;
+            --warning-bg: rgba(255, 193, 7, 0.2);
+            --warning-text: #000;
+            --info-color: #17a2b8;
+            --success-color: #28a745;
+            --hover-bg: rgba(255, 255, 255, 0.05);
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            --box-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Dark Mode Specific Overrides */
         [data-theme="dark"] .student-dashboard {
             background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
         }
 
+        [data-theme="dark"] .card-header {
+            background: linear-gradient(135deg, #0056b3 0%, #003d7a 100%);
+        }
+
         [data-theme="dark"] .exam-item {
-            background: #404040;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .exam-item:hover {
+            background: #333;
         }
 
         [data-theme="dark"] .exam-item.urgent {
-            background: rgba(220, 53, 69, 0.2);
+            background: var(--danger-bg);
+            border-left-color: var(--danger-color);
         }
 
         [data-theme="dark"] .exam-item.warning {
-            background: rgba(255, 193, 7, 0.2);
+            background: var(--warning-bg);
+            border-left-color: var(--warning-color);
+        }
+
+        [data-theme="dark"] .detail-item {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .countdown-number {
+            color: #0d6efd;
+        }
+
+        [data-theme="dark"] .btn-primary {
+            background: linear-gradient(135deg, #0056b3 0%, #003d7a 100%);
+            border-color: #004085;
+        }
+
+        [data-theme="dark"] .btn-primary:hover {
+            background: linear-gradient(135deg, #004085 0%, #002752 100%);
+        }
+
+        [data-theme="dark"] .stat-card {
+            background: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .stat-label {
+            color: var(--text-secondary);
+        }
+
+        [data-theme="dark"] .stat-value {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .notification-item {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .notification-item:hover {
+            background: #333;
+        }
+
+        [data-theme="dark"] .dropdown-menu {
+            background: var(--card-bg);
+            border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .dropdown-item {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .dropdown-item:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .alert-banner {
+            background: linear-gradient(135deg, #dc3545, #a02532);
+        }
+
+        [data-theme="dark"] .student-header {
+            background: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .student-info h2,
+        [data-theme="dark"] .student-info h3 {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .upcoming-exams,
+        [data-theme="dark"] .quick-stats,
+        [data-theme="dark"] .recent-notifications {
+            background: var(--card-bg);
+        }
+
+        [data-theme="dark"] h2,
+        [data-theme="dark"] h3,
+        [data-theme="dark"] h4,
+        [data-theme="dark"] h5 {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .exam-title {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .exam-subject {
+            color: var(--text-secondary);
+        }
+
+        [data-theme="dark"] .countdown-label {
+            color: var(--text-secondary);
+        }
+
+        [data-theme="dark"] .mini-calendar {
+            background: var(--card-bg);
+            color: var(--text-primary);
         }
 
         [data-theme="dark"] .mini-calendar th {
             background: #404040;
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .mini-calendar td {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .mini-calendar td.has-exam {
+            background: var(--danger-bg);
         }
 
         [data-theme="dark"] .mini-calendar td,
         [data-theme="dark"] .mini-calendar th {
-            border-color: #555;
+            border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .notification-content h5 {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .notification-meta {
+            color: var(--text-secondary);
         }
 
         /* Responsive design */
