@@ -619,7 +619,9 @@
             <small>
                 🇻🇪 Desarrollado para la Educación Venezolana |
                 🏫 Compatible con normativas MINED |
-                📅 BiScheduler K12 Platform
+                📅 BiScheduler K12 Platform |
+                🗄️ {{ current_tenant.institution_name if current_tenant and current_tenant.institution_name else (current_tenant.name if current_tenant else 'UEIPAB') }}
+                ({{ schema_name if schema_name else 'ueipab_2025_2026' }})
             </small>
         </div>
     </div>

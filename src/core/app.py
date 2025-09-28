@@ -91,16 +91,28 @@ def create_app(config_name='development'):
     @app.route('/')
     def index():
         from flask import render_template, g
-        from src.tenants.middleware import get_current_tenant
+        from src.tenants.middleware import get_current_tenant, get_current_schema_name
         from src.models.master import Tenant
 
-        # For demo purposes, default to UEIPAB tenant if no tenant context
+        # Get current tenant information
         current_tenant = get_current_tenant()
-        if not current_tenant:
-            # Default to UEIPAB tenant for direct access
-            current_tenant = db.session.query(Tenant).filter_by(institution_name='UEIPAB').first()
+        schema_name = get_current_schema_name()
 
-        return render_template('index.html', current_tenant=current_tenant)
+        # Provide fallback values for tenant information
+        if not current_tenant:
+            # Create a mock tenant object for display purposes
+            class MockTenant:
+                def __init__(self):
+                    self.institution_name = 'UEIPAB'
+                    self.name = 'Universidad Experimental de las Fuerzas Armadas Nacional Bolivariana'
+            current_tenant = MockTenant()
+
+        if not schema_name:
+            schema_name = 'ueipab_2025_2026'
+
+        return render_template('index.html',
+                             current_tenant=current_tenant,
+                             schema_name=schema_name)
 
     # Login page
     @app.route('/login')
@@ -140,7 +152,28 @@ def create_app(config_name='development'):
     @app.route('/dashboard')
     def dashboard():
         from flask import render_template
-        return render_template('dashboard.html')
+        from src.tenants.middleware import get_current_tenant, get_current_schema_name
+        from src.models.master import Tenant
+
+        # Get current tenant information
+        current_tenant = get_current_tenant()
+        schema_name = get_current_schema_name()
+
+        # Provide fallback values for tenant information
+        if not current_tenant:
+            # Create a mock tenant object for display purposes
+            class MockTenant:
+                def __init__(self):
+                    self.institution_name = 'UEIPAB'
+                    self.name = 'Universidad Experimental de las Fuerzas Armadas Nacional Bolivariana'
+            current_tenant = MockTenant()
+
+        if not schema_name:
+            schema_name = 'ueipab_2025_2026'
+
+        return render_template('dashboard.html',
+                             current_tenant=current_tenant,
+                             schema_name=schema_name)
 
     # Teacher portal page (Phase 4 - Teacher Self-Service)
     @app.route('/teacher-portal')
