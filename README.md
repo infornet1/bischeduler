@@ -32,7 +32,7 @@ BiScheduler is a comprehensive multi-tenant scheduling platform designed specifi
 - **Frontend**: Responsive web interface with ES6 JavaScript
 - **Styling**: CSS Grid/Flexbox with Venezuelan educational theme
 - **Infrastructure**: Nginx reverse proxy
-- **Deployment**: Port 5005 (production-ready)
+- **Deployment**: Port 5005 (production at https://dev.ueipab.edu.ve/bischeduler/)
 
 ## 🗂️ Project Structure
 
