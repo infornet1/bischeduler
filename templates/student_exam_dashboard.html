@@ -436,8 +436,9 @@
         [data-theme="dark"] {
             --card-bg: rgba(30, 30, 30, 0.95);
             --bg-secondary: #2a2a2a;
-            --text-primary: #e9ecef;
-            --text-secondary: #adb5bd;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-muted: #888888;
             --border-color: #495057;
             --primary-color: #0056b3;
             --danger-color: #dc3545;
@@ -612,6 +613,66 @@
 
         [data-theme="dark"] .notification-meta {
             color: var(--text-secondary);
+        }
+
+        /* Fix Bootstrap text classes for dark mode */
+        [data-theme="dark"] .text-muted {
+            color: var(--text-secondary, #adb5bd) !important;
+        }
+
+        [data-theme="dark"] .text-center.text-muted {
+            color: var(--text-secondary, #adb5bd) !important;
+        }
+
+        /* Fix heading colors in dark mode */
+        [data-theme="dark"] h1,
+        [data-theme="dark"] h2,
+        [data-theme="dark"] h3,
+        [data-theme="dark"] h4,
+        [data-theme="dark"] h5,
+        [data-theme="dark"] h6 {
+            color: var(--text-primary, #e9ecef) !important;
+        }
+
+        /* Fix paragraph text in dark mode */
+        [data-theme="dark"] p {
+            color: var(--text-primary, #e9ecef) !important;
+        }
+
+        /* Fix span elements in dark mode */
+        [data-theme="dark"] span {
+            color: var(--text-primary, #e9ecef) !important;
+        }
+
+        /* Fix small text elements */
+        [data-theme="dark"] small {
+            color: var(--text-secondary, #adb5bd) !important;
+        }
+
+        /* Fix card text content */
+        [data-theme="dark"] .card-text {
+            color: var(--text-primary, #e9ecef) !important;
+        }
+
+        /* Fix general text content */
+        [data-theme="dark"] .text-center {
+            color: var(--text-primary, #e9ecef) !important;
+        }
+
+        /* Override hardcoded white colors for dark mode readability */
+        [data-theme="dark"] .btn-exam {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        /* Fix display text elements */
+        [data-theme="dark"] .display-6 {
+            color: var(--text-primary, #e9ecef) !important;
+        }
+
+        /* Fix any remaining text elements */
+        [data-theme="dark"] div,
+        [data-theme="dark"] label {
+            color: var(--text-primary, #e9ecef);
         }
 
         /* Responsive design */
