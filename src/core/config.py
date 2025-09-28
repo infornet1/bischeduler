@@ -55,9 +55,9 @@ class DevelopmentConfig(BaseConfig):
     DEBUG = True
     TESTING = False
 
-    # Development database - use master database for authentication
+    # Development database - use tenant database for UEIPAB data
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'mysql+pymysql://root:Temporal2024!@localhost/bischeduler_master'
+        'mysql+pymysql://root:Temporal2024!@localhost/ueipab_2025_data'
 
     # Relaxed CORS for development
     CORS_ORIGINS = ["*"]

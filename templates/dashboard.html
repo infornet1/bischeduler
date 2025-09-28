@@ -490,20 +490,20 @@
         <div class="quick-stats">
             <div class="stats-grid">
                 <div class="stat-item">
-                    <div class="stat-value" id="active-students">245</div>
+                    <div class="stat-value" id="active-students">{{ stats.active_students }}</div>
                     <div class="stat-label">Estudiantes Activos</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" id="total-teachers">18</div>
+                    <div class="stat-value" id="total-teachers">{{ stats.total_teachers }}</div>
                     <div class="stat-label">Docentes</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" id="active-schedules">12</div>
-                    <div class="stat-label">Horarios Activos</div>
+                    <div class="stat-value" id="total-sections">{{ stats.total_sections }}</div>
+                    <div class="stat-label">Secciones</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" id="system-status">✅</div>
-                    <div class="stat-label">Estado del Sistema</div>
+                    <div class="stat-value" id="schedule-assignments">{{ stats.schedule_assignments }}</div>
+                    <div class="stat-label">Asignaciones</div>
                 </div>
             </div>
         </div>
