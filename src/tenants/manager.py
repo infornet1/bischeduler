@@ -235,12 +235,16 @@ class TenantManager:
 
     def get_tenant_by_domain(self, domain: str) -> Optional[Tenant]:
         """Get tenant by domain/subdomain"""
-        # Extract tenant identifier from domain
-        # e.g., ueipab.bischeduler.com -> ueipab
-        tenant_code = domain.split('.')[0]
-
         session = self.SessionLocal()
         try:
+            # First try exact domain match by website_url
+            tenant = session.query(Tenant).filter_by(website_url=domain).first()
+            if tenant:
+                return tenant
+
+            # Fallback: Extract tenant identifier from domain
+            # e.g., ueipab.bischeduler.com -> ueipab
+            tenant_code = domain.split('.')[0]
             return session.query(Tenant).filter_by(institution_code=tenant_code).first()
         finally:
             session.close()

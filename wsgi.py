@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from src.core.app import create_app
 
 # Create application
-application = create_app('development')
+application = create_app()
 
 # Add URL routing support for /bischeduler prefix
 class PrefixMiddleware:
@@ -32,6 +32,11 @@ class PrefixMiddleware:
 # Apply prefix middleware
 application = PrefixMiddleware(application, '/bischeduler')
 
+# Development server - only runs when script is executed directly
+# The systemd service should use a WSGI server like gunicorn instead
 if __name__ == '__main__':
-    from werkzeug.serving import run_simple
-    run_simple('0.0.0.0', 5005, application, use_reloader=True, use_debugger=True)
+    print("Note: For production, use a WSGI server like gunicorn")
+    print("The systemd service should not run this script directly")
+    # Commented out to prevent port binding issues with systemd
+    # from werkzeug.serving import run_simple
+    # run_simple('0.0.0.0', 5005, application, use_reloader=True, use_debugger=True)

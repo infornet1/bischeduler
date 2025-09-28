@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marcar Asistencia - {{ section.name }} - BiScheduler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/bischeduler/static/css/main.css" rel="stylesheet">
+    <style>
+        .student-row {
+            transition: background-color 0.2s;
+        }
+        .student-row:hover {
+            background-color: var(--bs-light);
+        }
+        .present-student {
+            background-color: rgba(40, 167, 69, 0.1);
+        }
+        .absent-student {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+        .quick-actions {
+            position: sticky;
+            top: 10px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="user-bar">
+        <div class="user-name">Profesor UEIPAB</div>
+        <div class="dropdown">
+            <button class="btn user-dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                <i class="bi bi-person-circle"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="/bischeduler/attendance"><i class="bi bi-person-check"></i> Control Asistencia</a></li>
+                <li><a class="dropdown-item" href="/bischeduler/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="/bischeduler/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+            </ul>
+        </div>
+        <button class="btn btn-outline-light btn-sm ms-2" onclick="toggleTheme()">
+            <i class="bi bi-moon-stars" id="theme-icon"></i>
+        </button>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2><i class="bi bi-check-square"></i> Marcar Asistencia</h2>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/bischeduler/attendance">Control de Asistencia</a></li>
+                                <li class="breadcrumb-item active">{{ section.name }}</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div>
+                        <a href="/bischeduler/attendance" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Section Info -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5><i class="bi bi-people"></i> {{ section.name }}</h5>
+                                <p class="mb-1">
+                                    <span class="badge bg-primary">Grado {{ section.grade_level }}</span>
+                                    <span class="badge bg-secondary">{{ students|length }} estudiantes</span>
+                                    <span class="badge bg-info">Año Académico {{ section.academic_year }}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <h6>Fecha de Asistencia:</h6>
+                                <p class="fs-5 text-primary">{{ attendance_date.strftime('%d/%m/%Y') }}</p>
+                                <small class="text-muted">{{ attendance_date.strftime('%A') | title }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" id="attendanceForm">
+                    <input type="hidden" name="attendance_date" value="{{ attendance_date.strftime('%Y-%m-%d') }}">
+
+                    <!-- Quick Actions -->
+                    <div class="card quick-actions mb-4">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-success" onclick="markAllPresent()">
+                                            <i class="bi bi-check-all"></i> Todos Presentes
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger" onclick="markAllAbsent()">
+                                            <i class="bi bi-x-circle"></i> Todos Ausentes
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="clearAll()">
+                                            <i class="bi bi-arrow-clockwise"></i> Limpiar
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <span class="me-3">
+                                        <i class="bi bi-check-circle text-success"></i>
+                                        Presentes: <span id="presentCount">0</span>
+                                    </span>
+                                    <span class="me-3">
+                                        <i class="bi bi-x-circle text-danger"></i>
+                                        Ausentes: <span id="absentCount">0</span>
+                                    </span>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Guardar Asistencia
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Students List -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="bi bi-list-check"></i> Lista de Estudiantes</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th width="5%">#</th>
+                                            <th width="25%">Nombre Completo</th>
+                                            <th width="10%">Género</th>
+                                            <th width="15%">Estado</th>
+                                            <th width="10%">Opciones</th>
+                                            <th width="20%">Motivo</th>
+                                            <th width="15%">Notas</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for student in students %}
+                                        {% set existing = existing_attendance.get(student.id, {}) %}
+                                        {% set attendance_record = existing.get('attendance') %}
+                                        <tr class="student-row" data-student-id="{{ student.id }}">
+                                            <td>{{ loop.index }}</td>
+                                            <td>
+                                                <strong>{{ student.full_name }}</strong><br>
+                                                <small class="text-muted">{{ student.cedula_escolar or 'Sin cédula' }}</small>
+                                            </td>
+                                            <td>
+                                                {% if student.gender == 'M' %}
+                                                    <span class="badge bg-primary">Masculino</span>
+                                                {% else %}
+                                                    <span class="badge bg-pink">Femenino</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input attendance-checkbox"
+                                                           type="checkbox"
+                                                           name="student_{{ student.id }}_present"
+                                                           id="present_{{ student.id }}"
+                                                           {% if attendance_record and attendance_record.present %}checked{% endif %}
+                                                           onchange="updateAttendanceUI({{ student.id }})">
+                                                    <label class="form-check-label" for="present_{{ student.id }}">
+                                                        <span class="present-text">Presente</span>
+                                                        <span class="absent-text">Ausente</span>
+                                                    </label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group-vertical btn-group-sm">
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input"
+                                                               type="checkbox"
+                                                               name="student_{{ student.id }}_excused"
+                                                               id="excused_{{ student.id }}"
+                                                               {% if attendance_record and attendance_record.excused %}checked{% endif %}>
+                                                        <label class="form-check-label" for="excused_{{ student.id }}">
+                                                            <small>Justificado</small>
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input"
+                                                               type="checkbox"
+                                                               name="student_{{ student.id }}_late"
+                                                               id="late_{{ student.id }}"
+                                                               {% if attendance_record and attendance_record.late_arrival %}checked{% endif %}>
+                                                        <label class="form-check-label" for="late_{{ student.id }}">
+                                                            <small>Tardanza</small>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <select class="form-select form-select-sm"
+                                                        name="student_{{ student.id }}_reason"
+                                                        id="reason_{{ student.id }}">
+                                                    <option value="">Seleccionar...</option>
+                                                    <option value="medical" {% if attendance_record and attendance_record.absence_reason == 'medical' %}selected{% endif %}>Médico</option>
+                                                    <option value="family" {% if attendance_record and attendance_record.absence_reason == 'family' %}selected{% endif %}>Familiar</option>
+                                                    <option value="transport" {% if attendance_record and attendance_record.absence_reason == 'transport' %}selected{% endif %}>Transporte</option>
+                                                    <option value="weather" {% if attendance_record and attendance_record.absence_reason == 'weather' %}selected{% endif %}>Clima</option>
+                                                    <option value="other" {% if attendance_record and attendance_record.absence_reason == 'other' %}selected{% endif %}>Otro</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="text"
+                                                       class="form-control form-control-sm"
+                                                       name="student_{{ student.id }}_notes"
+                                                       placeholder="Observaciones..."
+                                                       value="{{ attendance_record.notes if attendance_record else '' }}">
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="text-center mt-4 mb-5">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-save"></i> Guardar Asistencia
+                        </button>
+                        <a href="/bischeduler/attendance" class="btn btn-outline-secondary btn-lg ms-3">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCounts();
+
+            // Add listeners to all attendance checkboxes
+            document.querySelectorAll('.attendance-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    updateCounts();
+                });
+            });
+        });
+
+        function markAllPresent() {
+            document.querySelectorAll('.attendance-checkbox').forEach(checkbox => {
+                checkbox.checked = true;
+                const studentId = checkbox.name.split('_')[1];
+                updateAttendanceUI(studentId);
+            });
+            updateCounts();
+        }
+
+        function markAllAbsent() {
+            document.querySelectorAll('.attendance-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+                const studentId = checkbox.name.split('_')[1];
+                updateAttendanceUI(studentId);
+            });
+            updateCounts();
+        }
+
+        function clearAll() {
+            // Clear all checkboxes and form fields
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            document.querySelectorAll('select').forEach(select => {
+                select.selectedIndex = 0;
+            });
+            document.querySelectorAll('input[type="text"]').forEach(input => {
+                input.value = '';
+            });
+
+            // Update UI
+            document.querySelectorAll('.student-row').forEach(row => {
+                row.classList.remove('present-student', 'absent-student');
+            });
+
+            updateCounts();
+        }
+
+        function updateAttendanceUI(studentId) {
+            const checkbox = document.getElementById(`present_${studentId}`);
+            const row = document.querySelector(`[data-student-id="${studentId}"]`);
+
+            if (checkbox.checked) {
+                row.classList.add('present-student');
+                row.classList.remove('absent-student');
+            } else {
+                row.classList.add('absent-student');
+                row.classList.remove('present-student');
+            }
+        }
+
+        function updateCounts() {
+            const checkboxes = document.querySelectorAll('.attendance-checkbox');
+            const presentCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+            const absentCount = checkboxes.length - presentCount;
+
+            document.getElementById('presentCount').textContent = presentCount;
+            document.getElementById('absentCount').textContent = absentCount;
+        }
+
+        // Form submission with validation
+        document.getElementById('attendanceForm').addEventListener('submit', function(e) {
+            const totalStudents = document.querySelectorAll('.attendance-checkbox').length;
+            const presentCount = parseInt(document.getElementById('presentCount').textContent);
+            const absentCount = parseInt(document.getElementById('absentCount').textContent);
+
+            if (!confirm(`¿Confirmar asistencia para {{ section.name }}?\n\nPresentes: ${presentCount}\nAusentes: ${absentCount}\nTotal: ${totalStudents}`)) {
+                e.preventDefault();
+            }
+        });
+
+        // Theme toggle function
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+
+            const icon = document.getElementById('theme-icon');
+            icon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.getElementById('theme-icon').className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+
+        // Initialize UI for existing attendance
+        document.querySelectorAll('.student-row').forEach(row => {
+            const studentId = row.dataset.studentId;
+            updateAttendanceUI(studentId);
+        });
+    </script>
+</body>
+</html>

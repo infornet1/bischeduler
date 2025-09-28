@@ -83,6 +83,10 @@ def create_app(config_name='development'):
     from src.api.schedule_optimizer import schedule_optimizer_bp
     app.register_blueprint(schedule_optimizer_bp)
 
+    # Import and register attendance blueprint (Phase 11)
+    from src.attendance.views import attendance_bp
+    app.register_blueprint(attendance_bp)
+
     # Main landing page
     @app.route('/')
     def index():

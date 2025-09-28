@@ -672,6 +672,175 @@ class TeacherDashboardStats(Base):
     total_subjects = Column(Integer, default=0)
     total_sections = Column(Integer, default=0)
 
+
+# ============================================================================
+# VENEZUELAN ABSENCE MONITORING MODELS (Phase 11)
+# ============================================================================
+
+class Student(Base):
+    """
+    Venezuelan K12 student with government compliance fields
+    Phase 11: Absence monitoring system
+    """
+    __tablename__ = 'students'
+
+    id = Column(Integer, primary_key=True)
+    source_id = Column(Integer)  # Reference to migrated data
+
+    # Personal information
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(155), nullable=False)
+    full_name = Column(String(255), nullable=False)  # Combined name for reports
+
+    # Venezuelan identification
+    cedula_escolar = Column(String(20), unique=True)  # Student ID number
+    fecha_nacimiento = Column(DateTime)  # Birth date
+
+    # Government compliance fields
+    gender = Column(String(1), nullable=False)  # 'M' = Male (Varones), 'F' = Female (Hembras)
+    grade_level = Column(Integer, nullable=False)  # 1, 2, 3, 4, 5, 6 (for bachillerato: 1-5)
+    section_id = Column(Integer, ForeignKey('sections.id'), nullable=False)
+
+    # Contact information
+    parent_name = Column(String(200))
+    parent_phone = Column(String(20))
+    parent_email = Column(String(255))
+    address = Column(Text)
+
+    # Academic status
+    academic_year = Column(String(10), nullable=False)  # "2025-2026"
+    enrollment_date = Column(DateTime, default=datetime.now(timezone.utc))
+    is_active = Column(Boolean, default=True)
+
+    # Metadata
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, onupdate=datetime.now(timezone.utc))
+
+    # Relationships
+    section = relationship("Section", backref="students")
+
+    def __repr__(self):
+        return f'<Student {self.full_name} - Grade {self.grade_level} ({self.gender})>'
+
+
+class DailyAttendance(Base):
+    """
+    Daily attendance tracking for Venezuelan government compliance
+    Phase 11: Core attendance functionality
+    """
+    __tablename__ = 'daily_attendance'
+
+    id = Column(Integer, primary_key=True)
+    student_id = Column(Integer, ForeignKey('students.id'), nullable=False)
+    date = Column(DateTime, nullable=False)  # Attendance date
+
+    # Attendance status
+    present = Column(Boolean, nullable=False, default=False)
+    excused = Column(Boolean, default=False)  # Justified absence
+    late_arrival = Column(Boolean, default=False)
+    early_departure = Column(Boolean, default=False)
+
+    # Details
+    absence_reason = Column(String(100))  # Medical, family, etc.
+    notes = Column(Text)
+
+    # Recording metadata
+    recorded_by = Column(Integer, ForeignKey('teachers.id'))
+    recorded_at = Column(DateTime, default=datetime.now(timezone.utc))
+
+    # Academic context
+    academic_year = Column(String(10), nullable=False)
+
+    # Relationships
+    student = relationship("Student", backref="attendance_records")
+    teacher = relationship("Teacher", backref="attendance_entries")
+
+    def __repr__(self):
+        status = "Present" if self.present else "Absent"
+        return f'<DailyAttendance {self.student.full_name} - {self.date.strftime("%Y-%m-%d")} - {status}>'
+
+
+class MonthlyAttendanceSummary(Base):
+    """
+    Monthly attendance summaries for Venezuelan government reporting
+    Phase 11: Government compliance calculations
+    """
+    __tablename__ = 'monthly_attendance_summary'
+
+    id = Column(Integer, primary_key=True)
+
+    # Government format requirements
+    grade_level = Column(Integer, nullable=False)  # GRADO (J)
+    section_count = Column(Integer, nullable=False)  # CANTIDAD DE SECCIONES (K)
+    male_students = Column(Integer, nullable=False)  # V - Varones (L)
+    female_students = Column(Integer, nullable=False)  # H - Hembras (M)
+    total_students = Column(Integer, nullable=False)  # TOTAL (N)
+
+    # Attendance calculations
+    working_days = Column(Integer, nullable=False)  # DÍAS HABILES (O)
+    attendance_sum = Column(Integer, nullable=False)  # SUMATORIA DE LA ASISTENCIA (P)
+    average_attendance = Column(DECIMAL(5,2), nullable=False)  # PROMEDIO DE ASISTENCIA (Q)
+    attendance_percentage = Column(DECIMAL(5,2), nullable=False)  # PORCENTAJE DE ASISTENCIA (R)
+
+    # Period information
+    month = Column(Integer, nullable=False)  # 1-12
+    year = Column(Integer, nullable=False)
+    academic_year = Column(String(10), nullable=False)
+
+    # Calculation metadata
+    calculated_at = Column(DateTime, default=datetime.now(timezone.utc))
+    calculated_by = Column(String(100))  # System or user who generated
+
+    # Metadata
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, onupdate=datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return f'<MonthlyAttendanceSummary Grade {self.grade_level} - {self.month}/{self.year} - {self.attendance_percentage}%>'
+
+
+class AttendanceAlert(Base):
+    """
+    Automated alerts for chronic absenteeism and patterns
+    Phase 11: Enhanced monitoring features
+    """
+    __tablename__ = 'attendance_alerts'
+
+    id = Column(Integer, primary_key=True)
+    student_id = Column(Integer, ForeignKey('students.id'), nullable=False)
+
+    # Alert details
+    alert_type = Column(String(50), nullable=False)  # chronic_absence, pattern_detected, etc.
+    severity = Column(String(20), nullable=False)  # low, medium, high, critical
+    message = Column(Text, nullable=False)
+
+    # Metrics that triggered alert
+    absence_count = Column(Integer)  # Number of absences in period
+    absence_percentage = Column(DECIMAL(5,2))  # Percentage of absences
+    period_days = Column(Integer)  # Days in evaluation period
+
+    # Status
+    is_active = Column(Boolean, default=True)
+    acknowledged = Column(Boolean, default=False)
+    acknowledged_by = Column(Integer, ForeignKey('teachers.id'))
+    acknowledged_at = Column(DateTime)
+
+    # Actions taken
+    action_taken = Column(Text)
+    parent_contacted = Column(Boolean, default=False)
+    contact_date = Column(DateTime)
+
+    # Metadata
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, onupdate=datetime.now(timezone.utc))
+
+    # Relationships
+    student = relationship("Student", backref="alerts")
+    acknowledged_teacher = relationship("Teacher", backref="acknowledged_alerts")
+
+    def __repr__(self):
+        return f'<AttendanceAlert {self.student.full_name} - {self.alert_type} ({self.severity})>'
+
     # Preference satisfaction metrics
     preference_satisfaction_score = Column(DECIMAL(5,2), default=0.0)  # 0-100%
     time_preference_score = Column(DECIMAL(5,2), default=0.0)
