@@ -29,6 +29,7 @@ Venezuelan K12 Multi-Tenant Scheduling Platform
     --border-color-light: #e9ecef;
 
     /* Spacing */
+    --spacing-xs: 8px;
     --spacing-sm: 10px;
     --spacing-md: 15px;
     --spacing-lg: 20px;
