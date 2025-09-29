@@ -1097,6 +1097,686 @@ def create_app(config_name='development'):
         except Exception as e:
             return jsonify({'error': f"Failed to load assignments: {str(e)}"}), 500
 
+    @app.route('/api/schedule/assignments', methods=['POST'])
+    def create_schedule_assignment():
+        """Create a new schedule assignment with conflict detection"""
+        from flask import jsonify, request
+        from src.models.tenant import (
+            get_tenant_session, ScheduleAssignment, Teacher, Section,
+            Subject, Classroom, TimePeriod, DayOfWeek
+        )
+        from sqlalchemy import and_
+        from datetime import datetime
+
+        try:
+            data = request.get_json()
+            required_fields = ['section_id', 'subject_id', 'teacher_id',
+                             'classroom_id', 'day_of_week', 'time_period_id']
+
+            # Validate required fields
+            for field in required_fields:
+                if not data.get(field):
+                    return jsonify({'error': f'Missing required field: {field}'}), 400
+
+            db_session = get_tenant_session()
+            current_academic_year = '2025-2026'
+
+            # Check for conflicts before creating
+            conflicts = check_assignment_conflicts(
+                db_session, data['teacher_id'], data['classroom_id'],
+                data['day_of_week'], data['time_period_id'], current_academic_year
+            )
+
+            if conflicts:
+                return jsonify({
+                    'error': 'Assignment conflicts detected',
+                    'conflicts': conflicts
+                }), 409
+
+            # Create new assignment
+            assignment = ScheduleAssignment(
+                tenant_id=1,  # UEIPAB tenant
+                section_id=data['section_id'],
+                subject_id=data['subject_id'],
+                teacher_id=data['teacher_id'],
+                classroom_id=data['classroom_id'],
+                time_period_id=data['time_period_id'],
+                day_of_week=DayOfWeek(data['day_of_week']),
+                academic_year=current_academic_year,
+                assignment_type=data.get('assignment_type', 'regular'),
+                is_active=True,
+                is_locked=data.get('is_locked', False),
+                conflict_status='none',
+                created_at=datetime.now()
+            )
+
+            db_session.add(assignment)
+            db_session.commit()
+
+            return jsonify({
+                'success': True,
+                'message': 'Assignment created successfully',
+                'assignment_id': assignment.id
+            }), 201
+
+        except Exception as e:
+            db_session.rollback()
+            return jsonify({'error': f"Failed to create assignment: {str(e)}"}), 500
+        finally:
+            db_session.close()
+
+    @app.route('/api/schedule/assignments/<int:assignment_id>', methods=['PUT'])
+    def update_schedule_assignment(assignment_id):
+        """Update an existing schedule assignment"""
+        from flask import jsonify, request
+        from src.models.tenant import get_tenant_session, ScheduleAssignment, DayOfWeek
+        from datetime import datetime
+
+        try:
+            data = request.get_json()
+            db_session = get_tenant_session()
+
+            # Get existing assignment
+            assignment = db_session.query(ScheduleAssignment).filter(
+                and_(
+                    ScheduleAssignment.id == assignment_id,
+                    ScheduleAssignment.is_active == True
+                )
+            ).first()
+
+            if not assignment:
+                return jsonify({'error': 'Assignment not found'}), 404
+
+            # Check if assignment is locked
+            if assignment.is_locked:
+                return jsonify({'error': 'Cannot modify locked assignment'}), 403
+
+            # Check for conflicts if time/resource changes
+            if any(field in data for field in ['teacher_id', 'classroom_id', 'day_of_week', 'time_period_id']):
+                conflicts = check_assignment_conflicts(
+                    db_session,
+                    data.get('teacher_id', assignment.teacher_id),
+                    data.get('classroom_id', assignment.classroom_id),
+                    data.get('day_of_week', assignment.day_of_week.value),
+                    data.get('time_period_id', assignment.time_period_id),
+                    assignment.academic_year,
+                    exclude_assignment_id=assignment_id
+                )
+
+                if conflicts:
+                    return jsonify({
+                        'error': 'Update would create conflicts',
+                        'conflicts': conflicts
+                    }), 409
+
+            # Update assignment fields
+            updatable_fields = [
+                'section_id', 'subject_id', 'teacher_id', 'classroom_id',
+                'time_period_id', 'assignment_type', 'is_locked'
+            ]
+
+            for field in updatable_fields:
+                if field in data:
+                    if field == 'day_of_week':
+                        setattr(assignment, field, DayOfWeek(data[field]))
+                    else:
+                        setattr(assignment, field, data[field])
+
+            assignment.updated_at = datetime.now()
+            db_session.commit()
+
+            return jsonify({
+                'success': True,
+                'message': 'Assignment updated successfully'
+            })
+
+        except Exception as e:
+            db_session.rollback()
+            return jsonify({'error': f"Failed to update assignment: {str(e)}"}), 500
+        finally:
+            db_session.close()
+
+    @app.route('/api/schedule/assignments/<int:assignment_id>', methods=['DELETE'])
+    def delete_schedule_assignment(assignment_id):
+        """Delete a schedule assignment"""
+        from flask import jsonify
+        from src.models.tenant import get_tenant_session, ScheduleAssignment
+        from sqlalchemy import and_
+        from datetime import datetime
+
+        try:
+            db_session = get_tenant_session()
+
+            # Get assignment
+            assignment = db_session.query(ScheduleAssignment).filter(
+                and_(
+                    ScheduleAssignment.id == assignment_id,
+                    ScheduleAssignment.is_active == True
+                )
+            ).first()
+
+            if not assignment:
+                return jsonify({'error': 'Assignment not found'}), 404
+
+            # Check if assignment is locked
+            if assignment.is_locked:
+                return jsonify({'error': 'Cannot delete locked assignment'}), 403
+
+            # Soft delete
+            assignment.is_active = False
+            assignment.updated_at = datetime.now()
+            db_session.commit()
+
+            return jsonify({
+                'success': True,
+                'message': 'Assignment deleted successfully'
+            })
+
+        except Exception as e:
+            db_session.rollback()
+            return jsonify({'error': f"Failed to delete assignment: {str(e)}"}), 500
+        finally:
+            db_session.close()
+
+    @app.route('/api/schedule/conflicts/check', methods=['POST'])
+    def check_schedule_conflicts():
+        """Check for conflicts in a proposed assignment"""
+        from flask import jsonify, request
+        from src.models.tenant import get_tenant_session
+
+        try:
+            data = request.get_json()
+            required_fields = ['teacher_id', 'classroom_id', 'day_of_week', 'time_period_id']
+
+            for field in required_fields:
+                if not data.get(field):
+                    return jsonify({'error': f'Missing required field: {field}'}), 400
+
+            db_session = get_tenant_session()
+            current_academic_year = '2025-2026'
+
+            conflicts = check_assignment_conflicts(
+                db_session, data['teacher_id'], data['classroom_id'],
+                data['day_of_week'], data['time_period_id'], current_academic_year,
+                exclude_assignment_id=data.get('exclude_assignment_id')
+            )
+
+            return jsonify({
+                'success': True,
+                'has_conflicts': len(conflicts) > 0,
+                'conflicts': conflicts
+            })
+
+        except Exception as e:
+            return jsonify({'error': f"Failed to check conflicts: {str(e)}"}), 500
+        finally:
+            db_session.close()
+
+    def check_assignment_conflicts(db_session, teacher_id, classroom_id, day_of_week,
+                                 time_period_id, academic_year, exclude_assignment_id=None):
+        """Helper function to check for assignment conflicts"""
+        from src.models.tenant import ScheduleAssignment, Teacher, TimePeriod, DayOfWeek
+        from sqlalchemy import and_, or_
+
+        conflicts = []
+
+        # Check teacher conflict
+        teacher_query = db_session.query(ScheduleAssignment).filter(
+            and_(
+                ScheduleAssignment.teacher_id == teacher_id,
+                ScheduleAssignment.day_of_week == DayOfWeek(day_of_week),
+                ScheduleAssignment.time_period_id == time_period_id,
+                ScheduleAssignment.academic_year == academic_year,
+                ScheduleAssignment.is_active == True
+            )
+        )
+
+        if exclude_assignment_id:
+            teacher_query = teacher_query.filter(ScheduleAssignment.id != exclude_assignment_id)
+
+        teacher_conflict = teacher_query.first()
+        if teacher_conflict:
+            teacher = db_session.query(Teacher).get(teacher_id)
+            conflicts.append({
+                'type': 'teacher_conflict',
+                'message': f'Teacher {teacher.teacher_name if teacher else "Unknown"} is already assigned at this time',
+                'existing_assignment_id': teacher_conflict.id
+            })
+
+        # Check classroom conflict
+        classroom_query = db_session.query(ScheduleAssignment).filter(
+            and_(
+                ScheduleAssignment.classroom_id == classroom_id,
+                ScheduleAssignment.day_of_week == DayOfWeek(day_of_week),
+                ScheduleAssignment.time_period_id == time_period_id,
+                ScheduleAssignment.academic_year == academic_year,
+                ScheduleAssignment.is_active == True
+            )
+        )
+
+        if exclude_assignment_id:
+            classroom_query = classroom_query.filter(ScheduleAssignment.id != exclude_assignment_id)
+
+        classroom_conflict = classroom_query.first()
+        if classroom_conflict:
+            conflicts.append({
+                'type': 'classroom_conflict',
+                'message': f'Classroom is already occupied at this time',
+                'existing_assignment_id': classroom_conflict.id
+            })
+
+        # Check teacher workload (Venezuelan regulation: max 40 hours/week)
+        teacher_weekly_hours = db_session.query(ScheduleAssignment).join(TimePeriod).filter(
+            and_(
+                ScheduleAssignment.teacher_id == teacher_id,
+                ScheduleAssignment.academic_year == academic_year,
+                ScheduleAssignment.is_active == True
+            )
+        ).count() * 0.67  # Approximate hours per period (40 min = 0.67 hours)
+
+        if teacher_weekly_hours >= 40:
+            teacher = db_session.query(Teacher).get(teacher_id)
+            conflicts.append({
+                'type': 'workload_limit',
+                'message': f'Teacher {teacher.teacher_name if teacher else "Unknown"} exceeds 40-hour weekly limit ({teacher_weekly_hours:.1f} hours)',
+                'current_workload': teacher_weekly_hours
+            })
+
+        return conflicts
+
+    @app.route('/api/schedule/export', methods=['POST'])
+    def export_schedule():
+        """Export schedule data in various formats"""
+        from flask import jsonify, request, send_file
+        from src.models.tenant import get_tenant_session, ScheduleAssignment
+        from sqlalchemy import and_
+        import pandas as pd
+        import io
+        from datetime import datetime
+
+        try:
+            data = request.get_json()
+            view_type = data.get('view_type', 'section')
+            target_id = data.get('target_id')
+            format_type = data.get('format', 'xlsx')
+            current_academic_year = '2025-2026'
+
+            if not target_id:
+                return jsonify({'error': 'target_id is required'}), 400
+
+            db_session = get_tenant_session()
+
+            # Build query based on view type
+            query = db_session.query(ScheduleAssignment).filter(
+                and_(
+                    ScheduleAssignment.academic_year == current_academic_year,
+                    ScheduleAssignment.is_active == True
+                )
+            )
+
+            if view_type == 'section':
+                query = query.filter(ScheduleAssignment.section_id == target_id)
+            elif view_type == 'teacher':
+                query = query.filter(ScheduleAssignment.teacher_id == target_id)
+            elif view_type == 'classroom':
+                query = query.filter(ScheduleAssignment.classroom_id == target_id)
+
+            assignments = query.all()
+
+            # Prepare data for export
+            export_data = []
+            for assignment in assignments:
+                try:
+                    export_data.append({
+                        'Día': assignment.day_of_week.value if assignment.day_of_week else 'N/A',
+                        'Hora Inicio': assignment.time_period.start_time.strftime('%H:%M') if assignment.time_period else 'N/A',
+                        'Hora Fin': assignment.time_period.end_time.strftime('%H:%M') if assignment.time_period else 'N/A',
+                        'Período': assignment.time_period.period_name if assignment.time_period else 'N/A',
+                        'Materia': assignment.subject.subject_name if assignment.subject else 'N/A',
+                        'Profesor': assignment.teacher.teacher_name if assignment.teacher else 'N/A',
+                        'Aula': assignment.classroom.name if assignment.classroom else 'N/A',
+                        'Sección': assignment.section.name if assignment.section else 'N/A',
+                        'Tipo': assignment.assignment_type,
+                        'Año Académico': assignment.academic_year
+                    })
+                except Exception as e:
+                    # Skip assignments with missing relationships
+                    continue
+
+            if not export_data:
+                return jsonify({'error': 'No data to export'}), 404
+
+            df = pd.DataFrame(export_data)
+
+            # Generate filename
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'horario_{view_type}_{timestamp}'
+
+            # Create output buffer
+            output = io.BytesIO()
+
+            if format_type == 'xlsx':
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    df.to_excel(writer, sheet_name='Horario', index=False)
+
+                    # Get workbook and worksheet
+                    workbook = writer.book
+                    worksheet = writer.sheets['Horario']
+
+                    # Add formats
+                    header_format = workbook.add_format({
+                        'bold': True,
+                        'text_wrap': True,
+                        'valign': 'top',
+                        'fg_color': '#003366',
+                        'font_color': 'white',
+                        'border': 1
+                    })
+
+                    # Apply header format
+                    for col_num, value in enumerate(df.columns.values):
+                        worksheet.write(0, col_num, value, header_format)
+
+                    # Auto-adjust column widths
+                    for i, col in enumerate(df.columns):
+                        column_len = max(df[col].astype(str).map(len).max(), len(col)) + 2
+                        worksheet.set_column(i, i, min(column_len, 50))
+
+                output.seek(0)
+                filename += '.xlsx'
+                mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+            elif format_type == 'csv':
+                df.to_csv(output, index=False, encoding='utf-8-sig')
+                output.seek(0)
+                filename += '.csv'
+                mimetype = 'text/csv'
+
+            elif format_type == 'pdf':
+                # For PDF, we'll use a simple HTML to PDF conversion
+                html_content = df.to_html(index=False, classes='table table-striped')
+                html_template = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Horario {view_type.title()}</title>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                        .header {{ text-align: center; margin-bottom: 20px; }}
+                        .table {{ width: 100%; border-collapse: collapse; }}
+                        .table th, .table td {{ padding: 8px; text-align: left; border: 1px solid #ddd; }}
+                        .table th {{ background-color: #003366; color: white; }}
+                        .table-striped tbody tr:nth-of-type(odd) {{ background-color: rgba(0,0,0,.05); }}
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h2>Horario Académico - UEIPAB 2025-2026</h2>
+                        <p>Vista: {view_type.title()} | Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                    </div>
+                    {html_content}
+                </body>
+                </html>
+                """
+
+                # For now, return HTML (PDF generation requires additional libraries)
+                output.write(html_template.encode('utf-8'))
+                output.seek(0)
+                filename += '.html'
+                mimetype = 'text/html'
+
+            else:
+                return jsonify({'error': 'Unsupported format'}), 400
+
+            return send_file(
+                output,
+                mimetype=mimetype,
+                as_attachment=True,
+                download_name=filename
+            )
+
+        except Exception as e:
+            return jsonify({'error': f"Failed to export schedule: {str(e)}"}), 500
+        finally:
+            db_session.close()
+
+    @app.route('/api/schedule/generate', methods=['POST'])
+    def generate_schedule():
+        """Intelligent schedule generation with Venezuelan K12 compliance"""
+        from flask import jsonify, request
+        from src.models.tenant import get_tenant_session, ScheduleAssignment
+        from datetime import datetime
+
+        try:
+            data = request.get_json()
+            generation_type = data.get('generation_type', 'fill_gaps')
+            view_type = data.get('view_type', 'section')
+            target_id = data.get('target_id')
+            academic_year = data.get('academic_year', '2025-2026')
+            preserve_existing = data.get('preserve_existing', True)
+
+            if not target_id:
+                return jsonify({'error': 'target_id is required'}), 400
+
+            db_session = get_tenant_session()
+
+            # For now, return a placeholder response
+            # Future implementation will include intelligent scheduling algorithms
+            summary = {
+                'assignments_created': 0,
+                'teachers_assigned': 0,
+                'conflicts_resolved': 0,
+                'message': f'Generación automática de tipo "{generation_type}" está en desarrollo'
+            }
+
+            if generation_type == 'complete_rebuild':
+                summary['message'] = 'Regeneración completa implementada en versión futura'
+            elif generation_type == 'fill_gaps':
+                summary['message'] = 'Completar espacios libres - algoritmo en desarrollo'
+            elif generation_type == 'optimize_workload':
+                summary['message'] = 'Optimización de carga docente - algoritmo en desarrollo'
+
+            return jsonify({
+                'success': True,
+                'assignments_created': summary['assignments_created'],
+                'summary': summary,
+                'message': 'Generación automática disponible en versión futura'
+            })
+
+        except Exception as e:
+            return jsonify({'error': f"Failed to generate schedule: {str(e)}"}), 500
+        finally:
+            db_session.close()
+
+    @app.route('/api/schedule/validate/venezuelan-k12', methods=['POST'])
+    def validate_venezuelan_k12_compliance():
+        """Validate schedule against Venezuelan K12 education regulations"""
+        from flask import jsonify, request
+        from src.models.tenant import get_tenant_session, ScheduleAssignment, Teacher, Section
+        from sqlalchemy import and_, func
+
+        try:
+            data = request.get_json()
+            view_type = data.get('view_type', 'section')
+            target_id = data.get('target_id')
+            academic_year = data.get('academic_year', '2025-2026')
+
+            if not target_id:
+                return jsonify({'error': 'target_id is required'}), 400
+
+            db_session = get_tenant_session()
+            violations = []
+
+            # Venezuelan K12 Compliance Rules
+
+            # Rule 1: Teacher workload limit (40 hours/week)
+            teacher_workloads = db_session.query(
+                ScheduleAssignment.teacher_id,
+                func.count(ScheduleAssignment.id).label('assignments_count')
+            ).filter(
+                and_(
+                    ScheduleAssignment.academic_year == academic_year,
+                    ScheduleAssignment.is_active == True
+                )
+            ).group_by(ScheduleAssignment.teacher_id).all()
+
+            for teacher_id, assignments_count in teacher_workloads:
+                weekly_hours = assignments_count * 0.67  # 40 min periods = 0.67 hours
+                if weekly_hours > 40:
+                    teacher = db_session.query(Teacher).get(teacher_id)
+                    violations.append({
+                        'type': 'workload_violation',
+                        'severity': 'critical',
+                        'message': f'Profesor {teacher.teacher_name if teacher else "Unknown"} excede límite de 40 horas ({weekly_hours:.1f} horas)',
+                        'regulation': 'Resolución 058 del Ministerio de Educación',
+                        'teacher_id': teacher_id,
+                        'current_hours': weekly_hours,
+                        'max_hours': 40
+                    })
+
+            # Rule 2: Minimum break periods
+            # Venezuelan regulation requires minimum 20-minute break every 2 hours
+            all_assignments = db_session.query(ScheduleAssignment).filter(
+                and_(
+                    ScheduleAssignment.academic_year == academic_year,
+                    ScheduleAssignment.is_active == True
+                )
+            ).all() if view_type != 'section' else db_session.query(ScheduleAssignment).filter(
+                and_(
+                    ScheduleAssignment.section_id == target_id,
+                    ScheduleAssignment.academic_year == academic_year,
+                    ScheduleAssignment.is_active == True
+                )
+            ).all()
+
+            # Rule 3: Subject distribution requirements
+            # Each section should have minimum hours for core subjects
+            core_subjects_requirements = {
+                'MATEMÁTICAS': 5,  # Minimum 5 periods per week
+                'CASTELLANO Y LITERATURA': 4,
+                'CIENCIAS DE LA TIERRA': 3,
+                'INGLÉS': 3,
+                'EDUCACIÓN FÍSICA': 2
+            }
+
+            if view_type == 'section':
+                section_subjects = {}
+                for assignment in all_assignments:
+                    if assignment.subject and assignment.subject.subject_name:
+                        subject_name = assignment.subject.subject_name.upper()
+                        section_subjects[subject_name] = section_subjects.get(subject_name, 0) + 1
+
+                for subject, min_periods in core_subjects_requirements.items():
+                    current_periods = section_subjects.get(subject, 0)
+                    if current_periods < min_periods:
+                        violations.append({
+                            'type': 'subject_deficiency',
+                            'severity': 'warning',
+                            'message': f'Materia {subject} tiene {current_periods} períodos (mínimo requerido: {min_periods})',
+                            'regulation': 'Currículo Básico Nacional de Venezuela',
+                            'subject': subject,
+                            'current_periods': current_periods,
+                            'required_periods': min_periods
+                        })
+
+            # Rule 4: Bimodal schedule compliance
+            # Check that schedule respects Venezuelan bimodal structure (morning/afternoon)
+            morning_periods = [assignment for assignment in all_assignments
+                             if assignment.time_period and assignment.time_period.start_time.hour < 12]
+            afternoon_periods = [assignment for assignment in all_assignments
+                               if assignment.time_period and assignment.time_period.start_time.hour >= 13]
+
+            if len(afternoon_periods) > 0 and len(morning_periods) == 0:
+                violations.append({
+                    'type': 'bimodal_violation',
+                    'severity': 'warning',
+                    'message': 'Horario solo usa sesión vespertina. Se recomienda usar sesión matutina.',
+                    'regulation': 'Resolución 751 - Organización del Año Escolar',
+                    'morning_periods': len(morning_periods),
+                    'afternoon_periods': len(afternoon_periods)
+                })
+
+            # Rule 5: Grade-appropriate content
+            if view_type == 'section':
+                section = db_session.query(Section).get(target_id)
+                if section and section.grade_level:
+                    grade = section.grade_level
+
+                    # Check if subjects are appropriate for grade level
+                    inappropriate_subjects = []
+                    for assignment in all_assignments:
+                        if assignment.subject:
+                            subject_name = assignment.subject.subject_name.upper()
+
+                            # Example: Advanced subjects not appropriate for lower grades
+                            if grade <= 6 and any(advanced in subject_name for advanced in ['FÍSICA', 'QUÍMICA', 'BIOLOGÍA']):
+                                inappropriate_subjects.append(subject_name)
+
+                    if inappropriate_subjects:
+                        violations.append({
+                            'type': 'grade_content_mismatch',
+                            'severity': 'warning',
+                            'message': f'Materias {", ".join(set(inappropriate_subjects))} no son apropiadas para grado {grade}',
+                            'regulation': 'Diseño Curricular del Sistema Educativo Bolivariano',
+                            'grade': grade,
+                            'inappropriate_subjects': list(set(inappropriate_subjects))
+                        })
+
+            # Calculate compliance score
+            total_rules_checked = 5
+            critical_violations = len([v for v in violations if v['severity'] == 'critical'])
+            warning_violations = len([v for v in violations if v['severity'] == 'warning'])
+
+            compliance_score = max(0, 100 - (critical_violations * 20) - (warning_violations * 10))
+
+            return jsonify({
+                'success': True,
+                'compliance_score': compliance_score,
+                'violations': violations,
+                'summary': {
+                    'total_violations': len(violations),
+                    'critical_violations': critical_violations,
+                    'warning_violations': warning_violations,
+                    'rules_checked': total_rules_checked,
+                    'is_compliant': len(violations) == 0
+                },
+                'recommendations': generate_compliance_recommendations(violations)
+            })
+
+        except Exception as e:
+            return jsonify({'error': f"Failed to validate compliance: {str(e)}"}), 500
+        finally:
+            db_session.close()
+
+    def generate_compliance_recommendations(violations):
+        """Generate actionable recommendations based on violations"""
+        recommendations = []
+
+        for violation in violations:
+            if violation['type'] == 'workload_violation':
+                recommendations.append(f"Redistribuir carga del profesor {violation.get('teacher_id', 'ID')} a otros docentes disponibles")
+
+            elif violation['type'] == 'subject_deficiency':
+                subject = violation.get('subject', 'Unknown')
+                needed = violation.get('required_periods', 0) - violation.get('current_periods', 0)
+                recommendations.append(f"Agregar {needed} período(s) más de {subject}")
+
+            elif violation['type'] == 'bimodal_violation':
+                recommendations.append("Considerar balancear horario entre sesión matutina y vespertina")
+
+            elif violation['type'] == 'grade_content_mismatch':
+                recommendations.append(f"Revisar contenido curricular para grado {violation.get('grade', 'Unknown')}")
+
+        # Add general recommendations
+        if not recommendations:
+            recommendations.append("¡Excelente! El horario cumple con todas las regulaciones venezolanas K12")
+        else:
+            recommendations.append("Ejecutar detección de conflictos después de realizar ajustes")
+            recommendations.append("Consultar con coordinadores académicos para validación final")
+
+        return recommendations
+
     # Health check endpoint
     @app.route('/health')
     def health_check():

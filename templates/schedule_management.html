@@ -669,6 +669,9 @@
                     <button class="btn btn-info" onclick="printSchedule()">
                         <i class="fas fa-print"></i> Imprimir
                     </button>
+                    <button class="btn btn-warning" onclick="validateVenezuelanK12()">
+                        <i class="fas fa-flag"></i> Validar K12-VE
+                    </button>
                 </div>
             </div>
 
@@ -832,6 +835,33 @@
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
                     <button type="button" class="btn btn-danger" onclick="resolveAllConflicts()">
                         <i class="fas fa-magic"></i> Resolver Automáticamente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Venezuelan K12 Compliance Modal -->
+    <div class="modal fade" id="complianceModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #333;">
+                    <h5 class="modal-title">
+                        <i class="fas fa-flag"></i> Validación Curricular Venezolana K12
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #333;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="complianceContent">
+                        <!-- Compliance results will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" onclick="generateComplianceReport()">
+                        <i class="fas fa-file-alt"></i> Generar Reporte
                     </button>
                 </div>
             </div>
@@ -1138,42 +1168,44 @@
             }
 
             checkForConflicts(key) {
-                // Simple conflict check for demonstration
-                // In production, this would check against actual database
-                return Math.random() > 0.9; // 10% chance of conflict for demo
+                // Check if assignment has conflict status
+                const assignment = this.scheduleData[key];
+                return assignment && assignment.conflict_status && assignment.conflict_status !== 'none';
             }
 
             updateStatistics() {
                 const assignments = Object.keys(this.scheduleData).length;
                 const totalSlots = this.timePeriods.filter(p => !p.is_break).length * 5; // 5 days
                 const freeSlots = totalSlots - assignments;
-                const conflictCount = Math.floor(Math.random() * 3); // Demo conflicts
+
+                // Count real conflicts
+                const conflictCount = Object.values(this.scheduleData).filter(assignment =>
+                    assignment.conflict_status && assignment.conflict_status !== 'none'
+                ).length;
+
+                // Calculate workload hours (40 min periods = 0.67 hours each)
+                const workloadHours = (assignments * 0.67).toFixed(1);
 
                 document.getElementById('totalAssignments').textContent = assignments;
-                document.getElementById('teacherWorkload').textContent = (assignments * 40 / 60).toFixed(1); // Convert to hours, 1 decimal
+                document.getElementById('teacherWorkload').textContent = workloadHours;
                 document.getElementById('freeSlots').textContent = freeSlots;
                 document.getElementById('conflictCount').textContent = conflictCount;
             }
 
             quickAddAssignment(day, periodId) {
-                // Pre-fill the form with the selected slot
+                // Pre-fill the form with the selected slot and clear editing mode
                 document.getElementById('daySelect').value = day;
                 document.getElementById('periodSelect').value = periodId;
+
+                // Clear any editing state
+                delete document.getElementById('assignmentForm').dataset.editingId;
+                document.getElementById('saveAssignmentBtn').innerHTML = '<i class="fas fa-save"></i> Guardar Asignación';
+
+                // Clear form alerts
+                document.getElementById('conflictAlert').style.display = 'none';
+                document.getElementById('successAlert').style.display = 'none';
+
                 this.openAssignmentModal();
-            }
-
-            editAssignment(key) {
-                const assignment = this.scheduleData[key];
-                // Load assignment data into form
-                alert(`Editar asignación: ${assignment.subject}`);
-            }
-
-            deleteAssignment(key) {
-                if (confirm('¿Está seguro de eliminar esta asignación?')) {
-                    delete this.scheduleData[key];
-                    this.renderScheduleGrid();
-                    this.updateStatistics();
-                }
             }
 
             // Drag and Drop handlers
@@ -1196,7 +1228,7 @@
                 e.currentTarget.classList.remove('drag-over');
             }
 
-            handleDrop(e, day, periodId) {
+            async handleDrop(e, day, periodId) {
                 if (e.stopPropagation) {
                     e.stopPropagation();
                 }
@@ -1206,45 +1238,101 @@
                 const targetKey = `${day}_${periodId}`;
 
                 if (sourceKey !== targetKey) {
-                    // Move assignment
                     const assignment = this.scheduleData[sourceKey];
-                    if (assignment) {
-                        this.scheduleData[targetKey] = assignment;
-                        delete this.scheduleData[sourceKey];
-                        this.renderScheduleGrid();
-                        this.updateStatistics();
+                    if (assignment && assignment.id) {
+                        // Check for conflicts first
+                        this.showLoading(true);
+
+                        try {
+                            const conflictResponse = await fetch('/bischeduler/api/schedule/conflicts/check', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    teacher_id: assignment.teacher_id || assignment.teacher,
+                                    classroom_id: assignment.classroom_id || assignment.classroom,
+                                    day_of_week: day,
+                                    time_period_id: parseInt(periodId),
+                                    exclude_assignment_id: assignment.id
+                                })
+                            });
+
+                            const conflictResult = await conflictResponse.json();
+
+                            if (conflictResult.success && conflictResult.has_conflicts) {
+                                // Show conflict warning
+                                const confirmed = confirm(
+                                    `⚠️ Movimiento genera conflictos:\n\n${conflictResult.conflicts.map(c => `• ${c.message}`).join('\n')}\n\n¿Continuar de todas formas?`
+                                );
+
+                                if (!confirmed) {
+                                    return false;
+                                }
+                            }
+
+                            // Update assignment in database
+                            const updateResponse = await fetch(`/bischeduler/api/schedule/assignments/${assignment.id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    day_of_week: day,
+                                    time_period_id: parseInt(periodId)
+                                })
+                            });
+
+                            const updateResult = await updateResponse.json();
+
+                            if (updateResult.success) {
+                                // Update UI immediately
+                                this.scheduleData[targetKey] = { ...assignment };
+                                delete this.scheduleData[sourceKey];
+                                this.renderScheduleGrid();
+                                this.updateStatistics();
+
+                                this.showNotification(`Asignación movida a ${day} ${this.getTimePeriodName(periodId)}`, 'success');
+                            } else {
+                                throw new Error(updateResult.error || 'Failed to update assignment');
+                            }
+
+                        } catch (error) {
+                            console.error('Error moving assignment:', error);
+                            this.showNotification('Error al mover la asignación: ' + error.message, 'error');
+                        } finally {
+                            this.showLoading(false);
+                        }
                     }
                 }
+
+                // Remove dragging class from all elements
+                document.querySelectorAll('.dragging').forEach(el => {
+                    el.classList.remove('dragging');
+                });
 
                 return false;
             }
 
-            openAssignmentModal() {
-                $('#assignmentModal').modal('show');
+            getTimePeriodName(periodId) {
+                const period = this.timePeriods.find(p => p.id == periodId);
+                return period ? `${period.name} (${period.start_time}-${period.end_time})` : 'Unknown Period';
             }
 
-            async checkAssignmentConflicts() {
-                const teacherId = document.getElementById('teacherSelect').value;
-                const classroomId = document.getElementById('classroomSelect').value;
-                const day = document.getElementById('daySelect').value;
-                const periodId = document.getElementById('periodSelect').value;
+            openAssignmentModal() {
+                // Clear form when opening for new assignment
+                const form = document.getElementById('assignmentForm');
+                form.reset();
 
-                if (teacherId && day && periodId) {
-                    // Check for conflicts
-                    const conflicts = [];
+                // Clear editing state
+                delete form.dataset.editingId;
+                document.getElementById('saveAssignmentBtn').innerHTML = '<i class="fas fa-save"></i> Guardar Asignación';
 
-                    // Check teacher conflict
-                    // In production, this would check against actual database
+                // Clear alerts
+                document.getElementById('conflictAlert').style.display = 'none';
+                document.getElementById('successAlert').style.display = 'none';
 
-                    if (conflicts.length > 0) {
-                        document.getElementById('conflictAlert').style.display = 'block';
-                        document.getElementById('conflictMessage').textContent = conflicts.join(', ');
-                        document.getElementById('successAlert').style.display = 'none';
-                    } else {
-                        document.getElementById('conflictAlert').style.display = 'none';
-                        document.getElementById('successAlert').style.display = 'block';
-                    }
-                }
+                $('#assignmentModal').modal('show');
             }
 
             updateTeacherWorkload(teacherId) {
@@ -1262,41 +1350,312 @@
                 const form = document.getElementById('assignmentForm');
                 if (form.checkValidity()) {
                     const data = {
-                        section_id: document.getElementById('sectionSelect').value,
-                        subject_id: document.getElementById('subjectSelect').value,
-                        teacher_id: document.getElementById('teacherSelect').value,
-                        classroom_id: document.getElementById('classroomSelect').value,
+                        section_id: parseInt(document.getElementById('sectionSelect').value),
+                        subject_id: parseInt(document.getElementById('subjectSelect').value),
+                        teacher_id: parseInt(document.getElementById('teacherSelect').value),
+                        classroom_id: parseInt(document.getElementById('classroomSelect').value),
                         day_of_week: document.getElementById('daySelect').value,
-                        time_period_id: document.getElementById('periodSelect').value
+                        time_period_id: parseInt(document.getElementById('periodSelect').value)
                     };
 
+                    this.showLoading(true);
+
                     try {
-                        // In production, this would save to database via API
-                        const key = `${data.day_of_week}_${data.time_period_id}`;
-                        const subject = this.subjects.find(s => s.id == data.subject_id);
-                        const teacher = this.teachers.find(t => t.id == data.teacher_id);
-                        const classroom = this.classrooms.find(c => c.id == data.classroom_id);
+                        // Save to database via API
+                        const response = await fetch('/bischeduler/api/schedule/assignments', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(data)
+                        });
 
-                        this.scheduleData[key] = {
-                            subject: subject.name,
-                            teacher: teacher.name,
-                            classroom: classroom.name
-                        };
+                        const result = await response.json();
 
-                        $('#assignmentModal').modal('hide');
-                        form.reset();
-                        this.renderScheduleGrid();
-                        this.updateStatistics();
+                        if (result.success) {
+                            $('#assignmentModal').modal('hide');
+                            form.reset();
 
-                        alert('Asignación guardada exitosamente');
+                            // Clear form alerts
+                            document.getElementById('conflictAlert').style.display = 'none';
+                            document.getElementById('successAlert').style.display = 'none';
+
+                            // Reload schedule to show new assignment
+                            await this.loadSchedule();
+
+                            // Show success message
+                            this.showNotification('Asignación guardada exitosamente', 'success');
+                        } else {
+                            // Handle conflicts or errors
+                            if (response.status === 409) {
+                                document.getElementById('conflictAlert').style.display = 'block';
+                                document.getElementById('conflictMessage').innerHTML =
+                                    result.conflicts.map(c => `• ${c.message}`).join('<br>');
+                                document.getElementById('successAlert').style.display = 'none';
+                            } else {
+                                throw new Error(result.error || 'Unknown error');
+                            }
+                        }
 
                     } catch (error) {
                         console.error('Error saving assignment:', error);
-                        alert('Error al guardar la asignación');
+                        this.showNotification('Error al guardar la asignación: ' + error.message, 'error');
+                    } finally {
+                        this.showLoading(false);
                     }
                 } else {
                     form.reportValidity();
                 }
+            }
+
+            async editAssignment(key) {
+                const assignment = this.scheduleData[key];
+                if (!assignment || !assignment.id) {
+                    this.showNotification('No se pudo cargar la información de la asignación', 'error');
+                    return;
+                }
+
+                // Load assignment data into form
+                try {
+                    const [day, periodId] = key.split('_');
+
+                    document.getElementById('sectionSelect').value = assignment.section_id;
+                    document.getElementById('subjectSelect').value = assignment.subject_id;
+                    document.getElementById('teacherSelect').value = assignment.teacher_id;
+                    document.getElementById('classroomSelect').value = assignment.classroom_id;
+                    document.getElementById('daySelect').value = day;
+                    document.getElementById('periodSelect').value = periodId;
+
+                    // Store assignment ID for update
+                    document.getElementById('assignmentForm').dataset.editingId = assignment.id;
+                    document.getElementById('saveAssignmentBtn').innerHTML = '<i class="fas fa-save"></i> Actualizar Asignación';
+
+                    $('#assignmentModal').modal('show');
+
+                } catch (error) {
+                    console.error('Error loading assignment for edit:', error);
+                    this.showNotification('Error al cargar la asignación para editar', 'error');
+                }
+            }
+
+            async updateAssignment(assignmentId, data) {
+                this.showLoading(true);
+
+                try {
+                    const response = await fetch(`/bischeduler/api/schedule/assignments/${assignmentId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        $('#assignmentModal').modal('hide');
+                        document.getElementById('assignmentForm').reset();
+                        delete document.getElementById('assignmentForm').dataset.editingId;
+                        document.getElementById('saveAssignmentBtn').innerHTML = '<i class="fas fa-save"></i> Guardar Asignación';
+
+                        // Clear form alerts
+                        document.getElementById('conflictAlert').style.display = 'none';
+                        document.getElementById('successAlert').style.display = 'none';
+
+                        // Reload schedule
+                        await this.loadSchedule();
+                        this.showNotification('Asignación actualizada exitosamente', 'success');
+                    } else {
+                        if (response.status === 409) {
+                            document.getElementById('conflictAlert').style.display = 'block';
+                            document.getElementById('conflictMessage').innerHTML =
+                                result.conflicts.map(c => `• ${c.message}`).join('<br>');
+                        } else {
+                            throw new Error(result.error || 'Unknown error');
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('Error updating assignment:', error);
+                    this.showNotification('Error al actualizar la asignación: ' + error.message, 'error');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async deleteAssignment(key) {
+                const assignment = this.scheduleData[key];
+                if (!assignment || !assignment.id) {
+                    this.showNotification('No se pudo identificar la asignación', 'error');
+                    return;
+                }
+
+                if (!confirm('¿Está seguro de eliminar esta asignación?')) {
+                    return;
+                }
+
+                this.showLoading(true);
+
+                try {
+                    const response = await fetch(`/bischeduler/api/schedule/assignments/${assignment.id}`, {
+                        method: 'DELETE'
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Reload schedule to reflect deletion
+                        await this.loadSchedule();
+                        this.showNotification('Asignación eliminada exitosamente', 'success');
+                    } else {
+                        throw new Error(result.error || 'Unknown error');
+                    }
+
+                } catch (error) {
+                    console.error('Error deleting assignment:', error);
+                    this.showNotification('Error al eliminar la asignación: ' + error.message, 'error');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async checkAssignmentConflicts() {
+                const teacherId = document.getElementById('teacherSelect').value;
+                const classroomId = document.getElementById('classroomSelect').value;
+                const day = document.getElementById('daySelect').value;
+                const periodId = document.getElementById('periodSelect').value;
+
+                if (teacherId && classroomId && day && periodId) {
+                    try {
+                        const data = {
+                            teacher_id: parseInt(teacherId),
+                            classroom_id: parseInt(classroomId),
+                            day_of_week: day,
+                            time_period_id: parseInt(periodId)
+                        };
+
+                        // If editing, exclude current assignment
+                        const editingId = document.getElementById('assignmentForm').dataset.editingId;
+                        if (editingId) {
+                            data.exclude_assignment_id = parseInt(editingId);
+                        }
+
+                        const response = await fetch('/bischeduler/api/schedule/conflicts/check', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            if (result.has_conflicts) {
+                                document.getElementById('conflictAlert').style.display = 'block';
+                                document.getElementById('conflictMessage').innerHTML =
+                                    result.conflicts.map(c => `• ${c.message}`).join('<br>');
+                                document.getElementById('successAlert').style.display = 'none';
+                            } else {
+                                document.getElementById('conflictAlert').style.display = 'none';
+                                document.getElementById('successAlert').style.display = 'block';
+                            }
+                        }
+
+                    } catch (error) {
+                        console.error('Error checking conflicts:', error);
+                    }
+                }
+            }
+
+            async loadAllConflicts() {
+                try {
+                    // Get all assignments for comprehensive conflict detection
+                    const allConflicts = [];
+
+                    // Check every assignment against all others
+                    for (const [key, assignment] of Object.entries(this.scheduleData)) {
+                        if (!assignment.id) continue;
+
+                        const [day, periodId] = key.split('_');
+
+                        // Check this assignment for conflicts
+                        const response = await fetch('/bischeduler/api/schedule/conflicts/check', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                teacher_id: assignment.teacher_id || assignment.teacher,
+                                classroom_id: assignment.classroom_id || assignment.classroom,
+                                day_of_week: day,
+                                time_period_id: parseInt(periodId),
+                                exclude_assignment_id: assignment.id
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success && result.has_conflicts) {
+                            result.conflicts.forEach(conflict => {
+                                // Add assignment context to conflict
+                                conflict.assignment_key = key;
+                                conflict.assignment_info = {
+                                    subject: assignment.subject,
+                                    teacher: assignment.teacher,
+                                    classroom: assignment.classroom,
+                                    day: day,
+                                    period: periodId
+                                };
+                                allConflicts.push(conflict);
+                            });
+                        }
+                    }
+
+                    // Remove duplicates (conflicts detected from both sides)
+                    const uniqueConflicts = [];
+                    const seen = new Set();
+
+                    for (const conflict of allConflicts) {
+                        const key = `${conflict.type}_${conflict.message}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            uniqueConflicts.push(conflict);
+                        }
+                    }
+
+                    return uniqueConflicts;
+
+                } catch (error) {
+                    console.error('Error loading conflicts:', error);
+                    throw error;
+                }
+            }
+
+            showNotification(message, type = 'info') {
+                // Create a temporary notification
+                const notification = document.createElement('div');
+                notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show`;
+                notification.style.position = 'fixed';
+                notification.style.top = '20px';
+                notification.style.right = '20px';
+                notification.style.zIndex = '9999';
+                notification.style.maxWidth = '400px';
+                notification.innerHTML = `
+                    ${message}
+                    <button type="button" class="close" data-dismiss="alert">
+                        <span>&times;</span>
+                    </button>
+                `;
+
+                document.body.appendChild(notification);
+
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 5000);
             }
 
             showLoading(show) {
@@ -1312,39 +1671,682 @@
         }
 
         function saveAssignment() {
-            scheduleManager.saveAssignment();
-        }
+            // Check if we're editing or creating
+            const editingId = document.getElementById('assignmentForm').dataset.editingId;
 
-        function generateSchedule() {
-            if (confirm('¿Desea generar un horario automático? Esto reemplazará las asignaciones actuales.')) {
-                alert('Generador de horarios - Funcionalidad en desarrollo (Phase 6.5B)');
+            if (editingId) {
+                // Update existing assignment
+                const data = {
+                    section_id: parseInt(document.getElementById('sectionSelect').value),
+                    subject_id: parseInt(document.getElementById('subjectSelect').value),
+                    teacher_id: parseInt(document.getElementById('teacherSelect').value),
+                    classroom_id: parseInt(document.getElementById('classroomSelect').value),
+                    day_of_week: document.getElementById('daySelect').value,
+                    time_period_id: parseInt(document.getElementById('periodSelect').value)
+                };
+
+                scheduleManager.updateAssignment(parseInt(editingId), data);
+            } else {
+                // Create new assignment
+                scheduleManager.saveAssignment();
             }
         }
 
-        function checkConflicts() {
-            $('#conflictsModal').modal('show');
-            // Load conflicts
-            const conflictsList = document.getElementById('conflictsList');
-            conflictsList.innerHTML = `
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i>
-                    Sistema de detección de conflictos - En desarrollo
+        async function generateSchedule() {
+            const generationType = await showGenerationModal();
+            if (!generationType) return;
+
+            scheduleManager.showLoading(true);
+
+            try {
+                const response = await fetch('/bischeduler/api/schedule/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        view_type: scheduleManager.currentView,
+                        target_id: scheduleManager.currentTarget,
+                        generation_type: generationType,
+                        academic_year: '2025-2026',
+                        preserve_existing: generationType === 'fill_gaps'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Reload schedule to show generated assignments
+                    await scheduleManager.loadSchedule();
+                    scheduleManager.showNotification(
+                        `✨ Se generaron ${result.assignments_created} nuevas asignaciones automáticamente`,
+                        'success'
+                    );
+
+                    // Show generation summary
+                    if (result.summary) {
+                        showGenerationSummary(result.summary);
+                    }
+                } else {
+                    throw new Error(result.error || 'Error en la generación automática');
+                }
+
+            } catch (error) {
+                console.error('Generation error:', error);
+                scheduleManager.showNotification('Error en la generación automática: ' + error.message, 'error');
+            } finally {
+                scheduleManager.showLoading(false);
+            }
+        }
+
+        function showGenerationModal() {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-magic"></i> Generación Automática de Horarios
+                                </h5>
+                                <button type="button" class="close" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Algoritmo inteligente</strong> que respeta las regulaciones venezolanas K12
+                                </div>
+
+                                <p>Seleccione el tipo de generación:</p>
+                                <div class="list-group">
+                                    <button class="list-group-item list-group-item-action" onclick="selectGenerationType('complete_rebuild')">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">
+                                                <i class="fas fa-refresh text-primary"></i>
+                                                Regeneración Completa
+                                            </h6>
+                                            <small class="text-warning">⚠️ Destructivo</small>
+                                        </div>
+                                        <p class="mb-1">Elimina todas las asignaciones existentes y genera un horario completamente nuevo</p>
+                                        <small class="text-muted">Usa algoritmos de optimización para distribuir equitativamente la carga</small>
+                                    </button>
+
+                                    <button class="list-group-item list-group-item-action" onclick="selectGenerationType('fill_gaps')">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">
+                                                <i class="fas fa-puzzle-piece text-success"></i>
+                                                Completar Espacios Libres
+                                            </h6>
+                                            <small class="text-success">✅ Seguro</small>
+                                        </div>
+                                        <p class="mb-1">Mantiene las asignaciones existentes y llena los espacios vacíos</p>
+                                        <small class="text-muted">Ideal para optimizar horarios parcialmente configurados</small>
+                                    </button>
+
+                                    <button class="list-group-item list-group-item-action" onclick="selectGenerationType('optimize_workload')">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">
+                                                <i class="fas fa-balance-scale text-info"></i>
+                                                Optimizar Carga Docente
+                                            </h6>
+                                            <small class="text-info">📊 Inteligente</small>
+                                        </div>
+                                        <p class="mb-1">Redistribuye asignaciones para balancear la carga de trabajo</p>
+                                        <small class="text-muted">Respeta límite de 40 horas/semana por profesor</small>
+                                    </button>
+                                </div>
+
+                                <div class="mt-3">
+                                    <h6>Criterios de Generación:</h6>
+                                    <ul class="small text-muted">
+                                        <li>Límite de 40 horas semanales por profesor</li>
+                                        <li>Sin conflictos de horario (profesor/aula)</li>
+                                        <li>Distribución equitativa de materias</li>
+                                        <li>Respeto por especializaciones docentes</li>
+                                        <li>Optimización de uso de aulas</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+                $(modal).modal('show');
+
+                window.selectGenerationType = (type) => {
+                    $(modal).modal('hide');
+                    setTimeout(() => {
+                        document.body.removeChild(modal);
+                        delete window.selectGenerationType;
+                    }, 500);
+                    resolve(type);
+                };
+
+                $(modal).on('hidden.bs.modal', () => {
+                    setTimeout(() => {
+                        if (modal.parentNode) {
+                            document.body.removeChild(modal);
+                        }
+                        delete window.selectGenerationType;
+                    }, 100);
+                    resolve(null);
+                });
+            });
+        }
+
+        function showGenerationSummary(summary) {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-check-circle"></i> Generación Completada
+                            </h5>
+                            <button type="button" class="close text-white" data-dismiss="modal">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="text-center">
+                                        <i class="fas fa-calendar-plus fa-3x text-success mb-2"></i>
+                                        <h4>${summary.assignments_created || 0}</h4>
+                                        <small class="text-muted">Asignaciones Creadas</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-center">
+                                        <i class="fas fa-users fa-3x text-info mb-2"></i>
+                                        <h4>${summary.teachers_assigned || 0}</h4>
+                                        <small class="text-muted">Profesores Asignados</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${summary.conflicts_resolved ? `
+                                <div class="alert alert-success mt-3">
+                                    <i class="fas fa-shield-alt"></i>
+                                    Se resolvieron ${summary.conflicts_resolved} conflictos automáticamente
+                                </div>
+                            ` : ''}
+
+                            <div class="mt-3">
+                                <h6>Próximos pasos recomendados:</h6>
+                                <ul class="small">
+                                    <li>Revise las asignaciones generadas</li>
+                                    <li>Ejecute detección de conflictos</li>
+                                    <li>Ajuste manualmente si es necesario</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Entendido</button>
+                        </div>
+                    </div>
                 </div>
-                <p>Los conflictos detectados aparecerán aquí con opciones para resolverlos.</p>
             `;
+
+            document.body.appendChild(modal);
+            $(modal).modal('show');
+
+            $(modal).on('hidden.bs.modal', () => {
+                setTimeout(() => {
+                    if (modal.parentNode) {
+                        document.body.removeChild(modal);
+                    }
+                }, 100);
+            });
         }
 
-        function resolveAllConflicts() {
-            alert('Resolución automática de conflictos - En desarrollo');
+        async function checkConflicts() {
+            scheduleManager.showLoading(true);
+
+            try {
+                // Load all schedule conflicts for current view
+                const allConflicts = await scheduleManager.loadAllConflicts();
+
+                // Show conflicts modal
+                $('#conflictsModal').modal('show');
+
+                // Populate conflicts list
+                const conflictsList = document.getElementById('conflictsList');
+
+                if (allConflicts.length === 0) {
+                    conflictsList.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <strong>¡Excelente!</strong> No se detectaron conflictos en el horario actual.
+                        </div>
+                        <div class="text-center mt-3">
+                            <i class="fas fa-calendar-check fa-3x text-success"></i>
+                            <p class="mt-2 text-muted">El horario cumple con todas las restricciones venezolanas K12.</p>
+                        </div>
+                    `;
+                } else {
+                    let conflictsHtml = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Se detectaron ${allConflicts.length} conflicto(s)</strong> en el horario actual.
+                        </div>
+                    `;
+
+                    allConflicts.forEach((conflict, index) => {
+                        const iconClass = {
+                            'teacher_conflict': 'fas fa-user-times text-danger',
+                            'classroom_conflict': 'fas fa-door-closed text-warning',
+                            'workload_limit': 'fas fa-clock text-info',
+                            'schedule_overlap': 'fas fa-calendar-times text-danger'
+                        }[conflict.type] || 'fas fa-exclamation-triangle text-warning';
+
+                        conflictsHtml += `
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start">
+                                        <div class="mr-3">
+                                            <i class="${iconClass} fa-2x"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="card-title">
+                                                ${getConflictTitle(conflict.type)}
+                                            </h6>
+                                            <p class="card-text">${conflict.message}</p>
+                                            ${conflict.current_workload ? `
+                                                <div class="progress mb-2">
+                                                    <div class="progress-bar bg-warning" style="width: ${Math.min(conflict.current_workload / 40 * 100, 100)}%">
+                                                        ${conflict.current_workload.toFixed(1)} / 40 horas
+                                                    </div>
+                                                </div>
+                                            ` : ''}
+                                            <div class="mt-2">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-info-circle"></i>
+                                                    ${getConflictSolution(conflict.type)}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="ml-2">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="resolveConflict(${index})">
+                                                <i class="fas fa-magic"></i> Resolver
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    conflictsList.innerHTML = conflictsHtml;
+                }
+
+            } catch (error) {
+                console.error('Error loading conflicts:', error);
+                const conflictsList = document.getElementById('conflictsList');
+                conflictsList.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error al cargar conflictos: ${error.message}
+                    </div>
+                `;
+            } finally {
+                scheduleManager.showLoading(false);
+            }
         }
 
-        function exportSchedule() {
-            alert('Exportar a Excel - Conectando con sistema de exportación...');
-            // This would connect to the existing Excel export functionality
+        function getConflictTitle(type) {
+            const titles = {
+                'teacher_conflict': 'Conflicto de Profesor',
+                'classroom_conflict': 'Conflicto de Aula',
+                'workload_limit': 'Límite de Carga Horaria',
+                'schedule_overlap': 'Solapamiento de Horario'
+            };
+            return titles[type] || 'Conflicto Detectado';
+        }
+
+        function getConflictSolution(type) {
+            const solutions = {
+                'teacher_conflict': 'Reasigne el profesor a otro período o cambie la asignación existente.',
+                'classroom_conflict': 'Seleccione un aula diferente o cambie el período de tiempo.',
+                'workload_limit': 'Redistribuya las clases del profesor para no exceder 40 horas semanales.',
+                'schedule_overlap': 'Ajuste los horarios para evitar solapamientos.'
+            };
+            return solutions[type] || 'Revise y ajuste la asignación según las reglas venezolanas K12.';
+        }
+
+        async function resolveConflict(conflictIndex) {
+            try {
+                scheduleManager.showNotification('Función de resolución automática en desarrollo', 'info');
+                // Future: Implement intelligent conflict resolution algorithms
+            } catch (error) {
+                scheduleManager.showNotification('Error al resolver conflicto: ' + error.message, 'error');
+            }
+        }
+
+        async function resolveAllConflicts() {
+            if (!confirm('¿Desea intentar resolver automáticamente todos los conflictos detectados?')) {
+                return;
+            }
+
+            scheduleManager.showLoading(true);
+
+            try {
+                // Future: Implement batch conflict resolution
+                scheduleManager.showNotification('Resolución automática de conflictos en desarrollo (Fase 3)', 'info');
+
+                // For now, just refresh the conflicts view
+                setTimeout(async () => {
+                    await checkConflicts();
+                }, 1000);
+
+            } catch (error) {
+                scheduleManager.showNotification('Error en resolución automática: ' + error.message, 'error');
+            } finally {
+                scheduleManager.showLoading(false);
+            }
+        }
+
+        async function exportSchedule() {
+            const exportType = await showExportModal();
+            if (!exportType) return;
+
+            scheduleManager.showLoading(true);
+
+            try {
+                const response = await fetch('/bischeduler/api/schedule/export', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        view_type: scheduleManager.currentView,
+                        target_id: scheduleManager.currentTarget,
+                        format: exportType,
+                        academic_year: '2025-2026'
+                    })
+                });
+
+                if (response.ok) {
+                    // Handle file download
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `horario_${scheduleManager.currentView}_${new Date().toISOString().split('T')[0]}.${exportType}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    scheduleManager.showNotification('Horario exportado exitosamente', 'success');
+                } else {
+                    throw new Error('Error en la exportación');
+                }
+
+            } catch (error) {
+                console.error('Export error:', error);
+                scheduleManager.showNotification('Error al exportar: ' + error.message, 'error');
+            } finally {
+                scheduleManager.showLoading(false);
+            }
+        }
+
+        function showExportModal() {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.innerHTML = `
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-file-export"></i> Exportar Horario
+                                </h5>
+                                <button type="button" class="close" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Seleccione el formato de exportación:</p>
+                                <div class="list-group">
+                                    <button class="list-group-item list-group-item-action" onclick="selectExportType('xlsx')">
+                                        <i class="fas fa-file-excel text-success"></i>
+                                        <strong>Excel (.xlsx)</strong>
+                                        <small class="d-block text-muted">Formato estándar para análisis y edición</small>
+                                    </button>
+                                    <button class="list-group-item list-group-item-action" onclick="selectExportType('pdf')">
+                                        <i class="fas fa-file-pdf text-danger"></i>
+                                        <strong>PDF (.pdf)</strong>
+                                        <small class="d-block text-muted">Formato de presentación e impresión</small>
+                                    </button>
+                                    <button class="list-group-item list-group-item-action" onclick="selectExportType('csv')">
+                                        <i class="fas fa-file-csv text-info"></i>
+                                        <strong>CSV (.csv)</strong>
+                                        <small class="d-block text-muted">Datos separados por comas</small>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+                $(modal).modal('show');
+
+                window.selectExportType = (type) => {
+                    $(modal).modal('hide');
+                    setTimeout(() => {
+                        document.body.removeChild(modal);
+                        delete window.selectExportType;
+                    }, 500);
+                    resolve(type);
+                };
+
+                $(modal).on('hidden.bs.modal', () => {
+                    setTimeout(() => {
+                        if (modal.parentNode) {
+                            document.body.removeChild(modal);
+                        }
+                        delete window.selectExportType;
+                    }, 100);
+                    resolve(null);
+                });
+            });
         }
 
         function printSchedule() {
             window.print();
+        }
+
+        async function validateVenezuelanK12() {
+            scheduleManager.showLoading(true);
+
+            try {
+                const response = await fetch('/bischeduler/api/schedule/validate/venezuelan-k12', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        view_type: scheduleManager.currentView,
+                        target_id: scheduleManager.currentTarget,
+                        academic_year: '2025-2026'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showComplianceResults(result);
+                    $('#complianceModal').modal('show');
+                } else {
+                    throw new Error(result.error || 'Error en validación');
+                }
+
+            } catch (error) {
+                console.error('Compliance validation error:', error);
+                scheduleManager.showNotification('Error en validación curricular: ' + error.message, 'error');
+            } finally {
+                scheduleManager.showLoading(false);
+            }
+        }
+
+        function showComplianceResults(result) {
+            const complianceContent = document.getElementById('complianceContent');
+            const { compliance_score, violations, summary, recommendations } = result;
+
+            let statusColor = 'success';
+            let statusIcon = 'fas fa-check-circle';
+            let statusText = 'CUMPLE COMPLETAMENTE';
+
+            if (compliance_score < 60) {
+                statusColor = 'danger';
+                statusIcon = 'fas fa-times-circle';
+                statusText = 'NO CUMPLE - ACCIÓN REQUERIDA';
+            } else if (compliance_score < 80) {
+                statusColor = 'warning';
+                statusIcon = 'fas fa-exclamation-triangle';
+                statusText = 'CUMPLE PARCIALMENTE';
+            } else if (compliance_score < 100) {
+                statusColor = 'info';
+                statusIcon = 'fas fa-info-circle';
+                statusText = 'CUMPLE CON OBSERVACIONES';
+            }
+
+            let violationsHtml = '';
+            if (violations && violations.length > 0) {
+                violationsHtml = `
+                    <div class="mt-4">
+                        <h6><i class="fas fa-exclamation-triangle text-warning"></i> Violaciones Detectadas</h6>
+                        <div class="accordion" id="violationsAccordion">
+                `;
+
+                violations.forEach((violation, index) => {
+                    const severityColor = violation.severity === 'critical' ? 'danger' : 'warning';
+                    violationsHtml += `
+                        <div class="card">
+                            <div class="card-header" id="violation${index}">
+                                <h6 class="mb-0">
+                                    <button class="btn btn-link text-${severityColor}" type="button" data-toggle="collapse" data-target="#collapse${index}">
+                                        <i class="fas fa-${violation.severity === 'critical' ? 'times-circle' : 'exclamation-triangle'}"></i>
+                                        ${violation.message}
+                                        <span class="badge badge-${severityColor} ml-2">${violation.severity.toUpperCase()}</span>
+                                    </button>
+                                </h6>
+                            </div>
+                            <div id="collapse${index}" class="collapse" data-parent="#violationsAccordion">
+                                <div class="card-body">
+                                    <p><strong>Regulación:</strong> ${violation.regulation}</p>
+                                    ${violation.current_hours ? `<p><strong>Horas actuales:</strong> ${violation.current_hours} / ${violation.max_hours}</p>` : ''}
+                                    ${violation.current_periods ? `<p><strong>Períodos actuales:</strong> ${violation.current_periods} / ${violation.required_periods}</p>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                violationsHtml += '</div></div>';
+            }
+
+            let recommendationsHtml = '';
+            if (recommendations && recommendations.length > 0) {
+                recommendationsHtml = `
+                    <div class="mt-4">
+                        <h6><i class="fas fa-lightbulb text-info"></i> Recomendaciones</h6>
+                        <ul class="list-group list-group-flush">
+                            ${recommendations.map(rec => `
+                                <li class="list-group-item border-left-info">
+                                    <i class="fas fa-arrow-right text-info mr-2"></i> ${rec}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            complianceContent.innerHTML = `
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="alert alert-${statusColor} d-flex align-items-center">
+                            <i class="${statusIcon} fa-2x mr-3"></i>
+                            <div>
+                                <h5 class="mb-1">Puntuación de Cumplimiento: ${compliance_score}/100</h5>
+                                <p class="mb-0">${statusText}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">Resumen</h6>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="text-danger">
+                                            <i class="fas fa-times-circle fa-2x"></i>
+                                            <div><strong>${summary.critical_violations}</strong></div>
+                                            <small>Críticas</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-warning">
+                                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                                            <div><strong>${summary.warning_violations}</strong></div>
+                                            <small>Advertencias</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <h6><i class="fas fa-gavel text-primary"></i> Regulaciones Verificadas</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Límite carga horaria docente (40h)</li>
+                                <li><i class="fas fa-check text-success"></i> Distribución de materias básicas</li>
+                                <li><i class="fas fa-check text-success"></i> Estructura bimodal venezolana</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Contenido apropiado por grado</li>
+                                <li><i class="fas fa-check text-success"></i> Currículo Básico Nacional</li>
+                                <li><i class="fas fa-check text-success"></i> Resoluciones ministeriales</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                ${violationsHtml}
+                ${recommendationsHtml}
+
+                <div class="mt-4 p-3 bg-light rounded">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Nota:</strong> Esta validación verifica el cumplimiento con las regulaciones del Sistema Educativo Bolivariano de Venezuela.
+                        Para certificación oficial, consulte con las autoridades educativas competentes.
+                    </small>
+                </div>
+            `;
+        }
+
+        function generateComplianceReport() {
+            scheduleManager.showNotification('Generación de reporte de cumplimiento en desarrollo', 'info');
+            // Future: Generate PDF compliance report
         }
 
         function handleLogout() {
