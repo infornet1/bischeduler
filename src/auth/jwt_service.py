@@ -14,6 +14,7 @@ import hashlib
 import json
 
 from src.models.auth import User, UserSession, UserAuditLog
+from flask import current_app
 
 
 class JWTService:
@@ -271,24 +272,74 @@ class JWTService:
 
     def _create_session_record(self, user: User, token: str, session_info: Dict, session_id: str) -> UserSession:
         """Create session record in database"""
-        from src.core.app import db
-
         token_hash = hashlib.sha256(token.encode()).hexdigest()
 
-        session = UserSession(
-            user_id=user.id,
-            session_token=session_id,
-            jwt_token_hash=token_hash,
-            ip_address=session_info.get('ip_address') if session_info else None,
-            user_agent=session_info.get('user_agent') if session_info else None,
-            device_info=session_info.get('device_info') if session_info else None,
-            expires_at=datetime.now(timezone.utc) + current_app.config['JWT_ACCESS_TOKEN_EXPIRES']
-        )
+        # Check if this is a master database user
+        if hasattr(user, '_is_master_user') and user._is_master_user:
+            # Create session in master database
+            import mysql.connector
 
-        db.session.add(session)
-        db.session.commit()
+            master_db_config = {
+                'host': 'localhost',
+                'user': 'root',
+                'password': 'Temporal2024!',
+                'database': 'bischeduler_master',
+                'charset': 'utf8mb4'
+            }
 
-        return session
+            try:
+                master_conn = mysql.connector.connect(**master_db_config)
+                master_cursor = master_conn.cursor()
+
+                expires_at = datetime.now(timezone.utc) + current_app.config['JWT_ACCESS_TOKEN_EXPIRES']
+
+                master_cursor.execute("""
+                    INSERT INTO user_sessions
+                    (user_id, session_token, jwt_token_hash, ip_address, user_agent,
+                     device_info, created_at, last_activity, expires_at, is_active)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    user.id, session_id, token_hash,
+                    session_info.get('ip_address') if session_info else None,
+                    session_info.get('user_agent') if session_info else None,
+                    json.dumps(session_info.get('device_info')) if session_info and session_info.get('device_info') else None,
+                    datetime.now(timezone.utc), datetime.now(timezone.utc), expires_at, True
+                ))
+
+                master_conn.commit()
+                master_cursor.close()
+                master_conn.close()
+
+                # Create a dummy session object for return
+                session = UserSession()
+                session.user_id = user.id
+                session.session_token = session_id
+                session.jwt_token_hash = token_hash
+                session.expires_at = expires_at
+                session.is_active = True
+                return session
+
+            except Exception as e:
+                current_app.logger.error(f"Failed to create master user session: {e}")
+                raise
+        else:
+            # Create session in tenant database
+            from src.core.app import db
+
+            session = UserSession(
+                user_id=user.id,
+                session_token=session_id,
+                jwt_token_hash=token_hash,
+                ip_address=session_info.get('ip_address') if session_info else None,
+                user_agent=session_info.get('user_agent') if session_info else None,
+                device_info=session_info.get('device_info') if session_info else None,
+                expires_at=datetime.now(timezone.utc) + current_app.config['JWT_ACCESS_TOKEN_EXPIRES']
+            )
+
+            db.session.add(session)
+            db.session.commit()
+
+            return session
 
     def _verify_session(self, session_id: str, token: str) -> bool:
         """Verify session is still active"""
@@ -378,9 +429,55 @@ class AuthenticationService:
             Unauthorized: Invalid credentials or account issues
         """
         from src.core.app import db
+        from src.tenants.manager import TenantManager
+        import mysql.connector
 
-        # Find user by email
-        user = db.session.query(User).filter_by(email=email.lower()).first()
+        # First, try to find user in master database (for platform admins)
+        user = None
+        master_db_config = {
+            'host': 'localhost',
+            'user': 'root',
+            'password': 'Temporal2024!',
+            'database': 'bischeduler_master',
+            'charset': 'utf8mb4'
+        }
+
+        try:
+            # Check master database for platform admin users
+            master_conn = mysql.connector.connect(**master_db_config)
+            master_cursor = master_conn.cursor(dictionary=True)
+
+            master_cursor.execute("""
+                SELECT id, email, username, password_hash, first_name, last_name,
+                       cedula, phone, role, status, password_reset_token,
+                       password_reset_expires, email_verification_token,
+                       email_verified_at, failed_login_attempts, locked_until,
+                       tenant_id, tenant_permissions, last_login, last_activity,
+                       current_session_token, language, timezone, ui_preferences,
+                       created_at, updated_at, created_by
+                FROM users WHERE email = %s AND status = 'active'
+            """, (email.lower(),))
+
+            master_user_data = master_cursor.fetchone()
+            master_cursor.close()
+            master_conn.close()
+
+            if master_user_data:
+                # Create User object from master database data
+                user = User()
+                for key, value in master_user_data.items():
+                    setattr(user, key, value)
+                # Mark this as a master database user for proper session handling
+                user._is_master_user = True
+
+        except Exception as e:
+            current_app.logger.warning(f"Master database lookup failed: {e}")
+
+        # If not found in master, try tenant database
+        if not user:
+            user = db.session.query(User).filter_by(email=email.lower()).first()
+            if user:
+                user._is_master_user = False
 
         if not user:
             # Log failed login attempt
@@ -394,8 +491,12 @@ class AuthenticationService:
 
         # Check password
         if not user.check_password(password):
-            user.increment_failed_login()
-            db.session.commit()
+            if hasattr(user, '_is_master_user') and user._is_master_user:
+                # Update failed login attempts in master database
+                self._update_master_user_failed_login(user.id)
+            else:
+                user.increment_failed_login()
+                db.session.commit()
 
             self._log_authentication_event('login_failed_password', email, session_info, user.id)
             raise Unauthorized('Invalid email or password')
@@ -407,7 +508,11 @@ class AuthenticationService:
 
         # Reset failed login attempts on successful authentication
         if user.failed_login_attempts > 0:
-            user.unlock_account()
+            if hasattr(user, '_is_master_user') and user._is_master_user:
+                # Reset failed login attempts in master database
+                self._reset_master_user_failed_login(user.id)
+            else:
+                user.unlock_account()
 
         # Validate tenant access if specified
         if tenant_id and not user.has_permission('access', tenant_id):
@@ -416,9 +521,13 @@ class AuthenticationService:
                 raise Forbidden('Access denied to specified tenant')
 
         # Update login timestamp
-        user.last_login = datetime.now(timezone.utc)
-        user.update_last_activity()
-        db.session.commit()
+        if hasattr(user, '_is_master_user') and user._is_master_user:
+            # Update login timestamp in master database
+            self._update_master_user_login(user.id)
+        else:
+            user.last_login = datetime.now(timezone.utc)
+            user.update_last_activity()
+            db.session.commit()
 
         # Generate tokens
         token_data = self.jwt_service.generate_tokens(user, tenant_id, session_info)
@@ -512,3 +621,95 @@ class AuthenticationService:
             db.session.commit()
         except Exception:
             db.session.rollback()
+
+    def _update_master_user_failed_login(self, user_id: int):
+        """Update failed login attempts for master database user"""
+        import mysql.connector
+
+        master_db_config = {
+            'host': 'localhost',
+            'user': 'root',
+            'password': 'Temporal2024!',
+            'database': 'bischeduler_master',
+            'charset': 'utf8mb4'
+        }
+
+        try:
+            master_conn = mysql.connector.connect(**master_db_config)
+            master_cursor = master_conn.cursor()
+
+            # Increment failed login attempts and set lock if needed
+            master_cursor.execute("""
+                UPDATE users
+                SET failed_login_attempts = failed_login_attempts + 1,
+                    locked_until = CASE
+                        WHEN failed_login_attempts >= 4 THEN DATE_ADD(NOW(), INTERVAL 30 MINUTE)
+                        ELSE locked_until
+                    END
+                WHERE id = %s
+            """, (user_id,))
+
+            master_conn.commit()
+            master_cursor.close()
+            master_conn.close()
+
+        except Exception as e:
+            current_app.logger.error(f"Failed to update master user failed login: {e}")
+
+    def _reset_master_user_failed_login(self, user_id: int):
+        """Reset failed login attempts for master database user"""
+        import mysql.connector
+
+        master_db_config = {
+            'host': 'localhost',
+            'user': 'root',
+            'password': 'Temporal2024!',
+            'database': 'bischeduler_master',
+            'charset': 'utf8mb4'
+        }
+
+        try:
+            master_conn = mysql.connector.connect(**master_db_config)
+            master_cursor = master_conn.cursor()
+
+            master_cursor.execute("""
+                UPDATE users
+                SET failed_login_attempts = 0, locked_until = NULL
+                WHERE id = %s
+            """, (user_id,))
+
+            master_conn.commit()
+            master_cursor.close()
+            master_conn.close()
+
+        except Exception as e:
+            current_app.logger.error(f"Failed to reset master user failed login: {e}")
+
+    def _update_master_user_login(self, user_id: int):
+        """Update login timestamp for master database user"""
+        import mysql.connector
+
+        master_db_config = {
+            'host': 'localhost',
+            'user': 'root',
+            'password': 'Temporal2024!',
+            'database': 'bischeduler_master',
+            'charset': 'utf8mb4'
+        }
+
+        try:
+            master_conn = mysql.connector.connect(**master_db_config)
+            master_cursor = master_conn.cursor()
+
+            master_cursor.execute("""
+                UPDATE users
+                SET last_login = NOW(), last_activity = NOW()
+                WHERE id = %s
+            """, (user_id,))
+
+            master_conn.commit()
+            master_cursor.close()
+            master_conn.close()
+
+        except Exception as e:
+            current_app.logger.error(f"Failed to update master user login timestamp: {e}")

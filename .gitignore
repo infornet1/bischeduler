@@ -37,6 +37,10 @@ venv.bak/
 database/
 backups/
 
+# Database Backups Exception (allow versioned backups)
+!database_backups/
+!database_backups/**/*.sql
+
 # Configuration & Secrets
 .env
 .env.local
