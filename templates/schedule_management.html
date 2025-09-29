@@ -804,21 +804,51 @@
             border-top-color: #495057 !important;
         }
 
-        /* Button transparency fixes */
+        /* Enhanced action button dark mode fixes */
         [data-theme="dark"] .btn-primary-custom {
             background: #004080 !important;
             color: #ffffff !important;
-            border: none !important;
+            border: 1px solid #0056b3 !important;
+            box-shadow: 0 2px 8px rgba(0, 64, 128, 0.3) !important;
         }
 
         [data-theme="dark"] .btn-primary-custom:hover {
             background: #0056b3 !important;
             color: #ffffff !important;
+            border-color: #007bff !important;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4) !important;
+            transform: translateY(-1px) !important;
+        }
+
+        [data-theme="dark"] .btn-primary-custom:focus,
+        [data-theme="dark"] .btn-primary-custom:active {
+            background: #003d6b !important;
+            color: #ffffff !important;
+            border-color: #0056b3 !important;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
         }
 
         /* Action buttons container */
         [data-theme="dark"] .action-buttons {
             background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        /* Bootstrap button overrides for dark mode */
+        [data-theme="dark"] .action-buttons .btn {
+            border-width: 1px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        [data-theme="dark"] .action-buttons .btn:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        [data-theme="dark"] .action-buttons .btn:focus,
+        [data-theme="dark"] .action-buttons .btn:active {
+            transform: none !important;
         }
 
         /* Schedule table fixes */
@@ -999,29 +1029,56 @@
             color: #ffffff !important;
         }
 
-        /* Action button icons */
+        /* Enhanced action button content styling */
+        [data-theme="dark"] .action-buttons .btn-primary-custom {
+            text-decoration: none !important;
+        }
+
+        [data-theme="dark"] .action-buttons .btn-primary-custom:hover {
+            text-decoration: none !important;
+        }
+
+        /* Action button icons with proper transparency */
+        [data-theme="dark"] .action-buttons .btn i {
+            color: inherit !important;
+            background: transparent !important;
+            opacity: 1 !important;
+        }
+
         [data-theme="dark"] .btn-primary-custom i {
             color: #ffffff !important;
+            background: transparent !important;
         }
 
         [data-theme="dark"] .btn-success i {
             color: #ffffff !important;
+            background: transparent !important;
         }
 
         [data-theme="dark"] .btn-info i {
             color: #ffffff !important;
+            background: transparent !important;
         }
 
         [data-theme="dark"] .btn-warning i {
             color: #212529 !important;
+            background: transparent !important;
         }
 
         [data-theme="dark"] .btn-secondary i {
             color: #ffffff !important;
+            background: transparent !important;
         }
 
         [data-theme="dark"] .btn-danger i {
             color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        /* Action button text styling */
+        [data-theme="dark"] .action-buttons .btn {
+            font-weight: 600 !important;
+            text-shadow: none !important;
         }
 
         /* Modal icons */
