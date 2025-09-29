@@ -996,6 +996,19 @@
                     this.populateFormSelects();
                     this.updateTargetSelector();
 
+                    // Auto-load the first available section's schedule for better UX
+                    if (this.sections && this.sections.length > 0) {
+                        this.currentView = 'section';
+                        this.currentTarget = this.sections[0].id;
+                        document.getElementById('viewSelect').value = 'section';
+                        document.getElementById('targetSelect').value = this.sections[0].id;
+
+                        // Load initial schedule data
+                        setTimeout(() => {
+                            this.loadSchedule();
+                        }, 500);
+                    }
+
                 } catch (error) {
                     console.error('Error loading master data:', error);
                     alert('Error cargando datos del sistema. Verifique la conexión con la base de datos.');
@@ -2070,15 +2083,36 @@
 
         async function exportSchedule() {
             try {
+                // Check if we have schedule data to export BEFORE showing modal
+                if (!scheduleManager.scheduleData || Object.keys(scheduleManager.scheduleData).length === 0) {
+                    // Try to load a default section's schedule
+                    if (scheduleManager.sections && scheduleManager.sections.length > 0) {
+                        scheduleManager.showNotification('Cargando datos para exportar...', 'info');
+                        scheduleManager.currentView = 'section';
+                        scheduleManager.currentTarget = scheduleManager.sections[0].id;
+
+                        // Update UI to show the selected section
+                        document.getElementById('viewSelect').value = 'section';
+                        document.getElementById('targetSelect').value = scheduleManager.sections[0].id;
+
+                        // Load schedule data
+                        await scheduleManager.loadSchedule();
+
+                        // Check again if we now have data
+                        if (!scheduleManager.scheduleData || Object.keys(scheduleManager.scheduleData).length === 0) {
+                            scheduleManager.showNotification('No hay horarios configurados en el sistema. Configure primero algunos horarios.', 'warning');
+                            return;
+                        }
+                    } else {
+                        scheduleManager.showNotification('No hay datos disponibles para exportar. Configure primero algunas secciones y horarios.', 'warning');
+                        return;
+                    }
+                }
+
                 const exportType = await showExportModal();
                 if (!exportType) return;
 
                 scheduleManager.showLoading(true);
-
-                // Check if we have schedule data to export
-                if (!scheduleManager.scheduleData || Object.keys(scheduleManager.scheduleData).length === 0) {
-                    throw new Error('No hay datos de horario para exportar. Seleccione una sección, profesor o aula.');
-                }
 
                 // For fallback exports, we'll use the current schedule data
                 const targetId = scheduleManager.currentTarget || 'all';
@@ -2459,6 +2493,11 @@
                                 </button>
                             </div>
                             <div class="modal-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Exportando:</strong> ${scheduleManager.getCurrentTargetName()}
+                                    (${Object.keys(scheduleManager.scheduleData || {}).length} períodos)
+                                </div>
                                 <p>Seleccione el formato de exportación:</p>
                                 <div class="list-group">
                                     <button class="list-group-item list-group-item-action" onclick="selectExportType('xlsx')">
