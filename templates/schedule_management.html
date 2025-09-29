@@ -782,6 +782,7 @@
                     <label class="mb-0 mr-2">Ver horario de:</label>
                     <select class="form-control" id="viewSelector" style="width: 200px;">
                         <option value="section">Por Sección</option>
+                        <option value="level">Por Nivel</option>
                         <option value="teacher">Por Profesor</option>
                         <option value="classroom">Por Aula</option>
                     </select>
@@ -1214,6 +1215,23 @@
                             targetSelector.innerHTML += `<option value="${section.id}">${section.name}</option>`;
                         });
                         break;
+                    case 'level':
+                        // Venezuelan educational levels
+                        const levels = [
+                            { id: 'preescolar', name: 'Educación Inicial (Preescolar)', grades: ['1er Grupo', '2do Grupo', '3er Grupo'] },
+                            { id: 'primaria', name: 'Educación Primaria', grades: ['1er. Grado', '2do. Grado', '3er. Grado', '4to. Grado', '5to. Grado', '6to. Grado'] },
+                            { id: 'secundaria', name: 'Educación Media General (Secundaria)', grades: ['1er. Año', '2do. Año', '3er. Año', '4to. Año', '5to. Año'] }
+                        ];
+                        levels.forEach(level => {
+                            // Check if there are sections for this level
+                            const hasActiveSections = this.sections.some(section =>
+                                level.grades.includes(section.name)
+                            );
+                            if (hasActiveSections) {
+                                targetSelector.innerHTML += `<option value="${level.id}">${level.name}</option>`;
+                            }
+                        });
+                        break;
                     case 'teacher':
                         this.teachers.forEach(teacher => {
                             targetSelector.innerHTML += `<option value="${teacher.id}">${teacher.name}</option>`;
@@ -1239,16 +1257,45 @@
             async loadSchedule() {
                 this.showLoading(true);
                 try {
-                    // Load real schedule data from API
-                    const response = await fetch(`/bischeduler/api/schedule/assignments?view_type=${this.currentView}&target_id=${this.currentTarget}`);
-                    const result = await response.json();
-
-                    if (result.success) {
-                        this.scheduleData = result.schedule_data || {};
-                        console.log('Loaded schedule data:', this.scheduleData);
-                    } else {
-                        console.error('Failed to load schedule:', result.error);
+                    // Handle level view by aggregating multiple sections
+                    if (this.currentView === 'level') {
+                        const levelSections = this.getLevelSections(this.currentTarget);
                         this.scheduleData = {};
+
+                        // Load schedule for each section in the level
+                        for (const section of levelSections) {
+                            const response = await fetch(`/bischeduler/api/schedule/assignments?view_type=section&target_id=${section.id}`);
+                            const result = await response.json();
+
+                            if (result.success && result.schedule_data) {
+                                // Merge schedule data, prefixing with section name for clarity
+                                Object.entries(result.schedule_data).forEach(([key, assignment]) => {
+                                    // Store assignments grouped by section
+                                    if (!this.scheduleData[key]) {
+                                        this.scheduleData[key] = [];
+                                    }
+                                    // Add section information to the assignment
+                                    this.scheduleData[key].push({
+                                        ...assignment,
+                                        section: section.name,
+                                        sectionId: section.id
+                                    });
+                                });
+                            }
+                        }
+                        console.log('Loaded level schedule data:', this.scheduleData);
+                    } else {
+                        // Load single view (section, teacher, classroom)
+                        const response = await fetch(`/bischeduler/api/schedule/assignments?view_type=${this.currentView}&target_id=${this.currentTarget}`);
+                        const result = await response.json();
+
+                        if (result.success) {
+                            this.scheduleData = result.schedule_data || {};
+                            console.log('Loaded schedule data:', this.scheduleData);
+                        } else {
+                            console.error('Failed to load schedule:', result.error);
+                            this.scheduleData = {};
+                        }
                     }
 
                     this.renderScheduleGrid();
@@ -1291,16 +1338,25 @@
                             const assignment = this.scheduleData[key];
 
                             if (assignment) {
-                                cell.innerHTML = this.createAssignmentElement(assignment, key);
+                                // Handle level view (arrays of assignments) vs single assignment
+                                if (this.currentView === 'level' && Array.isArray(assignment)) {
+                                    // Multiple sections in level view
+                                    cell.innerHTML = this.createLevelAssignmentElement(assignment, key);
+                                } else {
+                                    // Single assignment for section/teacher/classroom view
+                                    cell.innerHTML = this.createAssignmentElement(assignment, key);
+                                }
                             } else {
                                 cell.innerHTML = '<div class="empty-slot"><i class="fas fa-plus"></i> Agregar</div>';
                                 cell.onclick = () => this.quickAddAssignment(day, period.id);
                             }
 
-                            // Enable drag and drop
-                            cell.ondrop = (e) => this.handleDrop(e, day, period.id);
-                            cell.ondragover = (e) => this.handleDragOver(e);
-                            cell.ondragleave = (e) => this.handleDragLeave(e);
+                            // Enable drag and drop (disabled for level view)
+                            if (this.currentView !== 'level') {
+                                cell.ondrop = (e) => this.handleDrop(e, day, period.id);
+                                cell.ondragover = (e) => this.handleDragOver(e);
+                                cell.ondragleave = (e) => this.handleDragLeave(e);
+                            }
                         }
 
                         row.appendChild(cell);
@@ -1328,6 +1384,39 @@
                         </div>
                     </div>
                 `;
+            }
+
+            createLevelAssignmentElement(assignments, key) {
+                // Create a compact view for multiple sections
+                if (assignments.length === 0) return '';
+
+                // Group by subject for better visualization
+                const subjectGroups = {};
+                assignments.forEach(assignment => {
+                    const subject = assignment.subject || 'N/A';
+                    if (!subjectGroups[subject]) {
+                        subjectGroups[subject] = [];
+                    }
+                    subjectGroups[subject].push(assignment);
+                });
+
+                let html = '<div class="level-assignments" style="font-size: 0.75rem;">';
+                Object.entries(subjectGroups).forEach(([subject, sectionAssignments]) => {
+                    const sections = sectionAssignments.map(a => a.section).join(', ');
+                    const teachers = [...new Set(sectionAssignments.map(a => a.teacher))].join(', ');
+
+                    html += `
+                        <div class="level-assignment-group" style="margin-bottom: 4px; padding: 2px; background: rgba(0, 51, 102, 0.05); border-left: 2px solid #003366;">
+                            <div style="font-weight: 600; color: #003366;">${subject}</div>
+                            <div style="font-size: 0.65rem; color: #666;">
+                                <span title="Secciones">${sections}</span><br>
+                                <span title="Profesor(es)">${teachers}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                return html;
             }
 
             checkForConflicts(key) {
@@ -1486,6 +1575,13 @@
                 if (this.currentView === 'section') {
                     const section = this.sections.find(s => s.id == this.currentTarget);
                     return section ? section.name : 'Sección Desconocida';
+                } else if (this.currentView === 'level') {
+                    const levelNames = {
+                        'preescolar': 'Educación Inicial (Preescolar)',
+                        'primaria': 'Educación Primaria',
+                        'secundaria': 'Educación Media General (Secundaria)'
+                    };
+                    return levelNames[this.currentTarget] || 'Nivel Desconocido';
                 } else if (this.currentView === 'teacher') {
                     const teacher = this.teachers.find(t => t.id == this.currentTarget);
                     return teacher ? teacher.name : 'Profesor Desconocido';
@@ -1494,6 +1590,16 @@
                     return classroom ? classroom.name : 'Aula Desconocida';
                 }
                 return 'N/A';
+            }
+
+            getLevelSections(levelId) {
+                const levelGrades = {
+                    'preescolar': ['1er Grupo', '2do Grupo', '3er Grupo'],
+                    'primaria': ['1er. Grado', '2do. Grado', '3er. Grado', '4to. Grado', '5to. Grado', '6to. Grado'],
+                    'secundaria': ['1er. Año', '2do. Año', '3er. Año', '4to. Año', '5to. Año']
+                };
+                const grades = levelGrades[levelId] || [];
+                return this.sections.filter(section => grades.includes(section.name));
             }
 
             openAssignmentModal() {
