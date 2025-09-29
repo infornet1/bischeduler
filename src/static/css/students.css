@@ -1,0 +1,349 @@
+/*
+BiScheduler - Students Management Specific Styles
+Venezuelan K12 Multi-Tenant Scheduling Platform
+*/
+
+/* Students Container */
+.students-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #003366 0%, #004080 100%);
+    padding: var(--spacing-lg, 20px);
+}
+
+/* Management Card */
+.management-card {
+    background: var(--card-bg, rgba(255, 255, 255, 0.95));
+    border-radius: var(--border-radius, 15px);
+    padding: var(--spacing-xl, 30px);
+    margin-bottom: var(--spacing-lg, 25px);
+    box-shadow: var(--box-shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.1));
+    backdrop-filter: blur(10px);
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Header Section */
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl, 30px);
+}
+
+.header-section h1 {
+    color: var(--primary-color, #003366);
+    font-size: 2rem;
+    margin-bottom: 5px;
+}
+
+.header-section p {
+    color: var(--text-secondary, #6c757d);
+    margin: 0;
+}
+
+/* Stats Row */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg, 20px);
+    margin-bottom: var(--spacing-xl, 30px);
+}
+
+/* Stat Cards */
+.stat-card {
+    background: var(--bg-secondary, #f8f9fa);
+    padding: var(--spacing-lg, 20px);
+    border-radius: var(--border-radius, 12px);
+    text-align: center;
+    border-left: 4px solid var(--primary-color, #003366);
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color, #003366);
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: var(--text-secondary, #6c757d);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Dark Mode Students Specific */
+[data-theme="dark"] .students-container {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+[data-theme="dark"] .header-section h1 {
+    color: var(--primary-color, #4a90e2);
+}
+
+[data-theme="dark"] .header-section p {
+    color: var(--text-secondary, #cccccc);
+}
+
+[data-theme="dark"] .management-card {
+    background: var(--card-bg, rgba(45, 45, 45, 0.95));
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .stat-card {
+    background: var(--light-color, #495057);
+    border-left-color: var(--primary-color, #4a90e2);
+}
+
+[data-theme="dark"] .stat-number {
+    color: var(--primary-color, #4a90e2);
+}
+
+[data-theme="dark"] .stat-label {
+    color: var(--text-secondary, #cccccc);
+}
+
+/* Students Table Specific Styles */
+.students-table {
+    margin-top: 20px;
+}
+
+.students-table .table th {
+    background-color: var(--primary-color, #003366);
+    color: white;
+    font-weight: 500;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.students-table .table td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+[data-theme="dark"] .students-table .table th {
+    background-color: var(--primary-color, #4a90e2);
+    color: white;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.action-buttons .btn {
+    padding: 5px 10px;
+    font-size: 0.875rem;
+}
+
+/* Badge Styles for Students */
+.badge-grade {
+    font-size: 0.875rem;
+    padding: 5px 10px;
+}
+
+.badge-preescolar {
+    background-color: #ff6b6b;
+}
+
+.badge-primaria {
+    background-color: #4ecdc4;
+}
+
+.badge-bachillerato {
+    background-color: #45b7d1;
+}
+
+[data-theme="dark"] .badge-preescolar {
+    background-color: #e74c3c;
+}
+
+[data-theme="dark"] .badge-primaria {
+    background-color: #1abc9c;
+}
+
+[data-theme="dark"] .badge-bachillerato {
+    background-color: #3498db;
+}
+
+/* Search and Filter Section */
+.search-filter-section {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 25px;
+    backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"] .search-filter-section {
+    background: rgba(45, 45, 45, 0.3);
+}
+
+.search-filter-section .form-control {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .search-filter-section .form-control {
+    background: rgba(73, 80, 87, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #ffffff);
+}
+
+/* Feature Grid */
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg, 20px);
+    margin-top: var(--spacing-lg, 20px);
+}
+
+/* Feature Cards */
+.feature-card {
+    background: var(--bg-secondary, #f8f9fa);
+    border-radius: var(--border-radius, 12px);
+    padding: var(--spacing-lg, 20px);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--box-shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.1));
+}
+
+.feature-icon {
+    font-size: 2rem;
+    color: var(--primary-color, #003366);
+    margin-bottom: var(--spacing-md, 15px);
+}
+
+.feature-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary, #212529);
+    margin-bottom: var(--spacing-sm, 10px);
+}
+
+.feature-description {
+    color: var(--text-secondary, #6c757d);
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-md, 15px);
+}
+
+.feature-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-implemented {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-planned {
+    background: #cce7ff;
+    color: #004085;
+}
+
+.status-in-progress {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* Dark Mode Feature Cards */
+[data-theme="dark"] .feature-card {
+    background: var(--light-color, #495057);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .feature-card:hover {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .feature-icon {
+    color: var(--primary-color, #4a90e2);
+}
+
+[data-theme="dark"] .feature-title {
+    color: var(--text-primary, #ffffff);
+}
+
+[data-theme="dark"] .feature-description {
+    color: var(--text-secondary, #cccccc);
+}
+
+[data-theme="dark"] .status-implemented {
+    background: rgba(40, 167, 69, 0.2);
+    color: #a3d5a7;
+}
+
+[data-theme="dark"] .status-planned {
+    background: rgba(23, 162, 184, 0.2);
+    color: #7ec8e3;
+}
+
+[data-theme="dark"] .status-in-progress {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffd700;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted, #6c757d);
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+[data-theme="dark"] .empty-state {
+    color: var(--text-muted, #999999);
+}
+
+[data-theme="dark"] .empty-state i {
+    color: var(--text-muted, #999999);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .management-card {
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .stats-row {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .action-buttons .btn {
+        font-size: 0.75rem;
+        padding: 3px 8px;
+    }
+}
