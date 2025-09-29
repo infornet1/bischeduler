@@ -886,6 +886,10 @@
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <script>
         // Schedule Management System
         class ScheduleManager {
@@ -2164,8 +2168,8 @@
                     scheduleManager.showNotification('Horario exportado como CSV', 'success');
                     return;
                 } else if (exportType === 'pdf') {
-                    exportToHTML();
-                    scheduleManager.showNotification('Horario exportado como HTML (abrir en navegador para imprimir como PDF)', 'success');
+                    await exportToPDF();
+                    scheduleManager.showNotification('Horario exportado como PDF', 'success');
                     return;
                 }
 
@@ -2515,6 +2519,157 @@
                     document.body.removeChild(a);
                 }
             }, 100);
+        }
+
+        async function exportToPDF() {
+            // Create a professional PDF schedule using jsPDF
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('landscape', 'mm', 'a4');
+
+            const scheduleData = scheduleManager.scheduleData;
+            const targetName = scheduleManager.getCurrentTargetName();
+            const currentDate = new Date().toLocaleDateString('es-VE');
+
+            // PDF Styling
+            const primaryColor = [0, 51, 102]; // #003366
+            const secondaryColor = [255, 204, 0]; // #ffcc00
+            const textColor = [51, 51, 51]; // #333
+
+            // Page margins and dimensions
+            const margin = 15;
+            const pageWidth = 297 - (margin * 2); // A4 landscape width minus margins
+            const pageHeight = 210 - (margin * 2); // A4 landscape height minus margins
+
+            // Header
+            pdf.setFillColor(...primaryColor);
+            pdf.rect(margin, margin, pageWidth, 25, 'F');
+
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(18);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Horario Académico - UEIPAB', margin + 5, margin + 8);
+
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Unidad Educativa Instituto Privado Adventista Barquisimeto', margin + 5, margin + 15);
+            pdf.text(`Año Académico 2025-2026 | ${targetName}`, margin + 5, margin + 20);
+
+            // Date
+            pdf.setTextColor(...textColor);
+            pdf.text(`Generado: ${currentDate}`, pageWidth - 35, margin + 8);
+
+            // Statistics
+            const statsY = margin + 35;
+            pdf.setFontSize(8);
+            pdf.setTextColor(...textColor);
+
+            const totalPeriods = Object.keys(scheduleData).length;
+            const totalSubjects = [...new Set(Object.values(scheduleData).map(a => a.subject))].length;
+            const totalTeachers = [...new Set(Object.values(scheduleData).map(a => a.teacher))].length;
+
+            pdf.text(`Total Períodos: ${totalPeriods}`, margin + 5, statsY);
+            pdf.text(`Materias: ${totalSubjects}`, margin + 60, statsY);
+            pdf.text(`Profesores: ${totalTeachers}`, margin + 100, statsY);
+
+            // Schedule table
+            const tableStartY = statsY + 10;
+            const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+            const timeSlots = scheduleManager.timePeriods.filter(p => !p.is_break);
+
+            // Table dimensions
+            const colWidth = (pageWidth - 60) / 6; // 6 columns (time + 5 days)
+            const timeColWidth = 60;
+            const rowHeight = 15;
+
+            // Table header
+            pdf.setFillColor(...primaryColor);
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(9);
+
+            // Header row
+            pdf.rect(margin, tableStartY, timeColWidth, rowHeight, 'F');
+            pdf.text('Hora', margin + 2, tableStartY + 10);
+
+            days.forEach((day, index) => {
+                const x = margin + timeColWidth + (index * colWidth);
+                pdf.rect(x, tableStartY, colWidth, rowHeight, 'F');
+                pdf.text(day, x + 2, tableStartY + 10);
+            });
+
+            // Table rows
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(7);
+            pdf.setTextColor(...textColor);
+
+            timeSlots.forEach((period, rowIndex) => {
+                const y = tableStartY + rowHeight + (rowIndex * rowHeight);
+
+                // Time column
+                pdf.setFillColor(241, 243, 244); // Light gray
+                pdf.rect(margin, y, timeColWidth, rowHeight, 'F');
+                pdf.rect(margin, y, timeColWidth, rowHeight, 'S');
+
+                pdf.setTextColor(...textColor);
+                pdf.text(`${period.start_time}`, margin + 2, y + 6);
+                pdf.text(`${period.end_time}`, margin + 2, y + 11);
+
+                // Day columns
+                days.forEach((day, dayIndex) => {
+                    const x = margin + timeColWidth + (dayIndex * colWidth);
+                    const dayKey = day.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                    const assignment = scheduleData[`${dayKey}_${period.id}`];
+
+                    // Draw cell border
+                    pdf.rect(x, y, colWidth, rowHeight, 'S');
+
+                    if (assignment) {
+                        // Alternate row colors
+                        if (rowIndex % 2 === 0) {
+                            pdf.setFillColor(248, 249, 250);
+                            pdf.rect(x, y, colWidth, rowHeight, 'F');
+                            pdf.rect(x, y, colWidth, rowHeight, 'S');
+                        }
+
+                        // Subject (bold)
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.setTextColor(...primaryColor);
+                        const subjectText = assignment.subject || 'N/A';
+                        const truncatedSubject = subjectText.length > 15 ? subjectText.substring(0, 12) + '...' : subjectText;
+                        pdf.text(truncatedSubject, x + 1, y + 5);
+
+                        // Teacher
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.setTextColor(102, 102, 102);
+                        const teacherText = assignment.teacher || 'N/A';
+                        const truncatedTeacher = teacherText.length > 20 ? teacherText.substring(0, 17) + '...' : teacherText;
+                        pdf.text(truncatedTeacher, x + 1, y + 9);
+
+                        // Classroom
+                        pdf.setTextColor(153, 153, 153);
+                        pdf.setFontSize(6);
+                        const classroomText = assignment.classroom || 'N/A';
+                        pdf.text(classroomText, x + 1, y + 12);
+                        pdf.setFontSize(7);
+                    }
+                });
+            });
+
+            // Footer
+            const footerY = tableStartY + rowHeight + (timeSlots.length * rowHeight) + 10;
+            pdf.setDrawColor(...primaryColor);
+            pdf.setLineWidth(0.5);
+            pdf.line(margin, footerY, margin + pageWidth, footerY);
+
+            pdf.setTextColor(...textColor);
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('BiScheduler - Sistema de Gestión de Horarios K12 Venezolano', margin + 5, footerY + 8);
+            pdf.text(`Generado automáticamente el ${currentDate}`, margin + 5, footerY + 14);
+
+            // Save the PDF
+            const filename = `horario_${scheduleManager.currentView || 'general'}_${new Date().toISOString().split('T')[0]}.pdf`;
+            pdf.save(filename);
         }
 
         function showExportModal() {
