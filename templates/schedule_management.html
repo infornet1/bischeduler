@@ -1319,6 +1319,20 @@
                 return period ? `${period.name} (${period.start_time}-${period.end_time})` : 'Unknown Period';
             }
 
+            getCurrentTargetName() {
+                if (this.currentView === 'section') {
+                    const section = this.sections.find(s => s.id == this.currentTarget);
+                    return section ? section.name : 'Sección Desconocida';
+                } else if (this.currentView === 'teacher') {
+                    const teacher = this.teachers.find(t => t.id == this.currentTarget);
+                    return teacher ? teacher.name : 'Profesor Desconocido';
+                } else if (this.currentView === 'classroom') {
+                    const classroom = this.classrooms.find(c => c.id == this.currentTarget);
+                    return classroom ? classroom.name : 'Aula Desconocida';
+                }
+                return 'N/A';
+            }
+
             openAssignmentModal() {
                 // Clear form when opening for new assignment
                 const form = document.getElementById('assignmentForm');
@@ -2055,12 +2069,25 @@
         }
 
         async function exportSchedule() {
-            const exportType = await showExportModal();
-            if (!exportType) return;
-
-            scheduleManager.showLoading(true);
-
             try {
+                const exportType = await showExportModal();
+                if (!exportType) return;
+
+                scheduleManager.showLoading(true);
+
+                // Validate current view and target
+                if (!scheduleManager.currentTarget) {
+                    throw new Error('Debe seleccionar una sección, profesor o aula para exportar');
+                }
+
+                // For now, create a simple CSV export as fallback
+                if (exportType === 'csv' || exportType === 'xlsx') {
+                    exportToCSV();
+                    scheduleManager.showNotification('Horario exportado como CSV (funcionalidad completa en desarrollo)', 'success');
+                    return;
+                }
+
+                // Try the full API endpoint for PDF
                 const response = await fetch('/bischeduler/api/schedule/export', {
                     method: 'POST',
                     headers: {
@@ -2083,20 +2110,80 @@
                     a.download = `horario_${scheduleManager.currentView}_${new Date().toISOString().split('T')[0]}.${exportType}`;
                     document.body.appendChild(a);
                     a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
+
+                    // Clean up
+                    setTimeout(() => {
+                        window.URL.revokeObjectURL(url);
+                        if (a.parentNode) {
+                            document.body.removeChild(a);
+                        }
+                    }, 100);
 
                     scheduleManager.showNotification('Horario exportado exitosamente', 'success');
                 } else {
-                    throw new Error('Error en la exportación');
+                    // Fallback to CSV if API fails
+                    console.warn('API export failed, falling back to CSV');
+                    exportToCSV();
+                    scheduleManager.showNotification('Exportado como CSV (API en desarrollo)', 'info');
                 }
 
             } catch (error) {
                 console.error('Export error:', error);
-                scheduleManager.showNotification('Error al exportar: ' + error.message, 'error');
+                // Fallback to CSV export
+                try {
+                    exportToCSV();
+                    scheduleManager.showNotification('Exportado como CSV debido a error técnico', 'warning');
+                } catch (csvError) {
+                    scheduleManager.showNotification('Error al exportar: ' + error.message, 'error');
+                }
             } finally {
                 scheduleManager.showLoading(false);
             }
+        }
+
+        function exportToCSV() {
+            // Create CSV from current schedule data
+            const scheduleData = scheduleManager.scheduleData;
+            const csvContent = [];
+
+            // CSV Headers
+            csvContent.push(['Día', 'Hora', 'Materia', 'Profesor', 'Aula', 'Sección']);
+
+            // Add data rows
+            Object.entries(scheduleData).forEach(([key, assignment]) => {
+                const [day, periodId] = key.split('_');
+                const period = scheduleManager.timePeriods.find(p => p.id == periodId);
+                const timeString = period ? `${period.start_time}-${period.end_time}` : 'N/A';
+
+                csvContent.push([
+                    day.charAt(0).toUpperCase() + day.slice(1),
+                    timeString,
+                    assignment.subject || 'N/A',
+                    assignment.teacher || 'N/A',
+                    assignment.classroom || 'N/A',
+                    scheduleManager.getCurrentTargetName()
+                ]);
+            });
+
+            // Create and download CSV
+            const csvString = csvContent.map(row =>
+                row.map(field => `"${field}"`).join(',')
+            ).join('\n');
+
+            const blob = new Blob(['\ufeff' + csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `horario_${scheduleManager.currentView}_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                if (a.parentNode) {
+                    document.body.removeChild(a);
+                }
+            }, 100);
         }
 
         function showExportModal() {
@@ -2144,19 +2231,37 @@
                 document.body.appendChild(modal);
                 $(modal).modal('show');
 
+                let resolved = false;
+
                 window.selectExportType = (type) => {
+                    if (resolved) return;
+                    resolved = true;
+
                     $(modal).modal('hide');
                     setTimeout(() => {
-                        document.body.removeChild(modal);
+                        try {
+                            if (modal.parentNode) {
+                                document.body.removeChild(modal);
+                            }
+                        } catch (e) {
+                            console.warn('Modal cleanup warning:', e.message);
+                        }
                         delete window.selectExportType;
                     }, 500);
                     resolve(type);
                 };
 
                 $(modal).on('hidden.bs.modal', () => {
+                    if (resolved) return;
+                    resolved = true;
+
                     setTimeout(() => {
-                        if (modal.parentNode) {
-                            document.body.removeChild(modal);
+                        try {
+                            if (modal.parentNode) {
+                                document.body.removeChild(modal);
+                            }
+                        } catch (e) {
+                            console.warn('Modal cleanup warning:', e.message);
                         }
                         delete window.selectExportType;
                     }, 100);
