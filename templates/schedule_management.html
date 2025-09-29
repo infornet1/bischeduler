@@ -1000,8 +1000,17 @@
                     if (this.sections && this.sections.length > 0) {
                         this.currentView = 'section';
                         this.currentTarget = this.sections[0].id;
-                        document.getElementById('viewSelect').value = 'section';
-                        document.getElementById('targetSelect').value = this.sections[0].id;
+
+                        // Safely update UI elements if they exist
+                        const viewSelect = document.getElementById('viewSelect');
+                        const targetSelect = document.getElementById('targetSelect');
+
+                        if (viewSelect) {
+                            viewSelect.value = 'section';
+                        }
+                        if (targetSelect) {
+                            targetSelect.value = this.sections[0].id;
+                        }
 
                         // Load initial schedule data
                         setTimeout(() => {
@@ -1690,14 +1699,23 @@
             }
         }
 
-        // Global functions
-        const scheduleManager = new ScheduleManager();
+        // Global schedule manager variable
+        let scheduleManager;
 
         function openAssignmentModal() {
+            if (!scheduleManager) {
+                console.warn('Schedule manager not initialized yet');
+                return;
+            }
             scheduleManager.openAssignmentModal();
         }
 
         function saveAssignment() {
+            if (!scheduleManager) {
+                console.warn('Schedule manager not initialized yet');
+                return;
+            }
+
             // Check if we're editing or creating
             const editingId = document.getElementById('assignmentForm').dataset.editingId;
 
@@ -1720,6 +1738,11 @@
         }
 
         async function generateSchedule() {
+            if (!scheduleManager) {
+                console.warn('Schedule manager not initialized yet');
+                return;
+            }
+
             const generationType = await showGenerationModal();
             if (!generationType) return;
 
@@ -1936,6 +1959,11 @@
         }
 
         async function checkConflicts() {
+            if (!scheduleManager) {
+                console.warn('Schedule manager not initialized yet');
+                return;
+            }
+
             scheduleManager.showLoading(true);
 
             try {
@@ -2082,6 +2110,11 @@
         }
 
         async function exportSchedule() {
+            if (!scheduleManager) {
+                console.warn('Schedule manager not initialized yet');
+                return;
+            }
+
             try {
                 // Check if we have schedule data to export BEFORE showing modal
                 if (!scheduleManager.scheduleData || Object.keys(scheduleManager.scheduleData).length === 0) {
@@ -2091,9 +2124,16 @@
                         scheduleManager.currentView = 'section';
                         scheduleManager.currentTarget = scheduleManager.sections[0].id;
 
-                        // Update UI to show the selected section
-                        document.getElementById('viewSelect').value = 'section';
-                        document.getElementById('targetSelect').value = scheduleManager.sections[0].id;
+                        // Update UI to show the selected section (if elements exist)
+                        const viewSelect = document.getElementById('viewSelect');
+                        const targetSelect = document.getElementById('targetSelect');
+
+                        if (viewSelect) {
+                            viewSelect.value = 'section';
+                        }
+                        if (targetSelect) {
+                            targetSelect.value = scheduleManager.sections[0].id;
+                        }
 
                         // Load schedule data
                         await scheduleManager.loadSchedule();
@@ -2571,6 +2611,11 @@
         }
 
         async function validateVenezuelanK12() {
+            if (!scheduleManager) {
+                console.warn('Schedule manager not initialized yet');
+                return;
+            }
+
             scheduleManager.showLoading(true);
 
             try {
@@ -2760,6 +2805,9 @@
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Schedule Management System initialized');
+
+            // Initialize the schedule manager after DOM is ready
+            scheduleManager = new ScheduleManager();
         });
     </script>
 </body>
