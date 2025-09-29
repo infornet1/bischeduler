@@ -2075,27 +2075,35 @@
 
                 scheduleManager.showLoading(true);
 
-                // Validate current view and target
-                if (!scheduleManager.currentTarget) {
-                    throw new Error('Debe seleccionar una sección, profesor o aula para exportar');
+                // Check if we have schedule data to export
+                if (!scheduleManager.scheduleData || Object.keys(scheduleManager.scheduleData).length === 0) {
+                    throw new Error('No hay datos de horario para exportar. Seleccione una sección, profesor o aula.');
                 }
 
-                // For now, create a simple CSV export as fallback
+                // For fallback exports, we'll use the current schedule data
+                const targetId = scheduleManager.currentTarget || 'all';
+                const viewType = scheduleManager.currentView || 'general';
+
+                // For all formats, use client-side export for now
                 if (exportType === 'csv' || exportType === 'xlsx') {
                     exportToCSV();
-                    scheduleManager.showNotification('Horario exportado como CSV (funcionalidad completa en desarrollo)', 'success');
+                    scheduleManager.showNotification('Horario exportado como CSV', 'success');
+                    return;
+                } else if (exportType === 'pdf') {
+                    exportToHTML();
+                    scheduleManager.showNotification('Horario exportado como HTML (abrir en navegador para imprimir como PDF)', 'success');
                     return;
                 }
 
-                // Try the full API endpoint for PDF
+                // If API is needed in the future, try the full API endpoint
                 const response = await fetch('/bischeduler/api/schedule/export', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        view_type: scheduleManager.currentView,
-                        target_id: scheduleManager.currentTarget,
+                        view_type: viewType,
+                        target_id: targetId,
                         format: exportType,
                         academic_year: '2025-2026'
                     })
@@ -2175,6 +2183,255 @@
             const a = document.createElement('a');
             a.href = url;
             a.download = `horario_${scheduleManager.currentView}_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                if (a.parentNode) {
+                    document.body.removeChild(a);
+                }
+            }, 100);
+        }
+
+        function exportToHTML() {
+            // Create a professional HTML schedule that can be printed as PDF
+            const scheduleData = scheduleManager.scheduleData;
+            const targetName = scheduleManager.getCurrentTargetName();
+            const currentDate = new Date().toLocaleDateString('es-VE');
+
+            // Group data by day
+            const daySchedule = {};
+            const days = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
+
+            days.forEach(day => {
+                daySchedule[day] = [];
+            });
+
+            Object.entries(scheduleData).forEach(([key, assignment]) => {
+                const [day, periodId] = key.split('_');
+                const period = scheduleManager.timePeriods.find(p => p.id == periodId);
+
+                if (period && daySchedule[day]) {
+                    daySchedule[day].push({
+                        time: `${period.start_time} - ${period.end_time}`,
+                        subject: assignment.subject || 'N/A',
+                        teacher: assignment.teacher || 'N/A',
+                        classroom: assignment.classroom || 'N/A',
+                        period: period
+                    });
+                }
+            });
+
+            // Sort by time for each day
+            days.forEach(day => {
+                daySchedule[day].sort((a, b) => a.period.start_time.localeCompare(b.period.start_time));
+            });
+
+            const htmlContent = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horario Académico - ${targetName}</title>
+    <style>
+        @media print {
+            @page { margin: 1cm; }
+            body { margin: 0; }
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #003366;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #003366;
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin: 5px 0;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .schedule-table th {
+            background: linear-gradient(135deg, #003366, #004080);
+            color: white;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #002244;
+        }
+
+        .schedule-table td {
+            padding: 10px 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+            vertical-align: top;
+        }
+
+        .schedule-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .schedule-table tr:hover {
+            background-color: #e8f4fd;
+        }
+
+        .time-column {
+            background-color: #f1f3f4;
+            font-weight: bold;
+            width: 120px;
+        }
+
+        .class-info {
+            min-height: 60px;
+            padding: 5px;
+        }
+
+        .subject {
+            font-weight: bold;
+            color: #003366;
+            margin-bottom: 3px;
+        }
+
+        .teacher {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .classroom {
+            color: #999;
+            font-size: 0.8em;
+            font-style: italic;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #003366;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Horario Académico</h1>
+        <div class="subtitle">🏫 UEIPAB - Unidad Educativa Instituto Privado Adventista Barquisimeto</div>
+        <div class="subtitle">📅 Año Académico 2025-2026</div>
+        <div class="subtitle"><strong>${targetName}</strong></div>
+        <div class="subtitle">Generado: ${currentDate}</div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-item">
+            <div class="stat-number">${Object.keys(scheduleData).length}</div>
+            <div class="stat-label">Total Períodos</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">${[...new Set(Object.values(scheduleData).map(a => a.subject))].length}</div>
+            <div class="stat-label">Materias</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">${[...new Set(Object.values(scheduleData).map(a => a.teacher))].length}</div>
+            <div class="stat-label">Profesores</div>
+        </div>
+    </div>
+
+    <table class="schedule-table">
+        <thead>
+            <tr>
+                <th>Hora</th>
+                <th>Lunes</th>
+                <th>Martes</th>
+                <th>Miércoles</th>
+                <th>Jueves</th>
+                <th>Viernes</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${scheduleManager.timePeriods.filter(p => !p.is_break).map(period => `
+                <tr>
+                    <td class="time-column">
+                        ${period.start_time} - ${period.end_time}
+                        <br><small>${period.name}</small>
+                    </td>
+                    ${days.map(day => {
+                        const assignment = daySchedule[day].find(a => a.period.id == period.id);
+                        return assignment ? `
+                            <td>
+                                <div class="class-info">
+                                    <div class="subject">${assignment.subject}</div>
+                                    <div class="teacher">${assignment.teacher}</div>
+                                    <div class="classroom">${assignment.classroom}</div>
+                                </div>
+                            </td>
+                        ` : '<td><div class="class-info">-</div></td>';
+                    }).join('')}
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p><strong>BiScheduler</strong> - Sistema de Gestión de Horarios K12 Venezolano</p>
+        <p>Generado automáticamente el ${currentDate} | Para convertir a PDF: Archivo → Imprimir → Guardar como PDF</p>
+    </div>
+</body>
+</html>`;
+
+            // Create and download HTML file
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `horario_${scheduleManager.currentView || 'general'}_${new Date().toISOString().split('T')[0]}.html`;
             document.body.appendChild(a);
             a.click();
 
