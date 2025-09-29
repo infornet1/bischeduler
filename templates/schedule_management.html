@@ -786,8 +786,20 @@
                         <option value="teacher">Por Profesor</option>
                         <option value="classroom">Por Aula</option>
                     </select>
+                    <!-- Level selector (only visible when "Por Nivel" is selected) -->
+                    <select class="form-control" id="levelSelector" style="width: 250px; display: none;">
+                        <option value="">Seleccione nivel...</option>
+                        <option value="preescolar">Educación Inicial (Preescolar)</option>
+                        <option value="primaria">Educación Primaria</option>
+                        <option value="secundaria">Educación Media General (Secundaria)</option>
+                    </select>
+                    <!-- Target selector for section/teacher/classroom -->
                     <select class="form-control" id="targetSelector" style="width: 200px;">
                         <option value="">Seleccione...</option>
+                    </select>
+                    <!-- Section filter for level view (only visible when level is selected) -->
+                    <select class="form-control" id="sectionFilter" style="width: 200px; display: none;">
+                        <option value="">Todas las secciones</option>
                     </select>
                 </div>
 
@@ -1034,6 +1046,7 @@
             constructor() {
                 this.currentView = 'section';
                 this.currentTarget = null;
+                this.filterSectionId = null;
                 this.scheduleData = {};
                 this.timePeriods = [];
                 this.sections = [];
@@ -1087,12 +1100,55 @@
                 document.getElementById('viewSelector').addEventListener('change', (e) => {
                     this.currentView = e.target.value;
                     this.updateTargetSelector();
+
+                    // Toggle visibility of selectors based on view type
+                    const levelSelector = document.getElementById('levelSelector');
+                    const targetSelector = document.getElementById('targetSelector');
+                    const sectionFilter = document.getElementById('sectionFilter');
+
+                    if (this.currentView === 'level') {
+                        // Show level selector, hide target selector
+                        levelSelector.style.display = 'block';
+                        targetSelector.style.display = 'none';
+                        sectionFilter.style.display = 'none';
+                    } else {
+                        // Show target selector, hide level selector
+                        levelSelector.style.display = 'none';
+                        targetSelector.style.display = 'block';
+                        sectionFilter.style.display = 'none';
+                    }
                 });
 
                 // Target selector
                 document.getElementById('targetSelector').addEventListener('change', (e) => {
                     this.currentTarget = e.target.value;
                     if (this.currentTarget) {
+                        this.loadSchedule();
+                    }
+                });
+
+                // Level selector (new)
+                document.getElementById('levelSelector').addEventListener('change', (e) => {
+                    this.currentTarget = e.target.value;
+                    if (this.currentTarget) {
+                        // Update section filter with sections from this level
+                        const sectionFilter = document.getElementById('sectionFilter');
+                        const levelSections = this.getLevelSections(this.currentTarget);
+
+                        sectionFilter.innerHTML = '<option value="">Todas las secciones</option>';
+                        levelSections.forEach(section => {
+                            sectionFilter.innerHTML += `<option value="${section.id}">${section.name}</option>`;
+                        });
+                        sectionFilter.style.display = levelSections.length > 1 ? 'block' : 'none';
+
+                        this.loadSchedule();
+                    }
+                });
+
+                // Section filter for level view
+                document.getElementById('sectionFilter').addEventListener('change', (e) => {
+                    this.filterSectionId = e.target.value;
+                    if (this.currentView === 'level' && this.currentTarget) {
                         this.loadSchedule();
                     }
                 });
@@ -1216,21 +1272,8 @@
                         });
                         break;
                     case 'level':
-                        // Venezuelan educational levels
-                        const levels = [
-                            { id: 'preescolar', name: 'Educación Inicial (Preescolar)', grades: ['1er Grupo', '2do Grupo', '3er Grupo'] },
-                            { id: 'primaria', name: 'Educación Primaria', grades: ['1er. Grado', '2do. Grado', '3er. Grado', '4to. Grado', '5to. Grado', '6to. Grado'] },
-                            { id: 'secundaria', name: 'Educación Media General (Secundaria)', grades: ['1er. Año', '2do. Año', '3er. Año', '4to. Año', '5to. Año'] }
-                        ];
-                        levels.forEach(level => {
-                            // Check if there are sections for this level
-                            const hasActiveSections = this.sections.some(section =>
-                                level.grades.includes(section.name)
-                            );
-                            if (hasActiveSections) {
-                                targetSelector.innerHTML += `<option value="${level.id}">${level.name}</option>`;
-                            }
-                        });
+                        // For level view, we don't populate targetSelector
+                        // The levelSelector dropdown handles this separately
                         break;
                     case 'teacher':
                         this.teachers.forEach(teacher => {
@@ -1259,7 +1302,13 @@
                 try {
                     // Handle level view by aggregating multiple sections
                     if (this.currentView === 'level') {
-                        const levelSections = this.getLevelSections(this.currentTarget);
+                        let levelSections = this.getLevelSections(this.currentTarget);
+
+                        // Apply section filter if selected
+                        if (this.filterSectionId) {
+                            levelSections = levelSections.filter(s => s.id == this.filterSectionId);
+                        }
+
                         this.scheduleData = {};
 
                         // Load schedule for each section in the level
