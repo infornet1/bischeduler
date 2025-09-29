@@ -881,6 +881,26 @@ class AttendanceAlert(Base):
 
 
 # ============================================================================
+# TENANT SESSION MANAGEMENT
+# ============================================================================
+
+def get_tenant_session():
+    """
+    Get database session for the current tenant (UEIPAB)
+    Temporary implementation for ueipab_2025_data database
+    """
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    # Use the UEIPAB tenant database directly
+    tenant_db_url = 'mysql+pymysql://root:Temporal2024!@localhost/ueipab_2025_data'
+    engine = create_engine(tenant_db_url)
+    SessionLocal = sessionmaker(bind=engine)
+
+    return SessionLocal()
+
+
+# ============================================================================
 # PHASE 6: EXAM SCHEDULING SYSTEM
 # ============================================================================
 

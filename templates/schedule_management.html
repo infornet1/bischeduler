@@ -85,7 +85,7 @@
 .schedule-management {
             min-height: 100vh;
             background: linear-gradient(135deg, #003366 0%, #004080 100%);
-            padding: var(--spacing-lg);
+            padding: 20px;
         }
 
         .management-container {
@@ -94,11 +94,11 @@
         }
 
         .schedule-header {
-            background: var(--card-bg, rgba(255, 255, 255, 0.95));
-            border-radius: var(--border-radius);
-            padding: var(--spacing-xl);
-            margin-bottom: var(--spacing-lg);
-            box-shadow: var(--box-shadow-lg);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
             backdrop-filter: blur(10px);
         }
 
@@ -106,26 +106,26 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: var(--spacing-lg);
+            margin-bottom: 25px;
             flex-wrap: wrap;
-            gap: var(--spacing-md);
+            gap: 15px;
         }
 
         .section-selector {
             display: flex;
             align-items: center;
-            gap: var(--spacing-md);
-            background: var(--card-bg, white);
-            padding: var(--spacing-md);
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
+            gap: 15px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .schedule-grid-container {
-            background: var(--card-bg, rgba(255, 255, 255, 0.95));
-            border-radius: var(--border-radius);
-            padding: var(--spacing-lg);
-            box-shadow: var(--box-shadow-lg);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
             backdrop-filter: blur(10px);
             overflow-x: auto;
         }
@@ -138,9 +138,9 @@
         }
 
         .schedule-table th {
-            background: var(--primary-color, #003366);
+            background: #003366;
             color: white;
-            padding: var(--spacing-md);
+            padding: 15px;
             text-align: center;
             font-weight: 600;
             font-size: 0.9rem;
@@ -296,54 +296,85 @@
 
         .action-buttons {
             display: flex;
-            gap: var(--spacing-md);
+            gap: 15px;
             flex-wrap: wrap;
         }
 
         .btn-primary-custom {
-            background: var(--primary-color, #003366);
+            background: #003366;
             color: white;
             border: none;
-            padding: var(--spacing-sm) var(--spacing-lg);
-            border-radius: var(--border-radius);
+            padding: 12px 20px;
+            border-radius: 8px;
             font-weight: 600;
-            transition: var(--transition);
+            transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
-            gap: var(--spacing-sm);
+            gap: 8px;
+            text-decoration: none;
         }
 
         .btn-primary-custom:hover {
             background: #004080;
             color: white;
             transform: translateY(-1px);
-            box-shadow: var(--box-shadow);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
         }
 
         .stats-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: var(--spacing-md);
-            margin-bottom: var(--spacing-lg);
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        /* Responsive: stack on mobile */
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
         }
 
         .stat-card {
-            background: var(--card-bg, white);
-            border-radius: var(--border-radius);
-            padding: var(--spacing-md);
-            box-shadow: var(--box-shadow);
+            background: white;
+            border-radius: 12px;
+            padding: 20px 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             text-align: center;
+            transition: transform 0.2s ease;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
 
         .stat-value {
-            font-size: 1.5rem;
+            font-size: 2rem;
             font-weight: bold;
-            color: var(--primary-color, #003366);
+            color: #003366;
+            margin-bottom: 8px;
+            line-height: 1;
         }
 
         .stat-label {
             font-size: 0.85rem;
-            color: var(--text-secondary, #6c757d);
+            color: #6c757d;
+            font-weight: 500;
+            line-height: 1.2;
         }
 
         .legend {
@@ -439,6 +470,109 @@
             .action-buttons {
                 justify-content: center;
             }
+        }
+
+        /* Comprehensive dark mode text fixes */
+        [data-theme="dark"] h1,
+        [data-theme="dark"] h2,
+        [data-theme="dark"] h3,
+        [data-theme="dark"] h4,
+        [data-theme="dark"] h5,
+        [data-theme="dark"] h6 {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] p,
+        [data-theme="dark"] span,
+        [data-theme="dark"] div,
+        [data-theme="dark"] label,
+        [data-theme="dark"] .navbar-brand,
+        [data-theme="dark"] .nav-link,
+        [data-theme="dark"] .breadcrumb-item,
+        [data-theme="dark"] .alert,
+        [data-theme="dark"] .btn,
+        [data-theme="dark"] .dropdown-item,
+        [data-theme="dark"] .card-title,
+        [data-theme="dark"] .card-text,
+        [data-theme="dark"] .form-label,
+        [data-theme="dark"] .form-control,
+        [data-theme="dark"] .table,
+        [data-theme="dark"] .table td,
+        [data-theme="dark"] .table th {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .text-primary {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .text-secondary {
+            color: var(--text-secondary, #b0b0b0) !important;
+        }
+
+        [data-theme="dark"] .text-muted {
+            color: var(--text-secondary, #b0b0b0) !important;
+        }
+
+        /* Dark mode fixes for schedule management */
+        [data-theme="dark"] .schedule-header {
+            background: rgba(30, 30, 30, 0.95) !important;
+        }
+
+        [data-theme="dark"] .section-selector {
+            background: rgba(40, 40, 40, 0.95) !important;
+        }
+
+        [data-theme="dark"] .schedule-grid-container {
+            background: rgba(30, 30, 30, 0.95) !important;
+        }
+
+        [data-theme="dark"] .stat-card {
+            background: rgba(40, 40, 40, 0.95) !important;
+        }
+
+        [data-theme="dark"] .stat-value {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .stat-label {
+            color: #b0b0b0 !important;
+        }
+
+        /* Footer styles */
+        .footer-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            margin: 20px;
+            padding: 15px 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 100;
+            clear: both;
+        }
+
+        .tenant-info {
+            text-align: center;
+            color: #6c757d;
+        }
+
+        .tenant-info strong {
+            color: #003366;
+            font-weight: 600;
+        }
+
+        /* Dark mode footer */
+        [data-theme="dark"] .footer-section {
+            background: rgba(30, 30, 30, 0.95) !important;
+        }
+
+        [data-theme="dark"] .tenant-info {
+            color: #b0b0b0 !important;
+        }
+
+        [data-theme="dark"] .tenant-info strong {
+            color: #ffffff !important;
         }
     </style>
 </head>
@@ -704,6 +838,20 @@
         </div>
     </div>
 
+    <!-- Footer with Tenant Information -->
+    <div class="footer-section">
+        <div class="management-container">
+            <div class="tenant-info">
+                <small class="text-muted">
+                    🗄️ Base de Datos: <strong>ueipab_2025_data</strong> |
+                    🏫 Institución: <strong>UEIPAB</strong> |
+                    📅 Año Académico: <strong>2025-2026</strong> |
+                    ⚙️ Gestión de Horarios BiScheduler K12
+                </small>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap and jQuery -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -793,72 +941,34 @@
 
             async loadMasterData() {
                 try {
-                    // Load time periods (Venezuelan schedule)
-                    this.timePeriods = [
-                        { id: 1, name: 'P1', start_time: '07:00', end_time: '07:40', is_break: false },
-                        { id: 2, name: 'P2', start_time: '07:40', end_time: '08:20', is_break: false },
-                        { id: 3, name: 'P3', start_time: '08:20', end_time: '09:00', is_break: false },
-                        { id: 4, name: 'P4', start_time: '09:00', end_time: '09:40', is_break: false },
-                        { id: 5, name: 'Recreo', start_time: '09:40', end_time: '10:00', is_break: true },
-                        { id: 6, name: 'P5', start_time: '10:00', end_time: '10:40', is_break: false },
-                        { id: 7, name: 'P6', start_time: '10:40', end_time: '11:20', is_break: false },
-                        { id: 8, name: 'P7', start_time: '11:20', end_time: '12:00', is_break: false },
-                        { id: 9, name: 'P8', start_time: '12:00', end_time: '12:40', is_break: false },
-                        { id: 10, name: 'Almuerzo', start_time: '12:40', end_time: '13:00', is_break: true },
-                        { id: 11, name: 'P9', start_time: '13:00', end_time: '13:40', is_break: false },
-                        { id: 12, name: 'P10', start_time: '13:40', end_time: '14:20', is_break: false }
-                    ];
+                    // Load real data from API
+                    const response = await fetch('/bischeduler/api/schedule/reference-data');
+                    const result = await response.json();
 
-                    // Load sections
-                    this.sections = [
-                        { id: 1, name: '1er año A', grade: '1er año' },
-                        { id: 2, name: '1er año B', grade: '1er año' },
-                        { id: 3, name: '2do año A', grade: '2do año' },
-                        { id: 4, name: '2do año B', grade: '2do año' },
-                        { id: 5, name: '3er año A', grade: '3er año' },
-                        { id: 6, name: '3er año B', grade: '3er año' },
-                        { id: 7, name: '4to año A', grade: '4to año' },
-                        { id: 8, name: '4to año B', grade: '4to año' },
-                        { id: 9, name: '5to año A', grade: '5to año' },
-                        { id: 10, name: '5to año B', grade: '5to año' }
-                    ];
+                    if (result.success && result.data) {
+                        this.teachers = result.data.teachers;
+                        this.sections = result.data.sections;
+                        this.subjects = result.data.subjects;
+                        this.classrooms = result.data.classrooms;
+                        this.timePeriods = result.data.time_periods;
 
-                    // Load teachers
-                    this.teachers = [
-                        { id: 1, name: 'MARIA NIETO', specialization: 'Matemáticas' },
-                        { id: 2, name: 'JUAN PEREZ', specialization: 'Física' },
-                        { id: 3, name: 'ANA RODRIGUEZ', specialization: 'Castellano' },
-                        { id: 4, name: 'CARLOS MENDEZ', specialization: 'Historia' },
-                        { id: 5, name: 'LUCIA GARCIA', specialization: 'Inglés' }
-                    ];
-
-                    // Load subjects
-                    this.subjects = [
-                        { id: 1, name: 'CASTELLANO Y LITERATURA' },
-                        { id: 2, name: 'INGLÉS' },
-                        { id: 3, name: 'MATEMÁTICAS' },
-                        { id: 4, name: 'FÍSICA' },
-                        { id: 5, name: 'QUÍMICA' },
-                        { id: 6, name: 'BIOLOGÍA' },
-                        { id: 7, name: 'GHC PARA LA SOBERANIA NACIONAL' },
-                        { id: 8, name: 'EDUCACIÓN FÍSICA' }
-                    ];
-
-                    // Load classrooms
-                    this.classrooms = [
-                        { id: 1, name: 'Aula 1', capacity: 30 },
-                        { id: 2, name: 'Aula 2', capacity: 30 },
-                        { id: 3, name: 'Aula 3', capacity: 30 },
-                        { id: 4, name: 'Lab Física', capacity: 25 },
-                        { id: 5, name: 'Lab Química', capacity: 25 },
-                        { id: 6, name: 'Cancha 1', capacity: 50 }
-                    ];
+                        console.log('Loaded real data:', {
+                            teachers: this.teachers.length,
+                            sections: this.sections.length,
+                            subjects: this.subjects.length,
+                            classrooms: this.classrooms.length,
+                            timePeriods: this.timePeriods.length
+                        });
+                    } else {
+                        throw new Error('Failed to load reference data: ' + (result.error || 'Unknown error'));
+                    }
 
                     this.populateFormSelects();
                     this.updateTargetSelector();
 
                 } catch (error) {
                     console.error('Error loading master data:', error);
+                    alert('Error cargando datos del sistema. Verifique la conexión con la base de datos.');
                 }
             }
 
@@ -936,36 +1046,30 @@
             async loadSchedule() {
                 this.showLoading(true);
                 try {
-                    // For demo, generate sample schedule data
-                    this.generateSampleSchedule();
+                    // Load real schedule data from API
+                    const response = await fetch(`/bischeduler/api/schedule/assignments?view_type=${this.currentView}&target_id=${this.currentTarget}`);
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.scheduleData = result.schedule_data || {};
+                        console.log('Loaded schedule data:', this.scheduleData);
+                    } else {
+                        console.error('Failed to load schedule:', result.error);
+                        this.scheduleData = {};
+                    }
+
                     this.renderScheduleGrid();
                     this.updateStatistics();
                 } catch (error) {
                     console.error('Error loading schedule:', error);
+                    this.scheduleData = {};
+                    this.renderScheduleGrid();
+                    this.updateStatistics();
                 } finally {
                     this.showLoading(false);
                 }
             }
 
-            generateSampleSchedule() {
-                // Generate some sample assignments for demonstration
-                this.scheduleData = {};
-                const days = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
-
-                // Add some sample assignments
-                if (this.currentView === 'section' && this.currentTarget) {
-                    // Sample assignments for a section
-                    this.scheduleData = {
-                        'lunes_1': { subject: 'MATEMÁTICAS', teacher: 'MARIA NIETO', classroom: 'Aula 3' },
-                        'lunes_3': { subject: 'FÍSICA', teacher: 'JUAN PEREZ', classroom: 'Lab Física' },
-                        'martes_2': { subject: 'CASTELLANO', teacher: 'ANA RODRIGUEZ', classroom: 'Aula 1' },
-                        'martes_4': { subject: 'INGLÉS', teacher: 'LUCIA GARCIA', classroom: 'Aula 2' },
-                        'miercoles_1': { subject: 'QUÍMICA', teacher: 'CARLOS MENDEZ', classroom: 'Lab Química' },
-                        'jueves_3': { subject: 'BIOLOGÍA', teacher: 'ANA RODRIGUEZ', classroom: 'Aula 3' },
-                        'viernes_2': { subject: 'EDUCACIÓN FÍSICA', teacher: 'JUAN PEREZ', classroom: 'Cancha 1' }
-                    };
-                }
-            }
 
             renderScheduleGrid() {
                 const tbody = document.getElementById('scheduleBody');
@@ -1046,7 +1150,7 @@
                 const conflictCount = Math.floor(Math.random() * 3); // Demo conflicts
 
                 document.getElementById('totalAssignments').textContent = assignments;
-                document.getElementById('teacherWorkload').textContent = assignments * 40 / 60; // Convert to hours
+                document.getElementById('teacherWorkload').textContent = (assignments * 40 / 60).toFixed(1); // Convert to hours, 1 decimal
                 document.getElementById('freeSlots').textContent = freeSlots;
                 document.getElementById('conflictCount').textContent = conflictCount;
             }
@@ -1147,7 +1251,7 @@
                 if (teacherId) {
                     const teacher = this.teachers.find(t => t.id == teacherId);
                     if (teacher) {
-                        const currentHours = Math.floor(Math.random() * 30) + 10; // Demo hours
+                        const currentHours = (Math.random() * 30 + 10).toFixed(1); // Demo hours with 1 decimal
                         document.getElementById('teacherWorkloadInfo').textContent =
                             `Carga horaria: ${currentHours}/40 horas`;
                     }

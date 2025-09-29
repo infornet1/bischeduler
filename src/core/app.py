@@ -902,6 +902,201 @@ def create_app(config_name='development'):
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
+    # ============================================================================
+    # SCHEDULE MANAGEMENT API ENDPOINTS
+    # ============================================================================
+
+    @app.route('/api/schedule/reference-data')
+    def schedule_reference_data():
+        """Get all reference data needed for schedule management"""
+        from flask import jsonify
+        from src.models.tenant import (
+            get_tenant_session, Teacher, Section, Subject,
+            Classroom, TimePeriod
+        )
+        from sqlalchemy import and_
+
+        try:
+            db_session = get_tenant_session()
+            current_academic_year = '2025-2026'
+
+            # Get all teachers
+            teachers = db_session.query(Teacher).filter(
+                Teacher.is_active == True
+            ).order_by(Teacher.teacher_name).all()
+
+            # Get all sections
+            sections = db_session.query(Section).filter(
+                Section.is_active == True
+            ).order_by(Section.name).all()
+
+            # Get all subjects
+            subjects = db_session.query(Subject).filter(
+                and_(
+                    Subject.academic_year == current_academic_year,
+                    Subject.is_active == True
+                )
+            ).order_by(Subject.subject_name).all()
+
+            # Get all classrooms
+            classrooms = db_session.query(Classroom).filter(
+                Classroom.is_active == True
+            ).order_by(Classroom.name).all()
+
+            # Get time periods (deduplicated by name and time)
+            time_periods_query = db_session.query(TimePeriod).filter(
+                and_(
+                    TimePeriod.academic_year == current_academic_year,
+                    TimePeriod.is_active == True
+                )
+            ).order_by(TimePeriod.display_order).all()
+
+            # Deduplicate time periods by name and start_time
+            seen_periods = {}
+            time_periods = []
+            for tp in time_periods_query:
+                key = f"{tp.period_name}_{tp.start_time}"
+                if key not in seen_periods:
+                    seen_periods[key] = tp
+                    time_periods.append(tp)
+
+            return jsonify({
+                'success': True,
+                'data': {
+                    'teachers': [
+                        {
+                            'id': t.id,
+                            'name': t.teacher_name,
+                            'specialization': t.area_specialization or 'General'
+                        } for t in teachers
+                    ],
+                    'sections': [
+                        {
+                            'id': s.id,
+                            'name': s.name,
+                            'grade': s.grade_level
+                        } for s in sections
+                    ],
+                    'subjects': [
+                        {
+                            'id': s.id,
+                            'name': s.subject_name,
+                            'short_name': s.short_name
+                        } for s in subjects
+                    ],
+                    'classrooms': [
+                        {
+                            'id': c.id,
+                            'name': c.name,
+                            'capacity': c.capacity or 30,
+                            'room_type': c.room_type.value if c.room_type else 'regular'
+                        } for c in classrooms
+                    ],
+                    'time_periods': [
+                        {
+                            'id': tp.id,
+                            'name': tp.period_name,
+                            'start_time': tp.start_time.strftime('%H:%M'),
+                            'end_time': tp.end_time.strftime('%H:%M'),
+                            'is_break': tp.is_break,
+                            'duration': tp.duration_minutes
+                        } for tp in time_periods
+                    ]
+                }
+            })
+
+        except Exception as e:
+            return jsonify({'error': f"Failed to load reference data: {str(e)}"}), 500
+
+    @app.route('/api/schedule/assignments')
+    def get_schedule_assignments():
+        """Get schedule assignments for a specific view (section/teacher/classroom)"""
+        from flask import jsonify, request
+        from src.models.tenant import get_tenant_session, ScheduleAssignment, TimePeriod
+        from sqlalchemy import and_
+
+        try:
+            view_type = request.args.get('view_type', 'section')  # section, teacher, classroom
+            target_id = request.args.get('target_id', type=int)
+            current_academic_year = '2025-2026'
+
+            if not target_id:
+                return jsonify({'error': 'target_id is required'}), 400
+
+            db_session = get_tenant_session()
+
+            # Build query based on view type
+            query = db_session.query(ScheduleAssignment).filter(
+                and_(
+                    ScheduleAssignment.academic_year == current_academic_year,
+                    ScheduleAssignment.is_active == True
+                )
+            )
+
+            if view_type == 'section':
+                query = query.filter(ScheduleAssignment.section_id == target_id)
+            elif view_type == 'teacher':
+                query = query.filter(ScheduleAssignment.teacher_id == target_id)
+            elif view_type == 'classroom':
+                query = query.filter(ScheduleAssignment.classroom_id == target_id)
+
+            assignments = query.all()
+
+            # Get time periods for mapping (deduplicated)
+            time_periods_query = db_session.query(TimePeriod).filter(
+                and_(
+                    TimePeriod.academic_year == current_academic_year,
+                    TimePeriod.is_active == True
+                )
+            ).order_by(TimePeriod.display_order).all()
+
+            # Create mapping from all period IDs to canonical period info
+            period_mapping = {}
+            seen_periods = {}
+            for tp in time_periods_query:
+                key = f"{tp.period_name}_{tp.start_time}"
+                if key not in seen_periods:
+                    seen_periods[key] = tp
+                    canonical_period = tp
+                else:
+                    canonical_period = seen_periods[key]
+
+                period_mapping[tp.id] = canonical_period
+
+            # Format assignments for frontend
+            schedule_data = {}
+            for assignment in assignments:
+                try:
+                    # Map to canonical period
+                    canonical_period = period_mapping.get(assignment.time_period_id)
+                    if not canonical_period:
+                        continue
+
+                    key = f"{assignment.day_of_week.value}_{canonical_period.id}"
+                    schedule_data[key] = {
+                        'id': assignment.id,
+                        'subject': assignment.subject.subject_name if assignment.subject else 'Unknown Subject',
+                        'teacher': assignment.teacher.teacher_name if assignment.teacher else 'Unknown Teacher',
+                        'classroom': assignment.classroom.name if assignment.classroom else 'Unknown Classroom',
+                        'section': assignment.section.name if assignment.section else 'Unknown Section',
+                        'assignment_type': assignment.assignment_type,
+                        'is_locked': assignment.is_locked,
+                        'conflict_status': assignment.conflict_status
+                    }
+                except Exception as e:
+                    # Skip assignments with missing relationships
+                    continue
+
+            return jsonify({
+                'success': True,
+                'schedule_data': schedule_data,
+                'view_type': view_type,
+                'target_id': target_id
+            })
+
+        except Exception as e:
+            return jsonify({'error': f"Failed to load assignments: {str(e)}"}), 500
+
     # Health check endpoint
     @app.route('/health')
     def health_check():

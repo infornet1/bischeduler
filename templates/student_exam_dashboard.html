@@ -561,6 +561,28 @@
             color: #ffffff !important;
         }
 
+        /* Ultra-specific alert banner text fixes for dark mode */
+        [data-theme="dark"] .alert-banner,
+        [data-theme="dark"] .alert-banner *,
+        [data-theme="dark"] .alert-banner strong,
+        [data-theme="dark"] .alert-banner span,
+        [data-theme="dark"] .alert-banner div,
+        [data-theme="dark"] #alertMessage,
+        [data-theme="dark"] #alertBanner,
+        [data-theme="dark"] #alertBanner *,
+        [data-theme="dark"] #alertBanner strong,
+        [data-theme="dark"] #alertBanner span {
+            color: #ffffff !important;
+            background-color: transparent !important;
+        }
+
+        /* Force alert banner visibility in dark mode */
+        [data-theme="dark"] .alert-banner {
+            background: linear-gradient(135deg, #dc3545, #a02532) !important;
+            border: 3px solid #ff0000 !important;
+            box-shadow: 0 0 20px rgba(220, 53, 69, 0.8) !important;
+        }
+
         [data-theme="dark"] .student-header {
             background: var(--card-bg);
             color: var(--text-primary);
@@ -715,6 +737,218 @@
             .exam-actions {
                 justify-content: center;
             }
+        }
+
+        /* Ultra-specific fixes for section headers: Próximos Exámenes, Calendario, Notificaciones */
+        [data-theme="dark"] .card-header h3,
+        [data-theme="dark"] .card-header h4,
+        [data-theme="dark"] .upcoming-exams .card-header h3,
+        [data-theme="dark"] .exam-calendar-mini .card-header h4,
+        [data-theme="dark"] .notifications-panel .card-header h4 {
+            color: #ffffff !important;
+        }
+
+        /* Fix stat labels including "Próximos Exámenes" */
+        [data-theme="dark"] .stat-label {
+            color: var(--text-secondary, #b0b0b0) !important;
+        }
+
+        /* Fix section content text */
+        [data-theme="dark"] .card-body p,
+        [data-theme="dark"] .upcoming-exams .card-body,
+        [data-theme="dark"] .exam-calendar-mini .card-body,
+        [data-theme="dark"] .notifications-panel .card-body,
+        [data-theme="dark"] .text-center.text-muted {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        /* Fix loading text specifically */
+        [data-theme="dark"] .text-center.text-muted p {
+            color: var(--text-secondary, #b0b0b0) !important;
+        }
+
+        /* Fix calendar table text */
+        [data-theme="dark"] .mini-calendar,
+        [data-theme="dark"] .mini-calendar td,
+        [data-theme="dark"] .mini-calendar th {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        /* Fix exam items and notification items text */
+        [data-theme="dark"] .exam-item h5,
+        [data-theme="dark"] .exam-item p,
+        [data-theme="dark"] .exam-item span,
+        [data-theme="dark"] .notification-item p,
+        [data-theme="dark"] .notification-item span {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        /* ULTRA-AGGRESSIVE FIXES for "Próximos Exámenes" section - same level as alert banner */
+        [data-theme="dark"] .upcoming-exams,
+        [data-theme="dark"] .upcoming-exams *,
+        [data-theme="dark"] .upcoming-exams .card-body,
+        [data-theme="dark"] .upcoming-exams .card-body *,
+        [data-theme="dark"] .upcoming-exams .exam-item,
+        [data-theme="dark"] .upcoming-exams .exam-item *,
+        [data-theme="dark"] .upcoming-exams .exam-item h5,
+        [data-theme="dark"] .upcoming-exams .exam-item p,
+        [data-theme="dark"] .upcoming-exams .exam-item span,
+        [data-theme="dark"] .upcoming-exams .exam-item div,
+        [data-theme="dark"] .upcoming-exams .exam-item strong,
+        [data-theme="dark"] .upcoming-exams .exam-item small,
+        [data-theme="dark"] .upcoming-exams .exam-title,
+        [data-theme="dark"] .upcoming-exams .exam-subject,
+        [data-theme="dark"] .upcoming-exams .exam-date,
+        [data-theme="dark"] .upcoming-exams .exam-time,
+        [data-theme="dark"] .upcoming-exams .exam-teacher,
+        [data-theme="dark"] .upcoming-exams .exam-classroom,
+        [data-theme="dark"] .upcoming-exams .exam-details,
+        [data-theme="dark"] .upcoming-exams .exam-info,
+        [data-theme="dark"] .upcoming-exams .text-muted,
+        [data-theme="dark"] .upcoming-exams .text-center,
+        [data-theme="dark"] .upcoming-exams .loading-text,
+        [data-theme="dark"] #examsList,
+        [data-theme="dark"] #examsList *,
+        [data-theme="dark"] #examsList p,
+        [data-theme="dark"] #examsList div,
+        [data-theme="dark"] #examsList span {
+            color: #ffffff !important;
+            background-color: transparent !important;
+        }
+
+        /* Force visibility for any loading or placeholder text in Próximos Exámenes */
+        [data-theme="dark"] .upcoming-exams .text-center.text-muted,
+        [data-theme="dark"] .upcoming-exams .text-center.text-muted *,
+        [data-theme="dark"] .upcoming-exams .text-center.text-muted p {
+            color: #ffffff !important;
+        }
+
+        /* ULTRA-AGGRESSIVE FIXES for "Calendario" section - same as Próximos Exámenes */
+        [data-theme="dark"] .exam-calendar-mini,
+        [data-theme="dark"] .exam-calendar-mini *,
+        [data-theme="dark"] .exam-calendar-mini .card-header,
+        [data-theme="dark"] .exam-calendar-mini .card-header *,
+        [data-theme="dark"] .exam-calendar-mini .card-body,
+        [data-theme="dark"] .exam-calendar-mini .card-body *,
+        [data-theme="dark"] .exam-calendar-mini .mini-calendar,
+        [data-theme="dark"] .exam-calendar-mini .mini-calendar *,
+        [data-theme="dark"] .exam-calendar-mini table,
+        [data-theme="dark"] .exam-calendar-mini table *,
+        [data-theme="dark"] .exam-calendar-mini td,
+        [data-theme="dark"] .exam-calendar-mini th,
+        [data-theme="dark"] .exam-calendar-mini tr,
+        [data-theme="dark"] .exam-calendar-mini thead,
+        [data-theme="dark"] .exam-calendar-mini tbody,
+        [data-theme="dark"] .exam-calendar-mini .calendar-day,
+        [data-theme="dark"] .exam-calendar-mini .calendar-date,
+        [data-theme="dark"] .exam-calendar-mini .calendar-month,
+        [data-theme="dark"] .exam-calendar-mini .calendar-year,
+        [data-theme="dark"] .exam-calendar-mini .has-exam,
+        [data-theme="dark"] .exam-calendar-mini .today,
+        [data-theme="dark"] #miniCalendar,
+        [data-theme="dark"] #miniCalendar *,
+        [data-theme="dark"] #miniCalendar td,
+        [data-theme="dark"] #miniCalendar th {
+            color: #ffffff !important;
+            background-color: transparent !important;
+        }
+
+        /* ULTRA-AGGRESSIVE FIXES for "Notificaciones" section - same as Próximos Exámenes */
+        [data-theme="dark"] .notifications-panel,
+        [data-theme="dark"] .notifications-panel *,
+        [data-theme="dark"] .notifications-panel .card-header,
+        [data-theme="dark"] .notifications-panel .card-header *,
+        [data-theme="dark"] .notifications-panel .card-body,
+        [data-theme="dark"] .notifications-panel .card-body *,
+        [data-theme="dark"] .notifications-panel .notification-item,
+        [data-theme="dark"] .notifications-panel .notification-item *,
+        [data-theme="dark"] .notifications-panel .notification-title,
+        [data-theme="dark"] .notifications-panel .notification-text,
+        [data-theme="dark"] .notifications-panel .notification-time,
+        [data-theme="dark"] .notifications-panel .notification-date,
+        [data-theme="dark"] .notifications-panel .notification-icon,
+        [data-theme="dark"] .notifications-panel .notification-content,
+        [data-theme="dark"] .notifications-panel p,
+        [data-theme="dark"] .notifications-panel span,
+        [data-theme="dark"] .notifications-panel div,
+        [data-theme="dark"] .notifications-panel small,
+        [data-theme="dark"] .notifications-panel strong,
+        [data-theme="dark"] #notificationsList,
+        [data-theme="dark"] #notificationsList *,
+        [data-theme="dark"] #notificationsList p,
+        [data-theme="dark"] #notificationsList div,
+        [data-theme="dark"] #notificationsList span {
+            color: #ffffff !important;
+            background-color: transparent !important;
+        }
+
+        /* Preserve special backgrounds for calendar dates with exams */
+        [data-theme="dark"] .exam-calendar-mini .has-exam {
+            background-color: rgba(13, 110, 253, 0.3) !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .exam-calendar-mini .today {
+            background-color: rgba(40, 167, 69, 0.3) !important;
+            color: #ffffff !important;
+        }
+
+        /* ULTRA-AGGRESSIVE FIXES for User Corner Dropdown - same as other sections */
+        [data-theme="dark"] .user-bar,
+        [data-theme="dark"] .user-bar *,
+        [data-theme="dark"] .user-info,
+        [data-theme="dark"] .user-info *,
+        [data-theme="dark"] .user-name,
+        [data-theme="dark"] .user-role,
+        [data-theme="dark"] .user-dropdown-toggle,
+        [data-theme="dark"] .user-dropdown-toggle *,
+        [data-theme="dark"] .dropdown,
+        [data-theme="dark"] .dropdown *,
+        [data-theme="dark"] .dropdown-menu,
+        [data-theme="dark"] .dropdown-menu *,
+        [data-theme="dark"] .dropdown-item,
+        [data-theme="dark"] .dropdown-item *,
+        [data-theme="dark"] .dropdown-item i,
+        [data-theme="dark"] .dropdown-item span,
+        [data-theme="dark"] .dropdown-item-text,
+        [data-theme="dark"] .dropdown-item-text *,
+        [data-theme="dark"] .dropdown-item-text small,
+        [data-theme="dark"] .dropdown-item-text span,
+        [data-theme="dark"] .dropdown-divider,
+        [data-theme="dark"] #currentUserName,
+        [data-theme="dark"] #dropdownUserName,
+        [data-theme="dark"] #darkModeText,
+        [data-theme="dark"] #darkModeIcon {
+            color: #ffffff !important;
+        }
+
+        /* Override dropdown menu background specifically */
+        [data-theme="dark"] .dropdown-menu {
+            background-color: rgba(30, 30, 30, 0.98) !important;
+            border-color: #444 !important;
+        }
+
+        /* Override dropdown item hover state */
+        [data-theme="dark"] .dropdown-item:hover,
+        [data-theme="dark"] .dropdown-item:focus {
+            background-color: rgba(60, 60, 60, 0.95) !important;
+            color: #ffffff !important;
+        }
+
+        /* Ensure user bar maintains its background */
+        [data-theme="dark"] .user-bar {
+            background: rgba(30, 30, 30, 0.95) !important;
+        }
+
+        /* Fix dropdown toggle button */
+        [data-theme="dark"] .user-dropdown-toggle {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        /* Ensure all text in dropdown is visible */
+        [data-theme="dark"] .dropdown-item-text small.text-muted {
+            color: #b0b0b0 !important;
         }
     </style>
 </head>
