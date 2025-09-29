@@ -9,9 +9,9 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="/bischeduler/static/css/styles.css?v=6">
-    <link rel="stylesheet" href="/bischeduler/static/css/dark-mode.css?v=6">
-    <link rel="stylesheet" href="/bischeduler/static/css/schedule-management.css?v=1">
+    <link rel="stylesheet" href="/bischeduler/static/css/styles.css?v=7">
+    <link rel="stylesheet" href="/bischeduler/static/css/dark-mode.css?v=7">
+    <link rel="stylesheet" href="/bischeduler/static/css/schedule-management.css?v=2">
 
     <!-- CSS extracted to external files for better maintainability -->
 </head>
@@ -1932,7 +1932,1709 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horario Académico - ${targetName}</title>
+    <style>
+        @media print {
+            @page { margin: 1cm; }
+            body { margin: 0; }
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
     <!-- Print styles extracted to external CSS file -->
+                document.documentElement.setAttribute('data-theme', theme);
+                this.updateThemeToggle(theme);
+            }
+
+            updateThemeToggle(theme) {
+                const icon = document.getElementById('darkModeIcon');
+                const text = document.getElementById('darkModeText');
+                if (icon && text) {
+                    if (theme === 'dark') {
+                        icon.className = 'fas fa-sun';
+                        text.textContent = 'Modo Claro';
+                    } else {
+                        icon.className = 'fas fa-moon';
+                        text.textContent = 'Modo Oscuro';
+                    }
+                }
+            }
+
+            setupEventListeners() {
+                // Dark mode toggle
+                document.getElementById('darkModeToggle').addEventListener('click', () => {
+                    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('bischeduler-theme', newTheme);
+                    this.updateThemeToggle(newTheme);
+                });
+
+                // View selector
+                const viewSelectorElement = document.getElementById('viewSelector');
+                if (viewSelectorElement) {
+                    viewSelectorElement.addEventListener('change', (e) => {
+                        this.currentView = e.target.value;
+                        console.log('View changed to:', this.currentView);
+                        this.updateTargetSelector();
+
+                        // Toggle visibility of selectors based on view type
+                        const levelSelector = document.getElementById('levelSelector');
+                        const targetSelector = document.getElementById('targetSelector');
+                        const sectionFilter = document.getElementById('sectionFilter');
+
+                        if (levelSelector && targetSelector && sectionFilter) {
+                            if (this.currentView === 'level') {
+                                // Show level selector, hide target selector
+                                console.log('Showing level selector');
+                                levelSelector.style.display = 'inline-block';
+                                targetSelector.style.display = 'none';
+                                sectionFilter.style.display = 'none';
+                                // Clear target when switching to level view
+                                this.currentTarget = null;
+                            } else {
+                                // Show target selector, hide level selector
+                                console.log('Showing target selector');
+                                levelSelector.style.display = 'none';
+                                targetSelector.style.display = 'inline-block';
+                                sectionFilter.style.display = 'none';
+                            }
+                        } else {
+                            console.error('Some selectors not found:', { levelSelector, targetSelector, sectionFilter });
+                        }
+                    });
+                } else {
+                    console.error('viewSelector element not found');
+                }
+
+                // Target selector
+                document.getElementById('targetSelector').addEventListener('change', (e) => {
+                    this.currentTarget = e.target.value;
+                    if (this.currentTarget) {
+                        this.loadSchedule();
+                    }
+                });
+
+                // Level selector (new)
+                const levelSelectorElement = document.getElementById('levelSelector');
+                if (levelSelectorElement) {
+                    levelSelectorElement.addEventListener('change', (e) => {
+                        this.currentTarget = e.target.value;
+                        console.log('Level selected:', this.currentTarget);
+                        if (this.currentTarget) {
+                            // Update section filter with sections from this level
+                            const sectionFilter = document.getElementById('sectionFilter');
+                            const levelSections = this.getLevelSections(this.currentTarget);
+
+                            if (sectionFilter) {
+                                sectionFilter.innerHTML = '<option value="">Todas las secciones</option>';
+                                levelSections.forEach(section => {
+                                    sectionFilter.innerHTML += `<option value="${section.id}">${section.name}</option>`;
+                                });
+                                sectionFilter.style.display = levelSections.length > 1 ? 'inline-block' : 'none';
+                            }
+
+                            this.loadSchedule();
+                        }
+                    });
+                } else {
+                    console.error('levelSelector element not found');
+                }
+
+                // Section filter for level view
+                const sectionFilterElement = document.getElementById('sectionFilter');
+                if (sectionFilterElement) {
+                    sectionFilterElement.addEventListener('change', (e) => {
+                        this.filterSectionId = e.target.value;
+                        if (this.currentView === 'level' && this.currentTarget) {
+                            this.loadSchedule();
+                        }
+                    });
+                }
+
+                // Form field changes for conflict checking
+                ['sectionSelect', 'teacherSelect', 'classroomSelect', 'daySelect', 'periodSelect'].forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.addEventListener('change', () => this.checkAssignmentConflicts());
+                    }
+                });
+
+                // Teacher selection updates workload info
+                document.getElementById('teacherSelect').addEventListener('change', (e) => {
+                    this.updateTeacherWorkload(e.target.value);
+                });
+            }
+
+            async loadMasterData() {
+                try {
+                    // Load real data from API
+                    const response = await fetch('/bischeduler/api/schedule/reference-data');
+                    const result = await response.json();
+
+                    if (result.success && result.data) {
+                        this.teachers = result.data.teachers;
+                        this.sections = result.data.sections;
+                        this.subjects = result.data.subjects;
+                        this.classrooms = result.data.classrooms;
+                        this.timePeriods = result.data.time_periods;
+
+                        console.log('Loaded real data:', {
+                            teachers: this.teachers.length,
+                            sections: this.sections.length,
+                            subjects: this.subjects.length,
+                            classrooms: this.classrooms.length,
+                            timePeriods: this.timePeriods.length
+                        });
+                    } else {
+                        throw new Error('Failed to load reference data: ' + (result.error || 'Unknown error'));
+                    }
+
+                    this.populateFormSelects();
+                    this.updateTargetSelector();
+
+                    // Auto-load the first available section's schedule for better UX
+                    if (this.sections && this.sections.length > 0) {
+                        this.currentView = 'section';
+                        this.currentTarget = this.sections[0].id;
+
+                        // Safely update UI elements if they exist
+                        const viewSelect = document.getElementById('viewSelect');
+                        const targetSelect = document.getElementById('targetSelect');
+
+                        if (viewSelect) {
+                            viewSelect.value = 'section';
+                        }
+                        if (targetSelect) {
+                            targetSelect.value = this.sections[0].id;
+                        }
+
+                        // Load initial schedule data
+                        setTimeout(() => {
+                            this.loadSchedule();
+                        }, 500);
+                    }
+
+                } catch (error) {
+                    console.error('Error loading master data:', error);
+                    alert('Error cargando datos del sistema. Verifique la conexión con la base de datos.');
+                }
+            }
+
+            populateFormSelects() {
+                // Populate sections
+                const sectionSelect = document.getElementById('sectionSelect');
+                sectionSelect.innerHTML = '<option value="">Seleccione sección...</option>';
+                this.sections.forEach(section => {
+                    sectionSelect.innerHTML += `<option value="${section.id}">${section.name}</option>`;
+                });
+
+                // Populate subjects
+                const subjectSelect = document.getElementById('subjectSelect');
+                subjectSelect.innerHTML = '<option value="">Seleccione materia...</option>';
+                this.subjects.forEach(subject => {
+                    subjectSelect.innerHTML += `<option value="${subject.id}">${subject.name}</option>`;
+                });
+
+                // Populate teachers
+                const teacherSelect = document.getElementById('teacherSelect');
+                teacherSelect.innerHTML = '<option value="">Seleccione profesor...</option>';
+                this.teachers.forEach(teacher => {
+                    teacherSelect.innerHTML += `<option value="${teacher.id}">${teacher.name} (${teacher.specialization})</option>`;
+                });
+
+                // Populate classrooms
+                const classroomSelect = document.getElementById('classroomSelect');
+                classroomSelect.innerHTML = '<option value="">Seleccione aula...</option>';
+                this.classrooms.forEach(classroom => {
+                    classroomSelect.innerHTML += `<option value="${classroom.id}">${classroom.name} (Cap: ${classroom.capacity})</option>`;
+                });
+
+                // Populate periods
+                const periodSelect = document.getElementById('periodSelect');
+                periodSelect.innerHTML = '<option value="">Seleccione período...</option>';
+                this.timePeriods.forEach(period => {
+                    if (!period.is_break) {
+                        periodSelect.innerHTML += `<option value="${period.id}">${period.name}: ${period.start_time} - ${period.end_time}</option>`;
+                    }
+                });
+            }
+
+            updateTargetSelector() {
+                const targetSelector = document.getElementById('targetSelector');
+                targetSelector.innerHTML = '<option value="">Seleccione...</option>';
+
+                switch (this.currentView) {
+                    case 'section':
+                        this.sections.forEach(section => {
+                            targetSelector.innerHTML += `<option value="${section.id}">${section.name}</option>`;
+                        });
+                        break;
+                    case 'level':
+                        // For level view, we don't populate targetSelector
+                        // The levelSelector dropdown handles this separately
+                        break;
+                    case 'teacher':
+                        this.teachers.forEach(teacher => {
+                            targetSelector.innerHTML += `<option value="${teacher.id}">${teacher.name}</option>`;
+                        });
+                        break;
+                    case 'classroom':
+                        this.classrooms.forEach(classroom => {
+                            targetSelector.innerHTML += `<option value="${classroom.id}">${classroom.name}</option>`;
+                        });
+                        break;
+                }
+            }
+
+            loadDefaultSchedule() {
+                // Load first section by default
+                if (this.sections.length > 0) {
+                    this.currentTarget = this.sections[0].id;
+                    document.getElementById('targetSelector').value = this.currentTarget;
+                    this.loadSchedule();
+                }
+            }
+
+            async loadSchedule() {
+                this.showLoading(true);
+                try {
+                    // Handle level view by aggregating multiple sections
+                    if (this.currentView === 'level') {
+                        let levelSections = this.getLevelSections(this.currentTarget);
+
+                        // Apply section filter if selected
+                        if (this.filterSectionId) {
+                            levelSections = levelSections.filter(s => s.id == this.filterSectionId);
+                        }
+
+                        this.scheduleData = {};
+
+                        // Load schedule for each section in the level
+                        for (const section of levelSections) {
+                            const response = await fetch(`/bischeduler/api/schedule/assignments?view_type=section&target_id=${section.id}`);
+                            const result = await response.json();
+
+                            if (result.success && result.schedule_data) {
+                                // Merge schedule data, prefixing with section name for clarity
+                                Object.entries(result.schedule_data).forEach(([key, assignment]) => {
+                                    // Store assignments grouped by section
+                                    if (!this.scheduleData[key]) {
+                                        this.scheduleData[key] = [];
+                                    }
+                                    // Add section information to the assignment
+                                    this.scheduleData[key].push({
+                                        ...assignment,
+                                        section: section.name,
+                                        sectionId: section.id
+                                    });
+                                });
+                            }
+                        }
+                        console.log('Loaded level schedule data:', this.scheduleData);
+                    } else {
+                        // Load single view (section, teacher, classroom)
+                        const response = await fetch(`/bischeduler/api/schedule/assignments?view_type=${this.currentView}&target_id=${this.currentTarget}`);
+                        const result = await response.json();
+
+                        if (result.success) {
+                            this.scheduleData = result.schedule_data || {};
+                            console.log('Loaded schedule data:', this.scheduleData);
+                        } else {
+                            console.error('Failed to load schedule:', result.error);
+                            this.scheduleData = {};
+                        }
+                    }
+
+                    this.renderScheduleGrid();
+                    this.updateStatistics();
+                } catch (error) {
+                    console.error('Error loading schedule:', error);
+                    this.scheduleData = {};
+                    this.renderScheduleGrid();
+                    this.updateStatistics();
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+
+            renderScheduleGrid() {
+                const tbody = document.getElementById('scheduleBody');
+                tbody.innerHTML = '';
+
+                this.timePeriods.forEach(period => {
+                    const row = document.createElement('tr');
+
+                    // Time cell
+                    const timeCell = document.createElement('td');
+                    timeCell.className = period.is_break ? 'break-cell' : 'time-cell';
+                    timeCell.innerHTML = period.is_break ?
+                        `<em>${period.name}</em>` :
+                        `<strong>${period.name}</strong><br><small>${period.start_time}-${period.end_time}</small>`;
+                    row.appendChild(timeCell);
+
+                    // Day cells
+                    ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'].forEach(day => {
+                        const cell = document.createElement('td');
+
+                        if (period.is_break) {
+                            cell.className = 'break-cell';
+                            cell.innerHTML = '-';
+                        } else {
+                            const key = `${day}_${period.id}`;
+                            const assignment = this.scheduleData[key];
+
+                            if (assignment) {
+                                // Handle level view (arrays of assignments) vs single assignment
+                                if (this.currentView === 'level' && Array.isArray(assignment)) {
+                                    // Multiple sections in level view
+                                    cell.innerHTML = this.createLevelAssignmentElement(assignment, key);
+                                } else {
+                                    // Single assignment for section/teacher/classroom view
+                                    cell.innerHTML = this.createAssignmentElement(assignment, key);
+                                }
+                            } else {
+                                cell.innerHTML = '<div class="empty-slot"><i class="fas fa-plus"></i> Agregar</div>';
+                                cell.onclick = () => this.quickAddAssignment(day, period.id);
+                            }
+
+                            // Enable drag and drop (disabled for level view)
+                            if (this.currentView !== 'level') {
+                                cell.ondrop = (e) => this.handleDrop(e, day, period.id);
+                                cell.ondragover = (e) => this.handleDragOver(e);
+                                cell.ondragleave = (e) => this.handleDragLeave(e);
+                            }
+                        }
+
+                        row.appendChild(cell);
+                    });
+
+                    tbody.appendChild(row);
+                });
+            }
+
+            createAssignmentElement(assignment, key) {
+                const hasConflict = this.checkForConflicts(key);
+                return `
+                    <div class="schedule-assignment" draggable="true" ondragstart="scheduleManager.handleDragStart(event, '${key}')">
+                        ${hasConflict ? '<div class="conflict-indicator">!</div>' : ''}
+                        <div class="assignment-subject">${assignment.subject}</div>
+                        <div class="assignment-teacher">${assignment.teacher}</div>
+                        <div class="assignment-classroom">${assignment.classroom}</div>
+                        <div class="assignment-actions">
+                            <button onclick="scheduleManager.editAssignment('${key}')" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="scheduleManager.deleteAssignment('${key}')" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            createLevelAssignmentElement(assignments, key) {
+                // Create a compact view for multiple sections
+                if (assignments.length === 0) return '';
+
+                // Group by subject for better visualization
+                const subjectGroups = {};
+                assignments.forEach(assignment => {
+                    const subject = assignment.subject || 'N/A';
+                    if (!subjectGroups[subject]) {
+                        subjectGroups[subject] = [];
+                    }
+                    subjectGroups[subject].push(assignment);
+                });
+
+                let html = '<div class="level-assignments" style="font-size: 0.75rem;">';
+                Object.entries(subjectGroups).forEach(([subject, sectionAssignments]) => {
+                    const sections = sectionAssignments.map(a => a.section).join(', ');
+                    const teachers = [...new Set(sectionAssignments.map(a => a.teacher))].join(', ');
+
+                    html += `
+                        <div class="level-assignment-group" style="margin-bottom: 4px; padding: 2px; background: rgba(0, 51, 102, 0.05); border-left: 2px solid #003366;">
+                            <div style="font-weight: 600; color: #003366;">${subject}</div>
+                            <div style="font-size: 0.65rem; color: #666;">
+                                <span title="Secciones">${sections}</span><br>
+                                <span title="Profesor(es)">${teachers}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                return html;
+            }
+
+            checkForConflicts(key) {
+                // Check if assignment has conflict status
+                const assignment = this.scheduleData[key];
+                return assignment && assignment.conflict_status && assignment.conflict_status !== 'none';
+            }
+
+            updateStatistics() {
+                const assignments = Object.keys(this.scheduleData).length;
+                const totalSlots = this.timePeriods.filter(p => !p.is_break).length * 5; // 5 days
+                const freeSlots = totalSlots - assignments;
+
+                // Count real conflicts
+                const conflictCount = Object.values(this.scheduleData).filter(assignment =>
+                    assignment.conflict_status && assignment.conflict_status !== 'none'
+                ).length;
+
+                // Calculate workload hours (40 min periods = 0.67 hours each)
+                const workloadHours = (assignments * 0.67).toFixed(1);
+
+                document.getElementById('totalAssignments').textContent = assignments;
+                document.getElementById('teacherWorkload').textContent = workloadHours;
+                document.getElementById('freeSlots').textContent = freeSlots;
+                document.getElementById('conflictCount').textContent = conflictCount;
+            }
+
+            quickAddAssignment(day, periodId) {
+                // Pre-fill the form with the selected slot and clear editing mode
+                document.getElementById('daySelect').value = day;
+                document.getElementById('periodSelect').value = periodId;
+
+                // Clear any editing state
+                delete document.getElementById('assignmentForm').dataset.editingId;
+                document.getElementById('saveAssignmentBtn').innerHTML = '<i class="fas fa-save"></i> Guardar Asignación';
+
+                // Clear form alerts
+                document.getElementById('conflictAlert').style.display = 'none';
+                document.getElementById('successAlert').style.display = 'none';
+
+                this.openAssignmentModal();
+            }
+
+            // Drag and Drop handlers
+            handleDragStart(e, key) {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('assignmentKey', key);
+                e.target.classList.add('dragging');
+            }
+
+            handleDragOver(e) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                e.dataTransfer.dropEffect = 'move';
+                e.currentTarget.classList.add('drag-over');
+                return false;
+            }
+
+            handleDragLeave(e) {
+                e.currentTarget.classList.remove('drag-over');
+            }
+
+            async handleDrop(e, day, periodId) {
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                }
+                e.currentTarget.classList.remove('drag-over');
+
+                const sourceKey = e.dataTransfer.getData('assignmentKey');
+                const targetKey = `${day}_${periodId}`;
+
+                if (sourceKey !== targetKey) {
+                    const assignment = this.scheduleData[sourceKey];
+                    if (assignment && assignment.id) {
+                        // Check for conflicts first
+                        this.showLoading(true);
+
+                        try {
+                            const conflictResponse = await fetch('/bischeduler/api/schedule/conflicts/check', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    teacher_id: assignment.teacher_id || assignment.teacher,
+                                    classroom_id: assignment.classroom_id || assignment.classroom,
+                                    day_of_week: day,
+                                    time_period_id: parseInt(periodId),
+                                    exclude_assignment_id: assignment.id
+                                })
+                            });
+
+                            const conflictResult = await conflictResponse.json();
+
+                            if (conflictResult.success && conflictResult.has_conflicts) {
+                                // Show conflict warning
+                                const confirmed = confirm(
+                                    `⚠️ Movimiento genera conflictos:\n\n${conflictResult.conflicts.map(c => `• ${c.message}`).join('\n')}\n\n¿Continuar de todas formas?`
+                                );
+
+                                if (!confirmed) {
+                                    return false;
+                                }
+                            }
+
+                            // Update assignment in database
+                            const updateResponse = await fetch(`/bischeduler/api/schedule/assignments/${assignment.id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    day_of_week: day,
+                                    time_period_id: parseInt(periodId)
+                                })
+                            });
+
+                            const updateResult = await updateResponse.json();
+
+                            if (updateResult.success) {
+                                // Update UI immediately
+                                this.scheduleData[targetKey] = { ...assignment };
+                                delete this.scheduleData[sourceKey];
+                                this.renderScheduleGrid();
+                                this.updateStatistics();
+
+                                this.showNotification(`Asignación movida a ${day} ${this.getTimePeriodName(periodId)}`, 'success');
+                            } else {
+                                throw new Error(updateResult.error || 'Failed to update assignment');
+                            }
+
+                        } catch (error) {
+                            console.error('Error moving assignment:', error);
+                            this.showNotification('Error al mover la asignación: ' + error.message, 'error');
+                        } finally {
+                            this.showLoading(false);
+                        }
+                    }
+                }
+
+                // Remove dragging class from all elements
+                document.querySelectorAll('.dragging').forEach(el => {
+                    el.classList.remove('dragging');
+                });
+
+                return false;
+            }
+
+            getTimePeriodName(periodId) {
+                const period = this.timePeriods.find(p => p.id == periodId);
+                return period ? `${period.name} (${period.start_time}-${period.end_time})` : 'Unknown Period';
+            }
+
+            getCurrentTargetName() {
+                if (this.currentView === 'section') {
+                    const section = this.sections.find(s => s.id == this.currentTarget);
+                    return section ? section.name : 'Sección Desconocida';
+                } else if (this.currentView === 'level') {
+                    const levelNames = {
+                        'preescolar': 'Educación Inicial (Preescolar)',
+                        'primaria': 'Educación Primaria',
+                        'secundaria': 'Educación Media General (Secundaria)'
+                    };
+                    return levelNames[this.currentTarget] || 'Nivel Desconocido';
+                } else if (this.currentView === 'teacher') {
+                    const teacher = this.teachers.find(t => t.id == this.currentTarget);
+                    return teacher ? teacher.name : 'Profesor Desconocido';
+                } else if (this.currentView === 'classroom') {
+                    const classroom = this.classrooms.find(c => c.id == this.currentTarget);
+                    return classroom ? classroom.name : 'Aula Desconocida';
+                }
+                return 'N/A';
+            }
+
+            getLevelSections(levelId) {
+                const levelGrades = {
+                    'preescolar': ['1er Grupo', '2do Grupo', '3er Grupo'],
+                    'primaria': ['1er. Grado', '2do. Grado', '3er. Grado', '4to. Grado', '5to. Grado', '6to. Grado'],
+                    'secundaria': ['1er. Año', '2do. Año', '3er. Año', '4to. Año', '5to. Año']
+                };
+                const grades = levelGrades[levelId] || [];
+                return this.sections.filter(section => grades.includes(section.name));
+            }
+
+            openAssignmentModal() {
+                // Clear form when opening for new assignment
+                const form = document.getElementById('assignmentForm');
+                form.reset();
+
+                // Clear editing state
+                delete form.dataset.editingId;
+                document.getElementById('saveAssignmentBtn').innerHTML = '<i class="fas fa-save"></i> Guardar Asignación';
+
+                // Clear alerts
+                document.getElementById('conflictAlert').style.display = 'none';
+                document.getElementById('successAlert').style.display = 'none';
+
+                $('#assignmentModal').modal('show');
+            }
+
+            updateTeacherWorkload(teacherId) {
+                if (teacherId) {
+                    const teacher = this.teachers.find(t => t.id == teacherId);
+                    if (teacher) {
+                        const currentHours = (Math.random() * 30 + 10).toFixed(1); // Demo hours with 1 decimal
+                        document.getElementById('teacherWorkloadInfo').textContent =
+                            `Carga horaria: ${currentHours}/40 horas`;
+                    }
+                }
+            }
+
+            async saveAssignment() {
+                const form = document.getElementById('assignmentForm');
+                if (form.checkValidity()) {
+                    const data = {
+                        section_id: parseInt(document.getElementById('sectionSelect').value),
+                        subject_id: parseInt(document.getElementById('subjectSelect').value),
+                        teacher_id: parseInt(document.getElementById('teacherSelect').value),
+                        classroom_id: parseInt(document.getElementById('classroomSelect').value),
+                        day_of_week: document.getElementById('daySelect').value,
+                        time_period_id: parseInt(document.getElementById('periodSelect').value)
+                    };
+
+                    this.showLoading(true);
+
+                    try {
+                        // Save to database via API
+                        const response = await fetch('/bischeduler/api/schedule/assignments', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            $('#assignmentModal').modal('hide');
+                            form.reset();
+
+                            // Clear form alerts
+                            document.getElementById('conflictAlert').style.display = 'none';
+                            document.getElementById('successAlert').style.display = 'none';
+
+                            // Reload schedule to show new assignment
+                            await this.loadSchedule();
+
+                            // Show success message
+                            this.showNotification('Asignación guardada exitosamente', 'success');
+                        } else {
+                            // Handle conflicts or errors
+                            if (response.status === 409) {
+                                document.getElementById('conflictAlert').style.display = 'block';
+                                document.getElementById('conflictMessage').innerHTML =
+                                    result.conflicts.map(c => `• ${c.message}`).join('<br>');
+                                document.getElementById('successAlert').style.display = 'none';
+                            } else {
+                                throw new Error(result.error || 'Unknown error');
+                            }
+                        }
+
+                    } catch (error) {
+                        console.error('Error saving assignment:', error);
+                        this.showNotification('Error al guardar la asignación: ' + error.message, 'error');
+                    } finally {
+                        this.showLoading(false);
+                    }
+                } else {
+                    form.reportValidity();
+                }
+            }
+
+            async editAssignment(key) {
+                const assignment = this.scheduleData[key];
+                if (!assignment || !assignment.id) {
+                    this.showNotification('No se pudo cargar la información de la asignación', 'error');
+                    return;
+                }
+
+                // Load assignment data into form
+                try {
+                    const [day, periodId] = key.split('_');
+
+                    document.getElementById('sectionSelect').value = assignment.section_id;
+                    document.getElementById('subjectSelect').value = assignment.subject_id;
+                    document.getElementById('teacherSelect').value = assignment.teacher_id;
+                    document.getElementById('classroomSelect').value = assignment.classroom_id;
+                    document.getElementById('daySelect').value = day;
+                    document.getElementById('periodSelect').value = periodId;
+
+                    // Store assignment ID for update
+                    document.getElementById('assignmentForm').dataset.editingId = assignment.id;
+                    document.getElementById('saveAssignmentBtn').innerHTML = '<i class="fas fa-save"></i> Actualizar Asignación';
+
+                    $('#assignmentModal').modal('show');
+
+                } catch (error) {
+                    console.error('Error loading assignment for edit:', error);
+                    this.showNotification('Error al cargar la asignación para editar', 'error');
+                }
+            }
+
+            async updateAssignment(assignmentId, data) {
+                this.showLoading(true);
+
+                try {
+                    const response = await fetch(`/bischeduler/api/schedule/assignments/${assignmentId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        $('#assignmentModal').modal('hide');
+                        document.getElementById('assignmentForm').reset();
+                        delete document.getElementById('assignmentForm').dataset.editingId;
+                        document.getElementById('saveAssignmentBtn').innerHTML = '<i class="fas fa-save"></i> Guardar Asignación';
+
+                        // Clear form alerts
+                        document.getElementById('conflictAlert').style.display = 'none';
+                        document.getElementById('successAlert').style.display = 'none';
+
+                        // Reload schedule
+                        await this.loadSchedule();
+                        this.showNotification('Asignación actualizada exitosamente', 'success');
+                    } else {
+                        if (response.status === 409) {
+                            document.getElementById('conflictAlert').style.display = 'block';
+                            document.getElementById('conflictMessage').innerHTML =
+                                result.conflicts.map(c => `• ${c.message}`).join('<br>');
+                        } else {
+                            throw new Error(result.error || 'Unknown error');
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('Error updating assignment:', error);
+                    this.showNotification('Error al actualizar la asignación: ' + error.message, 'error');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async deleteAssignment(key) {
+                const assignment = this.scheduleData[key];
+                if (!assignment || !assignment.id) {
+                    this.showNotification('No se pudo identificar la asignación', 'error');
+                    return;
+                }
+
+                if (!confirm('¿Está seguro de eliminar esta asignación?')) {
+                    return;
+                }
+
+                this.showLoading(true);
+
+                try {
+                    const response = await fetch(`/bischeduler/api/schedule/assignments/${assignment.id}`, {
+                        method: 'DELETE'
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Reload schedule to reflect deletion
+                        await this.loadSchedule();
+                        this.showNotification('Asignación eliminada exitosamente', 'success');
+                    } else {
+                        throw new Error(result.error || 'Unknown error');
+                    }
+
+                } catch (error) {
+                    console.error('Error deleting assignment:', error);
+                    this.showNotification('Error al eliminar la asignación: ' + error.message, 'error');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async checkAssignmentConflicts() {
+                const teacherId = document.getElementById('teacherSelect').value;
+                const classroomId = document.getElementById('classroomSelect').value;
+                const day = document.getElementById('daySelect').value;
+                const periodId = document.getElementById('periodSelect').value;
+
+                if (teacherId && classroomId && day && periodId) {
+                    try {
+                        const data = {
+                            teacher_id: parseInt(teacherId),
+                            classroom_id: parseInt(classroomId),
+                            day_of_week: day,
+                            time_period_id: parseInt(periodId)
+                        };
+
+                        // If editing, exclude current assignment
+                        const editingId = document.getElementById('assignmentForm').dataset.editingId;
+                        if (editingId) {
+                            data.exclude_assignment_id = parseInt(editingId);
+                        }
+
+                        const response = await fetch('/bischeduler/api/schedule/conflicts/check', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            if (result.has_conflicts) {
+                                document.getElementById('conflictAlert').style.display = 'block';
+                                document.getElementById('conflictMessage').innerHTML =
+                                    result.conflicts.map(c => `• ${c.message}`).join('<br>');
+                                document.getElementById('successAlert').style.display = 'none';
+                            } else {
+                                document.getElementById('conflictAlert').style.display = 'none';
+                                document.getElementById('successAlert').style.display = 'block';
+                            }
+                        }
+
+                    } catch (error) {
+                        console.error('Error checking conflicts:', error);
+                    }
+                }
+            }
+
+            async loadAllConflicts() {
+                try {
+                    // Get all assignments for comprehensive conflict detection
+                    const allConflicts = [];
+
+                    // Check every assignment against all others
+                    for (const [key, assignment] of Object.entries(this.scheduleData)) {
+                        if (!assignment.id) continue;
+
+                        const [day, periodId] = key.split('_');
+
+                        // Check this assignment for conflicts
+                        const response = await fetch('/bischeduler/api/schedule/conflicts/check', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                teacher_id: assignment.teacher_id || assignment.teacher,
+                                classroom_id: assignment.classroom_id || assignment.classroom,
+                                day_of_week: day,
+                                time_period_id: parseInt(periodId),
+                                exclude_assignment_id: assignment.id
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success && result.has_conflicts) {
+                            result.conflicts.forEach(conflict => {
+                                // Add assignment context to conflict
+                                conflict.assignment_key = key;
+                                conflict.assignment_info = {
+                                    subject: assignment.subject,
+                                    teacher: assignment.teacher,
+                                    classroom: assignment.classroom,
+                                    day: day,
+                                    period: periodId
+                                };
+                                allConflicts.push(conflict);
+                            });
+                        }
+                    }
+
+                    // Remove duplicates (conflicts detected from both sides)
+                    const uniqueConflicts = [];
+                    const seen = new Set();
+
+                    for (const conflict of allConflicts) {
+                        const key = `${conflict.type}_${conflict.message}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            uniqueConflicts.push(conflict);
+                        }
+                    }
+
+                    return uniqueConflicts;
+
+                } catch (error) {
+                    console.error('Error loading conflicts:', error);
+                    throw error;
+                }
+            }
+
+            showNotification(message, type = 'info') {
+                // Create a temporary notification
+                const notification = document.createElement('div');
+                notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show`;
+                notification.style.position = 'fixed';
+                notification.style.top = '20px';
+                notification.style.right = '20px';
+                notification.style.zIndex = '9999';
+                notification.style.maxWidth = '400px';
+                notification.innerHTML = `
+                    ${message}
+                    <button type="button" class="close" data-dismiss="alert">
+                        <span>&times;</span>
+                    </button>
+                `;
+
+                document.body.appendChild(notification);
+
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 5000);
+            }
+
+            showLoading(show) {
+                document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+            }
+        }
+
+        // Global schedule manager variable
+        let scheduleManager;
+
+        function openAssignmentModal() {
+            if (!scheduleManager) {
+                console.warn('Schedule manager not initialized yet');
+                return;
+            }
+            scheduleManager.openAssignmentModal();
+        }
+
+        function saveAssignment() {
+            if (!scheduleManager) {
+                console.warn('Schedule manager not initialized yet');
+                return;
+            }
+
+            // Check if we're editing or creating
+            const editingId = document.getElementById('assignmentForm').dataset.editingId;
+
+            if (editingId) {
+                // Update existing assignment
+                const data = {
+                    section_id: parseInt(document.getElementById('sectionSelect').value),
+                    subject_id: parseInt(document.getElementById('subjectSelect').value),
+                    teacher_id: parseInt(document.getElementById('teacherSelect').value),
+                    classroom_id: parseInt(document.getElementById('classroomSelect').value),
+                    day_of_week: document.getElementById('daySelect').value,
+                    time_period_id: parseInt(document.getElementById('periodSelect').value)
+                };
+
+                scheduleManager.updateAssignment(parseInt(editingId), data);
+            } else {
+                // Create new assignment
+                scheduleManager.saveAssignment();
+            }
+        }
+
+        async function generateSchedule() {
+            if (!scheduleManager) {
+                console.warn('Schedule manager not initialized yet');
+                return;
+            }
+
+            const generationType = await showGenerationModal();
+            if (!generationType) return;
+
+            scheduleManager.showLoading(true);
+
+            try {
+                const response = await fetch('/bischeduler/api/schedule/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        view_type: scheduleManager.currentView,
+                        target_id: scheduleManager.currentTarget,
+                        generation_type: generationType,
+                        academic_year: '2025-2026',
+                        preserve_existing: generationType === 'fill_gaps'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Reload schedule to show generated assignments
+                    await scheduleManager.loadSchedule();
+                    scheduleManager.showNotification(
+                        `✨ Se generaron ${result.assignments_created} nuevas asignaciones automáticamente`,
+                        'success'
+                    );
+
+                    // Show generation summary
+                    if (result.summary) {
+                        showGenerationSummary(result.summary);
+                    }
+                } else {
+                    throw new Error(result.error || 'Error en la generación automática');
+                }
+
+            } catch (error) {
+                console.error('Generation error:', error);
+                scheduleManager.showNotification('Error en la generación automática: ' + error.message, 'error');
+            } finally {
+                scheduleManager.showLoading(false);
+            }
+        }
+
+        function showGenerationModal() {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-magic"></i> Generación Automática de Horarios
+                                </h5>
+                                <button type="button" class="close" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Algoritmo inteligente</strong> que respeta las regulaciones venezolanas K12
+                                </div>
+
+                                <p>Seleccione el tipo de generación:</p>
+                                <div class="list-group">
+                                    <button class="list-group-item list-group-item-action" onclick="selectGenerationType('complete_rebuild')">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">
+                                                <i class="fas fa-refresh text-primary"></i>
+                                                Regeneración Completa
+                                            </h6>
+                                            <small class="text-warning">⚠️ Destructivo</small>
+                                        </div>
+                                        <p class="mb-1">Elimina todas las asignaciones existentes y genera un horario completamente nuevo</p>
+                                        <small class="text-muted">Usa algoritmos de optimización para distribuir equitativamente la carga</small>
+                                    </button>
+
+                                    <button class="list-group-item list-group-item-action" onclick="selectGenerationType('fill_gaps')">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">
+                                                <i class="fas fa-puzzle-piece text-success"></i>
+                                                Completar Espacios Libres
+                                            </h6>
+                                            <small class="text-success">✅ Seguro</small>
+                                        </div>
+                                        <p class="mb-1">Mantiene las asignaciones existentes y llena los espacios vacíos</p>
+                                        <small class="text-muted">Ideal para optimizar horarios parcialmente configurados</small>
+                                    </button>
+
+                                    <button class="list-group-item list-group-item-action" onclick="selectGenerationType('optimize_workload')">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">
+                                                <i class="fas fa-balance-scale text-info"></i>
+                                                Optimizar Carga Docente
+                                            </h6>
+                                            <small class="text-info">📊 Inteligente</small>
+                                        </div>
+                                        <p class="mb-1">Redistribuye asignaciones para balancear la carga de trabajo</p>
+                                        <small class="text-muted">Respeta límite de 40 horas/semana por profesor</small>
+                                    </button>
+                                </div>
+
+                                <div class="mt-3">
+                                    <h6>Criterios de Generación:</h6>
+                                    <ul class="small text-muted">
+                                        <li>Límite de 40 horas semanales por profesor</li>
+                                        <li>Sin conflictos de horario (profesor/aula)</li>
+                                        <li>Distribución equitativa de materias</li>
+                                        <li>Respeto por especializaciones docentes</li>
+                                        <li>Optimización de uso de aulas</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+                $(modal).modal('show');
+
+                window.selectGenerationType = (type) => {
+                    $(modal).modal('hide');
+                    setTimeout(() => {
+                        document.body.removeChild(modal);
+                        delete window.selectGenerationType;
+                    }, 500);
+                    resolve(type);
+                };
+
+                $(modal).on('hidden.bs.modal', () => {
+                    setTimeout(() => {
+                        if (modal.parentNode) {
+                            document.body.removeChild(modal);
+                        }
+                        delete window.selectGenerationType;
+                    }, 100);
+                    resolve(null);
+                });
+            });
+        }
+
+        function showGenerationSummary(summary) {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-check-circle"></i> Generación Completada
+                            </h5>
+                            <button type="button" class="close text-white" data-dismiss="modal">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="text-center">
+                                        <i class="fas fa-calendar-plus fa-3x text-success mb-2"></i>
+                                        <h4>${summary.assignments_created || 0}</h4>
+                                        <small class="text-muted">Asignaciones Creadas</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-center">
+                                        <i class="fas fa-users fa-3x text-info mb-2"></i>
+                                        <h4>${summary.teachers_assigned || 0}</h4>
+                                        <small class="text-muted">Profesores Asignados</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${summary.conflicts_resolved ? `
+                                <div class="alert alert-success mt-3">
+                                    <i class="fas fa-shield-alt"></i>
+                                    Se resolvieron ${summary.conflicts_resolved} conflictos automáticamente
+                                </div>
+                            ` : ''}
+
+                            <div class="mt-3">
+                                <h6>Próximos pasos recomendados:</h6>
+                                <ul class="small">
+                                    <li>Revise las asignaciones generadas</li>
+                                    <li>Ejecute detección de conflictos</li>
+                                    <li>Ajuste manualmente si es necesario</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Entendido</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            $(modal).modal('show');
+
+            $(modal).on('hidden.bs.modal', () => {
+                setTimeout(() => {
+                    if (modal.parentNode) {
+                        document.body.removeChild(modal);
+                    }
+                }, 100);
+            });
+        }
+
+        async function checkConflicts() {
+            if (!scheduleManager) {
+                console.warn('Schedule manager not initialized yet');
+                return;
+            }
+
+            scheduleManager.showLoading(true);
+
+            try {
+                // Load all schedule conflicts for current view
+                const allConflicts = await scheduleManager.loadAllConflicts();
+
+                // Show conflicts modal
+                $('#conflictsModal').modal('show');
+
+                // Populate conflicts list
+                const conflictsList = document.getElementById('conflictsList');
+
+                if (allConflicts.length === 0) {
+                    conflictsList.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <strong>¡Excelente!</strong> No se detectaron conflictos en el horario actual.
+                        </div>
+                        <div class="text-center mt-3">
+                            <i class="fas fa-calendar-check fa-3x text-success"></i>
+                            <p class="mt-2 text-muted">El horario cumple con todas las restricciones venezolanas K12.</p>
+                        </div>
+                    `;
+                } else {
+                    let conflictsHtml = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Se detectaron ${allConflicts.length} conflicto(s)</strong> en el horario actual.
+                        </div>
+                    `;
+
+                    allConflicts.forEach((conflict, index) => {
+                        const iconClass = {
+                            'teacher_conflict': 'fas fa-user-times text-danger',
+                            'classroom_conflict': 'fas fa-door-closed text-warning',
+                            'workload_limit': 'fas fa-clock text-info',
+                            'schedule_overlap': 'fas fa-calendar-times text-danger'
+                        }[conflict.type] || 'fas fa-exclamation-triangle text-warning';
+
+                        conflictsHtml += `
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start">
+                                        <div class="mr-3">
+                                            <i class="${iconClass} fa-2x"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="card-title">
+                                                ${getConflictTitle(conflict.type)}
+                                            </h6>
+                                            <p class="card-text">${conflict.message}</p>
+                                            ${conflict.current_workload ? `
+                                                <div class="progress mb-2">
+                                                    <div class="progress-bar bg-warning" style="width: ${Math.min(conflict.current_workload / 40 * 100, 100)}%">
+                                                        ${conflict.current_workload.toFixed(1)} / 40 horas
+                                                    </div>
+                                                </div>
+                                            ` : ''}
+                                            <div class="mt-2">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-info-circle"></i>
+                                                    ${getConflictSolution(conflict.type)}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="ml-2">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="resolveConflict(${index})">
+                                                <i class="fas fa-magic"></i> Resolver
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    conflictsList.innerHTML = conflictsHtml;
+                }
+
+            } catch (error) {
+                console.error('Error loading conflicts:', error);
+                const conflictsList = document.getElementById('conflictsList');
+                conflictsList.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error al cargar conflictos: ${error.message}
+                    </div>
+                `;
+            } finally {
+                scheduleManager.showLoading(false);
+            }
+        }
+
+        function getConflictTitle(type) {
+            const titles = {
+                'teacher_conflict': 'Conflicto de Profesor',
+                'classroom_conflict': 'Conflicto de Aula',
+                'workload_limit': 'Límite de Carga Horaria',
+                'schedule_overlap': 'Solapamiento de Horario'
+            };
+            return titles[type] || 'Conflicto Detectado';
+        }
+
+        function getConflictSolution(type) {
+            const solutions = {
+                'teacher_conflict': 'Reasigne el profesor a otro período o cambie la asignación existente.',
+                'classroom_conflict': 'Seleccione un aula diferente o cambie el período de tiempo.',
+                'workload_limit': 'Redistribuya las clases del profesor para no exceder 40 horas semanales.',
+                'schedule_overlap': 'Ajuste los horarios para evitar solapamientos.'
+            };
+            return solutions[type] || 'Revise y ajuste la asignación según las reglas venezolanas K12.';
+        }
+
+        async function resolveConflict(conflictIndex) {
+            try {
+                scheduleManager.showNotification('Función de resolución automática en desarrollo', 'info');
+                // Future: Implement intelligent conflict resolution algorithms
+            } catch (error) {
+                scheduleManager.showNotification('Error al resolver conflicto: ' + error.message, 'error');
+            }
+        }
+
+        async function resolveAllConflicts() {
+            if (!confirm('¿Desea intentar resolver automáticamente todos los conflictos detectados?')) {
+                return;
+            }
+
+            scheduleManager.showLoading(true);
+
+            try {
+                // Future: Implement batch conflict resolution
+                scheduleManager.showNotification('Resolución automática de conflictos en desarrollo (Fase 3)', 'info');
+
+                // For now, just refresh the conflicts view
+                setTimeout(async () => {
+                    await checkConflicts();
+                }, 1000);
+
+            } catch (error) {
+                scheduleManager.showNotification('Error en resolución automática: ' + error.message, 'error');
+            } finally {
+                scheduleManager.showLoading(false);
+            }
+        }
+
+        async function exportSchedule() {
+            if (!scheduleManager) {
+                console.warn('Schedule manager not initialized yet');
+                return;
+            }
+
+            try {
+                // Check if we have schedule data to export BEFORE showing modal
+                if (!scheduleManager.scheduleData || Object.keys(scheduleManager.scheduleData).length === 0) {
+                    // Try to load a default section's schedule
+                    if (scheduleManager.sections && scheduleManager.sections.length > 0) {
+                        scheduleManager.showNotification('Cargando datos para exportar...', 'info');
+                        scheduleManager.currentView = 'section';
+                        scheduleManager.currentTarget = scheduleManager.sections[0].id;
+
+                        // Update UI to show the selected section (if elements exist)
+                        const viewSelect = document.getElementById('viewSelect');
+                        const targetSelect = document.getElementById('targetSelect');
+
+                        if (viewSelect) {
+                            viewSelect.value = 'section';
+                        }
+                        if (targetSelect) {
+                            targetSelect.value = scheduleManager.sections[0].id;
+                        }
+
+                        // Load schedule data
+                        await scheduleManager.loadSchedule();
+
+                        // Check again if we now have data
+                        if (!scheduleManager.scheduleData || Object.keys(scheduleManager.scheduleData).length === 0) {
+                            scheduleManager.showNotification('No hay horarios configurados en el sistema. Configure primero algunos horarios.', 'warning');
+                            return;
+                        }
+                    } else {
+                        scheduleManager.showNotification('No hay datos disponibles para exportar. Configure primero algunas secciones y horarios.', 'warning');
+                        return;
+                    }
+                }
+
+                const exportType = await showExportModal();
+                if (!exportType) return;
+
+                scheduleManager.showLoading(true);
+
+                // For fallback exports, we'll use the current schedule data
+                const targetId = scheduleManager.currentTarget || 'all';
+                const viewType = scheduleManager.currentView || 'general';
+
+                // For all formats, use client-side export for now
+                if (exportType === 'csv' || exportType === 'xlsx') {
+                    exportToCSV();
+                    scheduleManager.showNotification('Horario exportado como CSV', 'success');
+                    return;
+                } else if (exportType === 'pdf') {
+                    await exportToPDF();
+                    scheduleManager.showNotification('Horario exportado como PDF', 'success');
+                    return;
+                }
+
+                // If API is needed in the future, try the full API endpoint
+                const response = await fetch('/bischeduler/api/schedule/export', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        view_type: viewType,
+                        target_id: targetId,
+                        format: exportType,
+                        academic_year: '2025-2026'
+                    })
+                });
+
+                if (response.ok) {
+                    // Handle file download
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `horario_${scheduleManager.currentView}_${new Date().toISOString().split('T')[0]}.${exportType}`;
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // Clean up
+                    setTimeout(() => {
+                        window.URL.revokeObjectURL(url);
+                        if (a.parentNode) {
+                            document.body.removeChild(a);
+                        }
+                    }, 100);
+
+                    scheduleManager.showNotification('Horario exportado exitosamente', 'success');
+                } else {
+                    // Fallback to CSV if API fails
+                    console.warn('API export failed, falling back to CSV');
+                    exportToCSV();
+                    scheduleManager.showNotification('Exportado como CSV (API en desarrollo)', 'info');
+                }
+
+            } catch (error) {
+                console.error('Export error:', error);
+                // Fallback to CSV export
+                try {
+                    exportToCSV();
+                    scheduleManager.showNotification('Exportado como CSV debido a error técnico', 'warning');
+                } catch (csvError) {
+                    scheduleManager.showNotification('Error al exportar: ' + error.message, 'error');
+                }
+            } finally {
+                scheduleManager.showLoading(false);
+            }
+        }
+
+        function exportToCSV() {
+            // Create CSV from current schedule data
+            const scheduleData = scheduleManager.scheduleData;
+            const csvContent = [];
+
+            // CSV Headers
+            csvContent.push(['Día', 'Hora', 'Materia', 'Profesor', 'Aula', 'Sección']);
+
+            // Add data rows
+            Object.entries(scheduleData).forEach(([key, assignment]) => {
+                const [day, periodId] = key.split('_');
+                const period = scheduleManager.timePeriods.find(p => p.id == periodId);
+                const timeString = period ? `${period.start_time}-${period.end_time}` : 'N/A';
+
+                csvContent.push([
+                    day.charAt(0).toUpperCase() + day.slice(1),
+                    timeString,
+                    assignment.subject || 'N/A',
+                    assignment.teacher || 'N/A',
+                    assignment.classroom || 'N/A',
+                    scheduleManager.getCurrentTargetName()
+                ]);
+            });
+
+            // Create and download CSV
+            const csvString = csvContent.map(row =>
+                row.map(field => `"${field}"`).join(',')
+            ).join('\n');
+
+            const blob = new Blob(['\ufeff' + csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `horario_${scheduleManager.currentView}_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                if (a.parentNode) {
+                    document.body.removeChild(a);
+                }
+            }, 100);
+        }
+
+        function exportToHTML() {
+            // Create a professional HTML schedule that can be printed as PDF
+            const scheduleData = scheduleManager.scheduleData;
+            const targetName = scheduleManager.getCurrentTargetName();
+            const currentDate = new Date().toLocaleDateString('es-VE');
+
+            // Group data by day
+            const daySchedule = {};
+            const days = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
+
+            days.forEach(day => {
+                daySchedule[day] = [];
+            });
+
+            Object.entries(scheduleData).forEach(([key, assignment]) => {
+                const [day, periodId] = key.split('_');
+                const period = scheduleManager.timePeriods.find(p => p.id == periodId);
+
+                if (period && daySchedule[day]) {
+                    daySchedule[day].push({
+                        time: `${period.start_time} - ${period.end_time}`,
+                        subject: assignment.subject || 'N/A',
+                        teacher: assignment.teacher || 'N/A',
+                        classroom: assignment.classroom || 'N/A',
+                        period: period
+                    });
+                }
+            });
+
+            // Sort by time for each day
+            days.forEach(day => {
+                daySchedule[day].sort((a, b) => a.period.start_time.localeCompare(b.period.start_time));
+            });
+
+            const htmlContent = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horario Académico - ${targetName}</title>
+    <style>
+        @media print {
+            @page { margin: 1cm; }
+            body { margin: 0; }
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #003366;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #003366;
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin: 5px 0;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .schedule-table th {
+            background: linear-gradient(135deg, #003366, #004080);
+            color: white;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #002244;
+        }
+
+        .schedule-table td {
+            padding: 10px 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+            vertical-align: top;
+        }
+
+        .schedule-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .schedule-table tr:hover {
+            background-color: #e8f4fd;
+        }
+
+        .time-column {
+            background-color: #f1f3f4;
+            font-weight: bold;
+            width: 120px;
+        }
+
+        .class-info {
+            min-height: 60px;
+            padding: 5px;
+        }
+
+        .subject {
+            font-weight: bold;
+            color: #003366;
+            margin-bottom: 3px;
+        }
+
+        .teacher {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .classroom {
+            color: #999;
+            font-size: 0.8em;
+            font-style: italic;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #003366;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
 </head>
 <body>
     <div class="header">

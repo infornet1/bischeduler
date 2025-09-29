@@ -77,6 +77,39 @@ Extracted from embedded styles for better maintainability
     backdrop-filter: blur(10px);
 }
 
+/* Statistics Row */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-md, 15px);
+    margin-bottom: var(--spacing-lg, 25px);
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-md, 15px);
+    flex-wrap: wrap;
+}
+
+/* Footer Section */
+.footer-section {
+    background: var(--card-bg, rgba(255, 255, 255, 0.95));
+    border-radius: var(--border-radius, 15px);
+    margin: var(--spacing-lg, 20px);
+    padding: var(--spacing-md, 15px) var(--spacing-lg, 20px);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--box-shadow, 0 4px 12px rgba(0, 0, 0, 0.1));
+    position: relative;
+    z-index: 100;
+    clear: both;
+}
+
+.tenant-info {
+    text-align: center;
+    color: var(--text-secondary, #6c757d);
+}
+
 /* Loading States */
 .loading-spinner {
     text-align: center;
@@ -115,6 +148,18 @@ Extracted from embedded styles for better maintainability
 
 [data-theme="dark"] .loading-spinner {
     color: var(--text-secondary, #cccccc);
+}
+
+[data-theme="dark"] .footer-section {
+    background: rgba(30, 30, 30, 0.95);
+}
+
+[data-theme="dark"] .tenant-info {
+    color: #b0b0b0;
+}
+
+[data-theme="dark"] .tenant-info strong {
+    color: #ffffff;
 }
 
 /* Schedule Table */
@@ -342,6 +387,16 @@ Extracted from embedded styles for better maintainability
         flex-direction: column;
         align-items: stretch;
         gap: var(--spacing-sm, 10px);
+        justify-content: center;
+    }
+
+    .action-buttons {
+        justify-content: center;
+    }
+
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-sm, 10px);
     }
 
     .content-card {
@@ -371,6 +426,13 @@ Extracted from embedded styles for better maintainability
     .assignment-teacher,
     .assignment-classroom {
         font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-row {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm, 10px);
     }
 }
 
