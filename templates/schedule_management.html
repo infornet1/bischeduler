@@ -794,7 +794,7 @@
                         <option value="secundaria">Educación Media General (Secundaria)</option>
                     </select>
                     <!-- Target selector for section/teacher/classroom -->
-                    <select class="form-control" id="targetSelector" style="width: 200px;">
+                    <select class="form-control" id="targetSelector" style="width: 200px; display: inline-block;">
                         <option value="">Seleccione...</option>
                     </select>
                     <!-- Section filter for level view (only visible when level is selected) -->
@@ -1097,27 +1097,41 @@
                 });
 
                 // View selector
-                document.getElementById('viewSelector').addEventListener('change', (e) => {
-                    this.currentView = e.target.value;
-                    this.updateTargetSelector();
+                const viewSelectorElement = document.getElementById('viewSelector');
+                if (viewSelectorElement) {
+                    viewSelectorElement.addEventListener('change', (e) => {
+                        this.currentView = e.target.value;
+                        console.log('View changed to:', this.currentView);
+                        this.updateTargetSelector();
 
-                    // Toggle visibility of selectors based on view type
-                    const levelSelector = document.getElementById('levelSelector');
-                    const targetSelector = document.getElementById('targetSelector');
-                    const sectionFilter = document.getElementById('sectionFilter');
+                        // Toggle visibility of selectors based on view type
+                        const levelSelector = document.getElementById('levelSelector');
+                        const targetSelector = document.getElementById('targetSelector');
+                        const sectionFilter = document.getElementById('sectionFilter');
 
-                    if (this.currentView === 'level') {
-                        // Show level selector, hide target selector
-                        levelSelector.style.display = 'block';
-                        targetSelector.style.display = 'none';
-                        sectionFilter.style.display = 'none';
-                    } else {
-                        // Show target selector, hide level selector
-                        levelSelector.style.display = 'none';
-                        targetSelector.style.display = 'block';
-                        sectionFilter.style.display = 'none';
-                    }
-                });
+                        if (levelSelector && targetSelector && sectionFilter) {
+                            if (this.currentView === 'level') {
+                                // Show level selector, hide target selector
+                                console.log('Showing level selector');
+                                levelSelector.style.display = 'inline-block';
+                                targetSelector.style.display = 'none';
+                                sectionFilter.style.display = 'none';
+                                // Clear target when switching to level view
+                                this.currentTarget = null;
+                            } else {
+                                // Show target selector, hide level selector
+                                console.log('Showing target selector');
+                                levelSelector.style.display = 'none';
+                                targetSelector.style.display = 'inline-block';
+                                sectionFilter.style.display = 'none';
+                            }
+                        } else {
+                            console.error('Some selectors not found:', { levelSelector, targetSelector, sectionFilter });
+                        }
+                    });
+                } else {
+                    console.error('viewSelector element not found');
+                }
 
                 // Target selector
                 document.getElementById('targetSelector').addEventListener('change', (e) => {
@@ -1128,30 +1142,41 @@
                 });
 
                 // Level selector (new)
-                document.getElementById('levelSelector').addEventListener('change', (e) => {
-                    this.currentTarget = e.target.value;
-                    if (this.currentTarget) {
-                        // Update section filter with sections from this level
-                        const sectionFilter = document.getElementById('sectionFilter');
-                        const levelSections = this.getLevelSections(this.currentTarget);
+                const levelSelectorElement = document.getElementById('levelSelector');
+                if (levelSelectorElement) {
+                    levelSelectorElement.addEventListener('change', (e) => {
+                        this.currentTarget = e.target.value;
+                        console.log('Level selected:', this.currentTarget);
+                        if (this.currentTarget) {
+                            // Update section filter with sections from this level
+                            const sectionFilter = document.getElementById('sectionFilter');
+                            const levelSections = this.getLevelSections(this.currentTarget);
 
-                        sectionFilter.innerHTML = '<option value="">Todas las secciones</option>';
-                        levelSections.forEach(section => {
-                            sectionFilter.innerHTML += `<option value="${section.id}">${section.name}</option>`;
-                        });
-                        sectionFilter.style.display = levelSections.length > 1 ? 'block' : 'none';
+                            if (sectionFilter) {
+                                sectionFilter.innerHTML = '<option value="">Todas las secciones</option>';
+                                levelSections.forEach(section => {
+                                    sectionFilter.innerHTML += `<option value="${section.id}">${section.name}</option>`;
+                                });
+                                sectionFilter.style.display = levelSections.length > 1 ? 'inline-block' : 'none';
+                            }
 
-                        this.loadSchedule();
-                    }
-                });
+                            this.loadSchedule();
+                        }
+                    });
+                } else {
+                    console.error('levelSelector element not found');
+                }
 
                 // Section filter for level view
-                document.getElementById('sectionFilter').addEventListener('change', (e) => {
-                    this.filterSectionId = e.target.value;
-                    if (this.currentView === 'level' && this.currentTarget) {
-                        this.loadSchedule();
-                    }
-                });
+                const sectionFilterElement = document.getElementById('sectionFilter');
+                if (sectionFilterElement) {
+                    sectionFilterElement.addEventListener('change', (e) => {
+                        this.filterSectionId = e.target.value;
+                        if (this.currentView === 'level' && this.currentTarget) {
+                            this.loadSchedule();
+                        }
+                    });
+                }
 
                 // Form field changes for conflict checking
                 ['sectionSelect', 'teacherSelect', 'classroomSelect', 'daySelect', 'periodSelect'].forEach(id => {
