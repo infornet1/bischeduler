@@ -9,11 +9,1696 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="/bischeduler/static/css/styles.css?v=7">
-    <link rel="stylesheet" href="/bischeduler/static/css/dark-mode.css?v=7">
-    <link rel="stylesheet" href="/bischeduler/static/css/schedule-management.css?v=2">
+    <link rel="stylesheet" href="/bischeduler/static/css/styles.css">
+    <link rel="stylesheet" href="/bischeduler/static/css/dark-mode.css">
 
-    <!-- CSS extracted to external files for better maintainability -->
+    <style>
+                /* User Bar Styles */
+        .user-bar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg, rgba(255, 255, 255, 0.95));
+            border-radius: 25px;
+            padding: 8px 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .user-info .user-name {
+            color: var(--text-primary, #212529);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .user-info .user-role {
+            color: var(--text-secondary, #6c757d);
+            font-size: 0.75rem;
+        }
+
+        .user-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-dropdown-toggle {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            color: var(--text-primary) !important;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .user-dropdown-toggle:hover,
+        .user-dropdown-toggle:focus,
+        .user-dropdown-toggle:active {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: var(--text-primary) !important;
+        }
+
+        .user-dropdown-toggle .fas {
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .user-dropdown-toggle[aria-expanded="true"] .fa-chevron-down {
+            transform: rotate(180deg);
+        }
+
+.schedule-management {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            padding: 20px;
+        }
+
+        .management-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .schedule-header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+        }
+
+        .schedule-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .section-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Select dropdown styling for proper vertical alignment */
+        .section-selector select.form-control {
+            height: 38px;
+            line-height: 1.5;
+            padding: 0.375rem 0.75rem;
+            vertical-align: middle;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .section-selector label {
+            margin-bottom: 0;
+            display: inline-flex;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        /* Fix for select option vertical centering */
+        .form-control option {
+            padding: 8px 12px;
+            line-height: 1.5;
+        }
+
+        .schedule-grid-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            overflow-x: auto;
+        }
+
+        .schedule-table {
+            width: 100%;
+            min-width: 800px;
+            border-collapse: separate;
+            border-spacing: 2px;
+        }
+
+        .schedule-table th {
+            background: #003366;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .schedule-table .time-header {
+            width: 100px;
+            background: #002244;
+        }
+
+        .schedule-table td {
+            background: var(--card-bg, white);
+            border: 1px solid var(--border-color, #dee2e6);
+            padding: var(--spacing-sm);
+            min-height: 80px;
+            vertical-align: top;
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .schedule-table td:hover {
+            background: var(--hover-bg, rgba(0, 51, 102, 0.05));
+            box-shadow: inset 0 0 0 2px var(--primary-color, #003366);
+        }
+
+        .time-cell {
+            background: var(--bg-secondary, #f8f9fa) !important;
+            font-weight: 600;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-primary, #212529);
+        }
+
+        .break-cell {
+            background: repeating-linear-gradient(
+                45deg,
+                var(--bg-tertiary, #e9ecef),
+                var(--bg-tertiary, #e9ecef) 10px,
+                var(--bg-secondary, #f8f9fa) 10px,
+                var(--bg-secondary, #f8f9fa) 20px
+            ) !important;
+            text-align: center;
+            font-style: italic;
+            color: var(--text-secondary, #6c757d);
+        }
+
+        .schedule-assignment {
+            background: linear-gradient(135deg, rgba(0, 51, 102, 0.1), rgba(255, 204, 0, 0.1));
+            border-left: 3px solid var(--primary-color, #003366);
+            border-radius: 4px;
+            padding: var(--spacing-xs);
+            margin: 2px;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            cursor: move;
+            transition: var(--transition);
+        }
+
+        .schedule-assignment:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--box-shadow);
+        }
+
+        .assignment-subject {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--primary-color, #003366);
+            margin-bottom: 2px;
+        }
+
+        .assignment-teacher {
+            font-size: 0.75rem;
+            color: var(--text-primary, #212529);
+            margin-bottom: 2px;
+        }
+
+        .assignment-classroom {
+            font-size: 0.7rem;
+            color: var(--text-secondary, #6c757d);
+        }
+
+        .assignment-actions {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            display: none;
+            gap: 4px;
+        }
+
+        .schedule-assignment:hover .assignment-actions {
+            display: flex;
+        }
+
+        .assignment-actions button {
+            background: white;
+            border: 1px solid var(--border-color, #dee2e6);
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .assignment-actions button:hover {
+            background: var(--danger-color, #dc3545);
+            color: white;
+        }
+
+        .empty-slot {
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary, #6c757d);
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .schedule-table td:hover .empty-slot {
+            opacity: 1;
+        }
+
+        .conflict-indicator {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: var(--danger-color, #dc3545);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary-custom {
+            background: #003366;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary-custom:hover {
+            background: #004080;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        /* Responsive: stack on mobile */
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.2s ease;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #003366;
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        .legend {
+            display: flex;
+            gap: var(--spacing-lg);
+            margin-top: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: 0.85rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        /* Dark mode adjustments */
+        [data-theme="dark"] .schedule-management {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        }
+
+        [data-theme="dark"] .time-cell {
+            background: #2d2d2d !important;
+        }
+
+        [data-theme="dark"] .break-cell {
+            background: repeating-linear-gradient(
+                45deg,
+                #404040,
+                #404040 10px,
+                #2d2d2d 10px,
+                #2d2d2d 20px
+            ) !important;
+        }
+
+        [data-theme="dark"] .schedule-assignment {
+            background: linear-gradient(135deg, rgba(109, 163, 208, 0.2), rgba(255, 204, 0, 0.1));
+        }
+
+        /* Drag and drop styles */
+        .dragging {
+            opacity: 0.5;
+        }
+
+        .drag-over {
+            background: rgba(0, 123, 255, 0.1) !important;
+            box-shadow: inset 0 0 0 2px var(--info-color, #17a2b8);
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .schedule-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .section-selector {
+                justify-content: center;
+            }
+
+            .action-buttons {
+                justify-content: center;
+            }
+        }
+
+        /* Comprehensive dark mode text fixes */
+        [data-theme="dark"] h1,
+        [data-theme="dark"] h2,
+        [data-theme="dark"] h3,
+        [data-theme="dark"] h4,
+        [data-theme="dark"] h5,
+        [data-theme="dark"] h6 {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] p,
+        [data-theme="dark"] span,
+        [data-theme="dark"] div,
+        [data-theme="dark"] label,
+        [data-theme="dark"] .navbar-brand,
+        [data-theme="dark"] .nav-link,
+        [data-theme="dark"] .breadcrumb-item,
+        [data-theme="dark"] .alert,
+        [data-theme="dark"] .btn,
+        [data-theme="dark"] .dropdown-item,
+        [data-theme="dark"] .card-title,
+        [data-theme="dark"] .card-text,
+        [data-theme="dark"] .form-label,
+        [data-theme="dark"] .form-control,
+        [data-theme="dark"] .table,
+        [data-theme="dark"] .table td,
+        [data-theme="dark"] .table th {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .text-primary {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .text-secondary {
+            color: var(--text-secondary, #b0b0b0) !important;
+        }
+
+        [data-theme="dark"] .text-muted {
+            color: var(--text-secondary, #b0b0b0) !important;
+        }
+
+        /* Dark mode fixes for schedule management */
+        [data-theme="dark"] .schedule-header {
+            background: rgba(30, 30, 30, 0.95) !important;
+        }
+
+        [data-theme="dark"] .schedule-header h1 {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .schedule-header h1 i {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .schedule-header p {
+            color: #b0b0b0 !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .schedule-header .text-muted {
+            color: #999999 !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .section-selector {
+            background: rgba(40, 40, 40, 0.95) !important;
+        }
+
+        /* Dark mode select alignment fixes */
+        [data-theme="dark"] .section-selector select.form-control {
+            background-color: #495057 !important;
+            border-color: #6c757d !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .section-selector label {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .schedule-grid-container {
+            background: rgba(30, 30, 30, 0.95) !important;
+        }
+
+        [data-theme="dark"] .stat-card {
+            background: rgba(40, 40, 40, 0.95) !important;
+        }
+
+        [data-theme="dark"] .stat-value {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .stat-label {
+            color: #b0b0b0 !important;
+        }
+
+        /* Footer styles */
+        .footer-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            margin: 20px;
+            padding: 15px 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 100;
+            clear: both;
+        }
+
+        .tenant-info {
+            text-align: center;
+            color: #6c757d;
+        }
+
+        .tenant-info strong {
+            color: #003366;
+            font-weight: 600;
+        }
+
+        /* Dark mode footer */
+        [data-theme="dark"] .footer-section {
+            background: rgba(30, 30, 30, 0.95) !important;
+        }
+
+        [data-theme="dark"] .tenant-info {
+            color: #b0b0b0 !important;
+        }
+
+        [data-theme="dark"] .tenant-info strong {
+            color: #ffffff !important;
+        }
+
+        /* Dark mode button fixes */
+        [data-theme="dark"] .btn-success {
+            background-color: #1e7e34 !important;
+            border-color: #1c7430 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .btn-success:hover {
+            background-color: #218838 !important;
+            border-color: #1e7e34 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .btn-success:focus,
+        [data-theme="dark"] .btn-success:active {
+            background-color: #1e7e34 !important;
+            border-color: #1c7430 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25) !important;
+        }
+
+        [data-theme="dark"] .btn-info {
+            background-color: #138496 !important;
+            border-color: #117a8b !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .btn-info:hover {
+            background-color: #17a2b8 !important;
+            border-color: #138496 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .btn-info:focus,
+        [data-theme="dark"] .btn-info:active {
+            background-color: #138496 !important;
+            border-color: #117a8b !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.25) !important;
+        }
+
+        [data-theme="dark"] .btn-warning {
+            background-color: #e0a800 !important;
+            border-color: #d39e00 !important;
+            color: #212529 !important;
+        }
+
+        [data-theme="dark"] .btn-warning:hover {
+            background-color: #ffc107 !important;
+            border-color: #e0a800 !important;
+            color: #212529 !important;
+        }
+
+        [data-theme="dark"] .btn-warning:focus,
+        [data-theme="dark"] .btn-warning:active {
+            background-color: #e0a800 !important;
+            border-color: #d39e00 !important;
+            color: #212529 !important;
+            box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25) !important;
+        }
+
+        [data-theme="dark"] .btn-secondary {
+            background-color: #495057 !important;
+            border-color: #42474c !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .btn-secondary:hover {
+            background-color: #6c757d !important;
+            border-color: #495057 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .btn-secondary:focus,
+        [data-theme="dark"] .btn-secondary:active {
+            background-color: #495057 !important;
+            border-color: #42474c !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25) !important;
+        }
+
+        /* Dark mode list group fixes - Export modal buttons */
+        [data-theme="dark"] .list-group-item {
+            background-color: #2d2d2d !important;
+            border-color: #495057 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .list-group-item-action {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .list-group-item-action:hover {
+            background-color: #404040 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .list-group-item-action:focus,
+        [data-theme="dark"] .list-group-item-action:active {
+            background-color: #495057 !important;
+            color: #ffffff !important;
+            border-color: #6c757d !important;
+        }
+
+        /* Dark mode modal fixes */
+        [data-theme="dark"] .modal-content {
+            background-color: #2d2d2d !important;
+            border-color: #495057 !important;
+        }
+
+        [data-theme="dark"] .modal-header {
+            border-bottom-color: #495057 !important;
+        }
+
+        [data-theme="dark"] .modal-footer {
+            border-top-color: #495057 !important;
+        }
+
+        [data-theme="dark"] .modal-title {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .close {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .close:hover {
+            color: #cccccc !important;
+        }
+
+        /* Dark mode alert fixes */
+        [data-theme="dark"] .alert-info {
+            background-color: rgba(23, 162, 184, 0.2) !important;
+            border-color: #17a2b8 !important;
+            color: #ffffff !important;
+        }
+
+        /* Comprehensive dark mode transparency fixes */
+
+        /* User bar fixes */
+        [data-theme="dark"] .user-bar {
+            background: rgba(40, 40, 40, 0.95) !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        [data-theme="dark"] .user-bar .user-name,
+        [data-theme="dark"] .user-bar .user-role {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .user-dropdown-toggle {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        /* Dropdown menu fixes */
+        [data-theme="dark"] .dropdown-menu {
+            background-color: #2d2d2d !important;
+            border-color: #495057 !important;
+        }
+
+        [data-theme="dark"] .dropdown-item {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .dropdown-item:hover {
+            background-color: #495057 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .dropdown-divider {
+            border-top-color: #495057 !important;
+        }
+
+        /* Enhanced action button dark mode fixes */
+        [data-theme="dark"] .btn-primary-custom {
+            background: #004080 !important;
+            color: #ffffff !important;
+            border: 1px solid #0056b3 !important;
+            box-shadow: 0 2px 8px rgba(0, 64, 128, 0.3) !important;
+        }
+
+        [data-theme="dark"] .btn-primary-custom:hover {
+            background: #0056b3 !important;
+            color: #ffffff !important;
+            border-color: #007bff !important;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4) !important;
+            transform: translateY(-1px) !important;
+        }
+
+        [data-theme="dark"] .btn-primary-custom:focus,
+        [data-theme="dark"] .btn-primary-custom:active {
+            background: #003d6b !important;
+            color: #ffffff !important;
+            border-color: #0056b3 !important;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+        }
+
+        /* Action buttons container */
+        [data-theme="dark"] .action-buttons {
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        /* Bootstrap button overrides for dark mode */
+        [data-theme="dark"] .action-buttons .btn {
+            border-width: 1px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        [data-theme="dark"] .action-buttons .btn:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        [data-theme="dark"] .action-buttons .btn:focus,
+        [data-theme="dark"] .action-buttons .btn:active {
+            transform: none !important;
+        }
+
+        /* Schedule table fixes */
+        [data-theme="dark"] .schedule-table th {
+            background: #1a3d5c !important;
+            color: #ffffff !important;
+            border-color: #495057 !important;
+        }
+
+        [data-theme="dark"] .schedule-table .time-header {
+            background: #0d1f2f !important;
+        }
+
+        [data-theme="dark"] .schedule-table td {
+            background: rgba(40, 40, 40, 0.95) !important;
+            border-color: #495057 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .schedule-table td:hover {
+            background: rgba(60, 60, 60, 0.95) !important;
+        }
+
+        /* Empty slot fixes */
+        [data-theme="dark"] .empty-slot {
+            color: #999999 !important;
+            background: transparent !important;
+        }
+
+        /* Assignment element fixes */
+        [data-theme="dark"] .assignment-subject {
+            color: #6da3d0 !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .assignment-teacher {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .assignment-classroom {
+            color: #b0b0b0 !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .assignment-actions button {
+            background: rgba(60, 60, 60, 0.95) !important;
+            border-color: #495057 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .assignment-actions button:hover {
+            background: #dc3545 !important;
+            color: #ffffff !important;
+        }
+
+        /* Level assignment group fixes */
+        [data-theme="dark"] .level-assignment-group {
+            background: rgba(109, 163, 208, 0.1) !important;
+            border-left-color: #6da3d0 !important;
+        }
+
+        /* Legend fixes */
+        [data-theme="dark"] .legend {
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .legend-item {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        /* Modal body fixes */
+        [data-theme="dark"] .modal-body {
+            background: transparent !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .modal-body p {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        /* Form control in modals */
+        [data-theme="dark"] .modal-content .form-control {
+            background-color: #495057 !important;
+            border-color: #6c757d !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .modal-content .form-control:focus {
+            background-color: #495057 !important;
+            border-color: #80bdff !important;
+            color: #ffffff !important;
+        }
+
+        /* Alert boxes in dark mode */
+        [data-theme="dark"] .alert-warning {
+            background-color: rgba(255, 193, 7, 0.2) !important;
+            border-color: #ffc107 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .alert-success {
+            background-color: rgba(40, 167, 69, 0.2) !important;
+            border-color: #28a745 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .alert-danger {
+            background-color: rgba(220, 53, 69, 0.2) !important;
+            border-color: #dc3545 !important;
+            color: #ffffff !important;
+        }
+
+        /* Loading overlay fix */
+        [data-theme="dark"] .loading-overlay {
+            background: rgba(0, 0, 0, 0.8) !important;
+        }
+
+        /* Small text and badges */
+        [data-theme="dark"] small {
+            color: #b0b0b0 !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .badge {
+            background-color: #495057 !important;
+            color: #ffffff !important;
+        }
+
+        /* Conflict indicator */
+        [data-theme="dark"] .conflict-indicator {
+            background: #dc3545 !important;
+            color: #ffffff !important;
+        }
+
+        /* Breadcrumb fix if exists */
+        [data-theme="dark"] .breadcrumb {
+            background-color: rgba(40, 40, 40, 0.95) !important;
+        }
+
+        [data-theme="dark"] .breadcrumb-item + .breadcrumb-item::before {
+            color: #6c757d !important;
+        }
+
+        /* Card elements if any */
+        [data-theme="dark"] .card {
+            background-color: rgba(40, 40, 40, 0.95) !important;
+            border-color: #495057 !important;
+        }
+
+        [data-theme="dark"] .card-header {
+            background-color: rgba(30, 30, 30, 0.95) !important;
+            border-bottom-color: #495057 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .card-body {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        /* Comprehensive icon dark mode fixes */
+
+        /* User bar icons */
+        [data-theme="dark"] .user-bar i {
+            color: #ffffff !important;
+        }
+
+        /* Dropdown menu icons */
+        [data-theme="dark"] .dropdown-item i {
+            color: #ffffff !important;
+        }
+
+        /* Header icons */
+        [data-theme="dark"] .schedule-header i {
+            color: #ffffff !important;
+        }
+
+        /* Enhanced action button content styling */
+        [data-theme="dark"] .action-buttons .btn-primary-custom {
+            text-decoration: none !important;
+        }
+
+        [data-theme="dark"] .action-buttons .btn-primary-custom:hover {
+            text-decoration: none !important;
+        }
+
+        /* Action button icons with proper transparency */
+        [data-theme="dark"] .action-buttons .btn i {
+            color: inherit !important;
+            background: transparent !important;
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] .btn-primary-custom i {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .btn-success i {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .btn-info i {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .btn-warning i {
+            color: #212529 !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .btn-secondary i {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .btn-danger i {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        /* Action button text styling */
+        [data-theme="dark"] .action-buttons .btn {
+            font-weight: 600 !important;
+            text-shadow: none !important;
+        }
+
+        /* Modal icons */
+        [data-theme="dark"] .modal-title i {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .modal-body i {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .modal-footer i {
+            color: #ffffff !important;
+        }
+
+        /* Compliance Modal specific dark mode fixes */
+        [data-theme="dark"] #complianceModal .modal-header {
+            background: linear-gradient(135deg, #b8860b, #cd853f) !important;
+            color: #000000 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .modal-header .modal-title {
+            color: #000000 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .modal-header .close {
+            color: #000000 !important;
+            opacity: 0.8;
+        }
+
+        [data-theme="dark"] #complianceModal .modal-header .close:hover {
+            color: #000000 !important;
+            opacity: 1;
+        }
+
+        /* Compliance Modal body content */
+        [data-theme="dark"] #complianceModal .card {
+            background-color: #3d3d3d !important;
+            border-color: #555555 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .card.bg-light {
+            background-color: #3d3d3d !important;
+        }
+
+        [data-theme="dark"] #complianceModal .card-body {
+            background-color: transparent !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #complianceModal .card-title {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #complianceModal .card-text {
+            color: #ffffff !important;
+        }
+
+        /* Alert components in compliance modal */
+        [data-theme="dark"] #complianceModal .alert {
+            background-color: #3d3d3d !important;
+            border-color: #555555 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .alert-success {
+            background-color: #1e4d3e !important;
+            border-color: #28a745 !important;
+            color: #d4edda !important;
+        }
+
+        [data-theme="dark"] #complianceModal .alert-warning {
+            background-color: #4d3e1e !important;
+            border-color: #ffc107 !important;
+            color: #fff3cd !important;
+        }
+
+        [data-theme="dark"] #complianceModal .alert-danger {
+            background-color: #4d1e1e !important;
+            border-color: #dc3545 !important;
+            color: #f8d7da !important;
+        }
+
+        [data-theme="dark"] #complianceModal .alert-info {
+            background-color: #1e3a4d !important;
+            border-color: #17a2b8 !important;
+            color: #d1ecf1 !important;
+        }
+
+        /* Lists and text in compliance modal */
+        [data-theme="dark"] #complianceModal .list-unstyled {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #complianceModal .list-unstyled li {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] #complianceModal small {
+            color: #cccccc !important;
+        }
+
+        [data-theme="dark"] #complianceModal .text-muted {
+            color: #cccccc !important;
+        }
+
+        [data-theme="dark"] #complianceModal h5,
+        [data-theme="dark"] #complianceModal h6 {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #complianceModal p {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #complianceModal strong {
+            color: #ffffff !important;
+        }
+
+        /* Background sections in compliance modal */
+        [data-theme="dark"] #complianceModal .bg-light {
+            background-color: #3d3d3d !important;
+        }
+
+        [data-theme="dark"] #complianceModal .rounded {
+            background-color: #3d3d3d !important;
+            border: 1px solid #555555;
+        }
+
+        /* Status colors in compliance modal (keep original colors for visibility) */
+        [data-theme="dark"] #complianceModal .text-success {
+            color: #28a745 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .text-warning {
+            color: #ffc107 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .text-danger {
+            color: #dc3545 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .text-primary {
+            color: #007bff !important;
+        }
+
+        /* Icons in compliance modal */
+        [data-theme="dark"] #complianceModal i.fas {
+            color: inherit !important;
+        }
+
+        [data-theme="dark"] #complianceModal .fa-check {
+            color: #28a745 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .fa-times-circle {
+            color: #dc3545 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .fa-exclamation-triangle {
+            color: #ffc107 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .fa-info-circle {
+            color: #17a2b8 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .fa-gavel {
+            color: #007bff !important;
+        }
+
+        [data-theme="dark"] #complianceModal .fa-flag {
+            color: #000000 !important;
+        }
+
+        /* Stronger overrides for compliance modal transparency issues */
+        [data-theme="dark"] #complianceModal .modal-body {
+            background-color: #2d2d2d !important;
+            color: #ffffff !important;
+        }
+
+        /* Override generic text color but preserve semantic colors */
+        [data-theme="dark"] #complianceModal .modal-body *:not(.text-success):not(.text-danger):not(.text-warning):not(.text-info):not(.text-primary):not(.fa-check):not(.fa-times-circle):not(.fa-exclamation-triangle):not(.fa-info-circle):not(.fa-gavel) {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #complianceModal .modal-body p,
+        [data-theme="dark"] #complianceModal .modal-body div,
+        [data-theme="dark"] #complianceModal .modal-body span {
+            background: none !important;
+            opacity: 1 !important;
+        }
+
+        /* Force visibility for all text elements in compliance modal */
+        [data-theme="dark"] #complianceModal h1,
+        [data-theme="dark"] #complianceModal h2,
+        [data-theme="dark"] #complianceModal h3,
+        [data-theme="dark"] #complianceModal h4,
+        [data-theme="dark"] #complianceModal h5,
+        [data-theme="dark"] #complianceModal h6 {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #complianceModal p {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #complianceModal strong,
+        [data-theme="dark"] #complianceModal b {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #complianceModal small {
+            color: #cccccc !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        /* Force icon visibility in compliance modal */
+        [data-theme="dark"] #complianceModal i,
+        [data-theme="dark"] #complianceModal .fas,
+        [data-theme="dark"] #complianceModal .far,
+        [data-theme="dark"] #complianceModal .fal,
+        [data-theme="dark"] #complianceModal .fab {
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        /* Specific fixes for alert content */
+        [data-theme="dark"] #complianceModal .alert * {
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .alert h1,
+        [data-theme="dark"] #complianceModal .alert h2,
+        [data-theme="dark"] #complianceModal .alert h3,
+        [data-theme="dark"] #complianceModal .alert h4,
+        [data-theme="dark"] #complianceModal .alert h5,
+        [data-theme="dark"] #complianceModal .alert h6 {
+            color: inherit !important;
+        }
+
+        [data-theme="dark"] #complianceModal .alert p {
+            color: inherit !important;
+        }
+
+        /* List items visibility */
+        [data-theme="dark"] #complianceModal ul,
+        [data-theme="dark"] #complianceModal ol,
+        [data-theme="dark"] #complianceModal li {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        /* Row and column visibility */
+        [data-theme="dark"] #complianceModal .row,
+        [data-theme="dark"] #complianceModal .col,
+        [data-theme="dark"] #complianceModal [class^="col-"],
+        [data-theme="dark"] #complianceModal [class*=" col-"] {
+            background: none !important;
+            opacity: 1 !important;
+        }
+
+        /* Modal footer buttons */
+        [data-theme="dark"] #complianceModal .modal-footer .btn {
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .modal-footer .btn i {
+            opacity: 1 !important;
+            color: inherit !important;
+        }
+
+        /* Ensure text content in specific containers is visible */
+        [data-theme="dark"] #complianceModal .alert-success h5,
+        [data-theme="dark"] #complianceModal .alert-warning h5,
+        [data-theme="dark"] #complianceModal .alert-danger h5,
+        [data-theme="dark"] #complianceModal .alert-info h5 {
+            color: inherit !important;
+        }
+
+        /* Alert icons - maintain specific colors */
+        [data-theme="dark"] .alert-info i {
+            color: #17a2b8 !important;
+        }
+
+        [data-theme="dark"] .alert-success i {
+            color: #28a745 !important;
+        }
+
+        /* Conflictos Detectados Modal dark mode fixes */
+        [data-theme="dark"] #conflictsModal .modal-header {
+            background: var(--danger-color, #dc3545) !important;
+            color: white !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .modal-header .modal-title {
+            color: white !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .modal-header .close {
+            color: white !important;
+            opacity: 0.8;
+        }
+
+        [data-theme="dark"] #conflictsModal .modal-header .close:hover {
+            color: white !important;
+            opacity: 1;
+        }
+
+        /* Conflicts Modal body content */
+        [data-theme="dark"] #conflictsModal .modal-body {
+            background-color: #2d2d2d !important;
+            color: #ffffff !important;
+        }
+
+        /* Force visibility for all text elements in conflicts modal */
+        [data-theme="dark"] #conflictsModal h1,
+        [data-theme="dark"] #conflictsModal h2,
+        [data-theme="dark"] #conflictsModal h3,
+        [data-theme="dark"] #conflictsModal h4,
+        [data-theme="dark"] #conflictsModal h5,
+        [data-theme="dark"] #conflictsModal h6 {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #conflictsModal p {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #conflictsModal strong,
+        [data-theme="dark"] #conflictsModal b {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #conflictsModal small {
+            color: #cccccc !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .text-muted {
+            color: #cccccc !important;
+            opacity: 1 !important;
+        }
+
+        /* Cards in conflicts modal */
+        [data-theme="dark"] #conflictsModal .card {
+            background-color: #3d3d3d !important;
+            border-color: #555555 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .card-body {
+            background-color: transparent !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .card-title {
+            color: #ffffff !important;
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .card-text {
+            color: #ffffff !important;
+            opacity: 1 !important;
+        }
+
+        /* Alert components in conflicts modal */
+        [data-theme="dark"] #conflictsModal .alert {
+            background-color: #3d3d3d !important;
+            border-color: #555555 !important;
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .alert-success {
+            background-color: #1e4d3e !important;
+            border-color: #28a745 !important;
+            color: #d4edda !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .alert-warning {
+            background-color: #4d3e1e !important;
+            border-color: #ffc107 !important;
+            color: #fff3cd !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .alert-danger {
+            background-color: #4d1e1e !important;
+            border-color: #dc3545 !important;
+            color: #f8d7da !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .alert-info {
+            background-color: #1e3a4d !important;
+            border-color: #17a2b8 !important;
+            color: #d1ecf1 !important;
+        }
+
+        /* Alert text content - ensure visibility */
+        [data-theme="dark"] #conflictsModal .alert * {
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .alert strong {
+            color: inherit !important;
+        }
+
+        /* Progress bars in conflicts modal */
+        [data-theme="dark"] #conflictsModal .progress {
+            background-color: #495057 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .progress-bar {
+            opacity: 1 !important;
+            color: #000000 !important;
+        }
+
+        /* Icons in conflicts modal */
+        [data-theme="dark"] #conflictsModal i,
+        [data-theme="dark"] #conflictsModal .fas,
+        [data-theme="dark"] #conflictsModal .far,
+        [data-theme="dark"] #conflictsModal .fal,
+        [data-theme="dark"] #conflictsModal .fab {
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        /* Status icons - preserve semantic colors */
+        [data-theme="dark"] #conflictsModal .text-danger {
+            color: #dc3545 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .text-warning {
+            color: #ffc107 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .text-info {
+            color: #17a2b8 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .text-success {
+            color: #28a745 !important;
+        }
+
+        /* Buttons in conflicts modal */
+        [data-theme="dark"] #conflictsModal .btn {
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .btn i {
+            opacity: 1 !important;
+            color: inherit !important;
+        }
+
+        /* Ensure all content containers are visible */
+        [data-theme="dark"] #conflictsModal .modal-body div,
+        [data-theme="dark"] #conflictsModal .modal-body span {
+            background: none !important;
+            opacity: 1 !important;
+        }
+
+        /* Override generic transparency rules for conflicts modal */
+        [data-theme="dark"] #conflictsModal .modal-body *:not(.text-success):not(.text-danger):not(.text-warning):not(.text-info):not(.fa-user-times):not(.fa-door-closed):not(.fa-clock):not(.fa-calendar-times):not(.fa-exclamation-triangle) {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .alert-warning i {
+            color: #ffc107 !important;
+        }
+
+        [data-theme="dark"] .alert-danger i {
+            color: #dc3545 !important;
+        }
+
+        /* Schedule table icons */
+        [data-theme="dark"] .empty-slot i {
+            color: #999999 !important;
+        }
+
+        [data-theme="dark"] .assignment-actions i {
+            color: #ffffff !important;
+        }
+
+        /* Form icons */
+        [data-theme="dark"] .form-group i {
+            color: #ffffff !important;
+        }
+
+        /* List group icons (export modal) */
+        [data-theme="dark"] .list-group-item i.fa-file-excel {
+            color: #28a745 !important;
+        }
+
+        [data-theme="dark"] .list-group-item i.fa-file-pdf {
+            color: #dc3545 !important;
+        }
+
+        [data-theme="dark"] .list-group-item i.fa-file-csv {
+            color: #17a2b8 !important;
+        }
+
+        [data-theme="dark"] .list-group-item i:not(.fa-file-excel):not(.fa-file-pdf):not(.fa-file-csv) {
+            color: #ffffff !important;
+        }
+
+        /* Status icons with colors */
+        [data-theme="dark"] .text-success i {
+            color: #28a745 !important;
+        }
+
+        [data-theme="dark"] .text-danger i {
+            color: #dc3545 !important;
+        }
+
+        [data-theme="dark"] .text-warning i {
+            color: #ffc107 !important;
+        }
+
+        [data-theme="dark"] .text-info i {
+            color: #17a2b8 !important;
+        }
+
+        [data-theme="dark"] .text-primary i {
+            color: #007bff !important;
+        }
+
+        /* Conflict type specific icons */
+        [data-theme="dark"] .fas.fa-user-times {
+            color: #dc3545 !important;
+        }
+
+        [data-theme="dark"] .fas.fa-door-closed {
+            color: #ffc107 !important;
+        }
+
+        [data-theme="dark"] .fas.fa-clock {
+            color: #17a2b8 !important;
+        }
+
+        [data-theme="dark"] .fas.fa-calendar-times {
+            color: #dc3545 !important;
+        }
+
+        /* Generation modal specific icons */
+        [data-theme="dark"] .fas.fa-refresh {
+            color: #007bff !important;
+        }
+
+        [data-theme="dark"] .fas.fa-puzzle-piece {
+            color: #28a745 !important;
+        }
+
+        [data-theme="dark"] .fas.fa-balance-scale {
+            color: #17a2b8 !important;
+        }
+
+        [data-theme="dark"] .fas.fa-calendar-plus {
+            color: #28a745 !important;
+        }
+
+        [data-theme="dark"] .fas.fa-users {
+            color: #17a2b8 !important;
+        }
+
+        [data-theme="dark"] .fas.fa-shield-alt {
+            color: #28a745 !important;
+        }
+
+        [data-theme="dark"] .fas.fa-calendar-check {
+            color: #28a745 !important;
+        }
+
+        /* Dark mode toggle icon - special handling */
+        [data-theme="dark"] #darkModeIcon {
+            color: #ffc107 !important;
+        }
+
+        [data-theme="light"] #darkModeIcon {
+            color: #495057 !important;
+        }
+
+        /* Validation icons */
+        [data-theme="dark"] .fas.fa-check {
+            color: #28a745 !important;
+        }
+
+        [data-theme="dark"] .fas.fa-times {
+            color: #dc3545 !important;
+        }
+
+        [data-theme="dark"] .fas.fa-gavel {
+            color: #007bff !important;
+        }
+
+        [data-theme="dark"] .fas.fa-lightbulb {
+            color: #17a2b8 !important;
+        }
+
+        [data-theme="dark"] .fas.fa-arrow-right {
+            color: #17a2b8 !important;
+        }
+
+        /* Small info icons */
+        [data-theme="dark"] small i {
+            color: #b0b0b0 !important;
+        }
+    </style>
 </head>
 <body>
     <!-- User Bar -->
@@ -370,1585 +2055,6 @@
                 const savedTheme = localStorage.getItem('bischeduler-theme');
                 const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                 const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
-                document.documentElement.setAttribute('data-theme', theme);
-                this.updateThemeToggle(theme);
-            }
-
-            updateThemeToggle(theme) {
-                const icon = document.getElementById('darkModeIcon');
-                const text = document.getElementById('darkModeText');
-                if (icon && text) {
-                    if (theme === 'dark') {
-                        icon.className = 'fas fa-sun';
-                        text.textContent = 'Modo Claro';
-                    } else {
-                        icon.className = 'fas fa-moon';
-                        text.textContent = 'Modo Oscuro';
-                    }
-                }
-            }
-
-            setupEventListeners() {
-                // Dark mode toggle
-                document.getElementById('darkModeToggle').addEventListener('click', () => {
-                    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-                    document.documentElement.setAttribute('data-theme', newTheme);
-                    localStorage.setItem('bischeduler-theme', newTheme);
-                    this.updateThemeToggle(newTheme);
-                });
-
-                // View selector
-                const viewSelectorElement = document.getElementById('viewSelector');
-                if (viewSelectorElement) {
-                    viewSelectorElement.addEventListener('change', (e) => {
-                        this.currentView = e.target.value;
-                        console.log('View changed to:', this.currentView);
-                        this.updateTargetSelector();
-
-                        // Toggle visibility of selectors based on view type
-                        const levelSelector = document.getElementById('levelSelector');
-                        const targetSelector = document.getElementById('targetSelector');
-                        const sectionFilter = document.getElementById('sectionFilter');
-
-                        if (levelSelector && targetSelector && sectionFilter) {
-                            if (this.currentView === 'level') {
-                                // Show level selector, hide target selector
-                                console.log('Showing level selector');
-                                levelSelector.style.display = 'inline-block';
-                                targetSelector.style.display = 'none';
-                                sectionFilter.style.display = 'none';
-                                // Clear target when switching to level view
-                                this.currentTarget = null;
-                            } else {
-                                // Show target selector, hide level selector
-                                console.log('Showing target selector');
-                                levelSelector.style.display = 'none';
-                                targetSelector.style.display = 'inline-block';
-                                sectionFilter.style.display = 'none';
-                            }
-                        } else {
-                            console.error('Some selectors not found:', { levelSelector, targetSelector, sectionFilter });
-                        }
-                    });
-                } else {
-                    console.error('viewSelector element not found');
-                }
-
-                // Target selector
-                document.getElementById('targetSelector').addEventListener('change', (e) => {
-                    this.currentTarget = e.target.value;
-                    if (this.currentTarget) {
-                        this.loadSchedule();
-                    }
-                });
-
-                // Level selector (new)
-                const levelSelectorElement = document.getElementById('levelSelector');
-                if (levelSelectorElement) {
-                    levelSelectorElement.addEventListener('change', (e) => {
-                        this.currentTarget = e.target.value;
-                        console.log('Level selected:', this.currentTarget);
-                        if (this.currentTarget) {
-                            // Update section filter with sections from this level
-                            const sectionFilter = document.getElementById('sectionFilter');
-                            const levelSections = this.getLevelSections(this.currentTarget);
-
-                            if (sectionFilter) {
-                                sectionFilter.innerHTML = '<option value="">Todas las secciones</option>';
-                                levelSections.forEach(section => {
-                                    sectionFilter.innerHTML += `<option value="${section.id}">${section.name}</option>`;
-                                });
-                                sectionFilter.style.display = levelSections.length > 1 ? 'inline-block' : 'none';
-                            }
-
-                            this.loadSchedule();
-                        }
-                    });
-                } else {
-                    console.error('levelSelector element not found');
-                }
-
-                // Section filter for level view
-                const sectionFilterElement = document.getElementById('sectionFilter');
-                if (sectionFilterElement) {
-                    sectionFilterElement.addEventListener('change', (e) => {
-                        this.filterSectionId = e.target.value;
-                        if (this.currentView === 'level' && this.currentTarget) {
-                            this.loadSchedule();
-                        }
-                    });
-                }
-
-                // Form field changes for conflict checking
-                ['sectionSelect', 'teacherSelect', 'classroomSelect', 'daySelect', 'periodSelect'].forEach(id => {
-                    const element = document.getElementById(id);
-                    if (element) {
-                        element.addEventListener('change', () => this.checkAssignmentConflicts());
-                    }
-                });
-
-                // Teacher selection updates workload info
-                document.getElementById('teacherSelect').addEventListener('change', (e) => {
-                    this.updateTeacherWorkload(e.target.value);
-                });
-            }
-
-            async loadMasterData() {
-                try {
-                    // Load real data from API
-                    const response = await fetch('/bischeduler/api/schedule/reference-data');
-                    const result = await response.json();
-
-                    if (result.success && result.data) {
-                        this.teachers = result.data.teachers;
-                        this.sections = result.data.sections;
-                        this.subjects = result.data.subjects;
-                        this.classrooms = result.data.classrooms;
-                        this.timePeriods = result.data.time_periods;
-
-                        console.log('Loaded real data:', {
-                            teachers: this.teachers.length,
-                            sections: this.sections.length,
-                            subjects: this.subjects.length,
-                            classrooms: this.classrooms.length,
-                            timePeriods: this.timePeriods.length
-                        });
-                    } else {
-                        throw new Error('Failed to load reference data: ' + (result.error || 'Unknown error'));
-                    }
-
-                    this.populateFormSelects();
-                    this.updateTargetSelector();
-
-                    // Auto-load the first available section's schedule for better UX
-                    if (this.sections && this.sections.length > 0) {
-                        this.currentView = 'section';
-                        this.currentTarget = this.sections[0].id;
-
-                        // Safely update UI elements if they exist
-                        const viewSelect = document.getElementById('viewSelect');
-                        const targetSelect = document.getElementById('targetSelect');
-
-                        if (viewSelect) {
-                            viewSelect.value = 'section';
-                        }
-                        if (targetSelect) {
-                            targetSelect.value = this.sections[0].id;
-                        }
-
-                        // Load initial schedule data
-                        setTimeout(() => {
-                            this.loadSchedule();
-                        }, 500);
-                    }
-
-                } catch (error) {
-                    console.error('Error loading master data:', error);
-                    alert('Error cargando datos del sistema. Verifique la conexión con la base de datos.');
-                }
-            }
-
-            populateFormSelects() {
-                // Populate sections
-                const sectionSelect = document.getElementById('sectionSelect');
-                sectionSelect.innerHTML = '<option value="">Seleccione sección...</option>';
-                this.sections.forEach(section => {
-                    sectionSelect.innerHTML += `<option value="${section.id}">${section.name}</option>`;
-                });
-
-                // Populate subjects
-                const subjectSelect = document.getElementById('subjectSelect');
-                subjectSelect.innerHTML = '<option value="">Seleccione materia...</option>';
-                this.subjects.forEach(subject => {
-                    subjectSelect.innerHTML += `<option value="${subject.id}">${subject.name}</option>`;
-                });
-
-                // Populate teachers
-                const teacherSelect = document.getElementById('teacherSelect');
-                teacherSelect.innerHTML = '<option value="">Seleccione profesor...</option>';
-                this.teachers.forEach(teacher => {
-                    teacherSelect.innerHTML += `<option value="${teacher.id}">${teacher.name} (${teacher.specialization})</option>`;
-                });
-
-                // Populate classrooms
-                const classroomSelect = document.getElementById('classroomSelect');
-                classroomSelect.innerHTML = '<option value="">Seleccione aula...</option>';
-                this.classrooms.forEach(classroom => {
-                    classroomSelect.innerHTML += `<option value="${classroom.id}">${classroom.name} (Cap: ${classroom.capacity})</option>`;
-                });
-
-                // Populate periods
-                const periodSelect = document.getElementById('periodSelect');
-                periodSelect.innerHTML = '<option value="">Seleccione período...</option>';
-                this.timePeriods.forEach(period => {
-                    if (!period.is_break) {
-                        periodSelect.innerHTML += `<option value="${period.id}">${period.name}: ${period.start_time} - ${period.end_time}</option>`;
-                    }
-                });
-            }
-
-            updateTargetSelector() {
-                const targetSelector = document.getElementById('targetSelector');
-                targetSelector.innerHTML = '<option value="">Seleccione...</option>';
-
-                switch (this.currentView) {
-                    case 'section':
-                        this.sections.forEach(section => {
-                            targetSelector.innerHTML += `<option value="${section.id}">${section.name}</option>`;
-                        });
-                        break;
-                    case 'level':
-                        // For level view, we don't populate targetSelector
-                        // The levelSelector dropdown handles this separately
-                        break;
-                    case 'teacher':
-                        this.teachers.forEach(teacher => {
-                            targetSelector.innerHTML += `<option value="${teacher.id}">${teacher.name}</option>`;
-                        });
-                        break;
-                    case 'classroom':
-                        this.classrooms.forEach(classroom => {
-                            targetSelector.innerHTML += `<option value="${classroom.id}">${classroom.name}</option>`;
-                        });
-                        break;
-                }
-            }
-
-            loadDefaultSchedule() {
-                // Load first section by default
-                if (this.sections.length > 0) {
-                    this.currentTarget = this.sections[0].id;
-                    document.getElementById('targetSelector').value = this.currentTarget;
-                    this.loadSchedule();
-                }
-            }
-
-            async loadSchedule() {
-                this.showLoading(true);
-                try {
-                    // Handle level view by aggregating multiple sections
-                    if (this.currentView === 'level') {
-                        let levelSections = this.getLevelSections(this.currentTarget);
-
-                        // Apply section filter if selected
-                        if (this.filterSectionId) {
-                            levelSections = levelSections.filter(s => s.id == this.filterSectionId);
-                        }
-
-                        this.scheduleData = {};
-
-                        // Load schedule for each section in the level
-                        for (const section of levelSections) {
-                            const response = await fetch(`/bischeduler/api/schedule/assignments?view_type=section&target_id=${section.id}`);
-                            const result = await response.json();
-
-                            if (result.success && result.schedule_data) {
-                                // Merge schedule data, prefixing with section name for clarity
-                                Object.entries(result.schedule_data).forEach(([key, assignment]) => {
-                                    // Store assignments grouped by section
-                                    if (!this.scheduleData[key]) {
-                                        this.scheduleData[key] = [];
-                                    }
-                                    // Add section information to the assignment
-                                    this.scheduleData[key].push({
-                                        ...assignment,
-                                        section: section.name,
-                                        sectionId: section.id
-                                    });
-                                });
-                            }
-                        }
-                        console.log('Loaded level schedule data:', this.scheduleData);
-                    } else {
-                        // Load single view (section, teacher, classroom)
-                        const response = await fetch(`/bischeduler/api/schedule/assignments?view_type=${this.currentView}&target_id=${this.currentTarget}`);
-                        const result = await response.json();
-
-                        if (result.success) {
-                            this.scheduleData = result.schedule_data || {};
-                            console.log('Loaded schedule data:', this.scheduleData);
-                        } else {
-                            console.error('Failed to load schedule:', result.error);
-                            this.scheduleData = {};
-                        }
-                    }
-
-                    this.renderScheduleGrid();
-                    this.updateStatistics();
-                } catch (error) {
-                    console.error('Error loading schedule:', error);
-                    this.scheduleData = {};
-                    this.renderScheduleGrid();
-                    this.updateStatistics();
-                } finally {
-                    this.showLoading(false);
-                }
-            }
-
-
-            renderScheduleGrid() {
-                const tbody = document.getElementById('scheduleBody');
-                tbody.innerHTML = '';
-
-                this.timePeriods.forEach(period => {
-                    const row = document.createElement('tr');
-
-                    // Time cell
-                    const timeCell = document.createElement('td');
-                    timeCell.className = period.is_break ? 'break-cell' : 'time-cell';
-                    timeCell.innerHTML = period.is_break ?
-                        `<em>${period.name}</em>` :
-                        `<strong>${period.name}</strong><br><small>${period.start_time}-${period.end_time}</small>`;
-                    row.appendChild(timeCell);
-
-                    // Day cells
-                    ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'].forEach(day => {
-                        const cell = document.createElement('td');
-
-                        if (period.is_break) {
-                            cell.className = 'break-cell';
-                            cell.innerHTML = '-';
-                        } else {
-                            const key = `${day}_${period.id}`;
-                            const assignment = this.scheduleData[key];
-
-                            if (assignment) {
-                                // Handle level view (arrays of assignments) vs single assignment
-                                if (this.currentView === 'level' && Array.isArray(assignment)) {
-                                    // Multiple sections in level view
-                                    cell.innerHTML = this.createLevelAssignmentElement(assignment, key);
-                                } else {
-                                    // Single assignment for section/teacher/classroom view
-                                    cell.innerHTML = this.createAssignmentElement(assignment, key);
-                                }
-                            } else {
-                                cell.innerHTML = '<div class="empty-slot"><i class="fas fa-plus"></i> Agregar</div>';
-                                cell.onclick = () => this.quickAddAssignment(day, period.id);
-                            }
-
-                            // Enable drag and drop (disabled for level view)
-                            if (this.currentView !== 'level') {
-                                cell.ondrop = (e) => this.handleDrop(e, day, period.id);
-                                cell.ondragover = (e) => this.handleDragOver(e);
-                                cell.ondragleave = (e) => this.handleDragLeave(e);
-                            }
-                        }
-
-                        row.appendChild(cell);
-                    });
-
-                    tbody.appendChild(row);
-                });
-            }
-
-            createAssignmentElement(assignment, key) {
-                const hasConflict = this.checkForConflicts(key);
-                return `
-                    <div class="schedule-assignment" draggable="true" ondragstart="scheduleManager.handleDragStart(event, '${key}')">
-                        ${hasConflict ? '<div class="conflict-indicator">!</div>' : ''}
-                        <div class="assignment-subject">${assignment.subject}</div>
-                        <div class="assignment-teacher">${assignment.teacher}</div>
-                        <div class="assignment-classroom">${assignment.classroom}</div>
-                        <div class="assignment-actions">
-                            <button onclick="scheduleManager.editAssignment('${key}')" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="scheduleManager.deleteAssignment('${key}')" title="Eliminar">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-
-            createLevelAssignmentElement(assignments, key) {
-                // Create a compact view for multiple sections
-                if (assignments.length === 0) return '';
-
-                // Group by subject for better visualization
-                const subjectGroups = {};
-                assignments.forEach(assignment => {
-                    const subject = assignment.subject || 'N/A';
-                    if (!subjectGroups[subject]) {
-                        subjectGroups[subject] = [];
-                    }
-                    subjectGroups[subject].push(assignment);
-                });
-
-                let html = '<div class="level-assignments" style="font-size: 0.75rem;">';
-                Object.entries(subjectGroups).forEach(([subject, sectionAssignments]) => {
-                    const sections = sectionAssignments.map(a => a.section).join(', ');
-                    const teachers = [...new Set(sectionAssignments.map(a => a.teacher))].join(', ');
-
-                    html += `
-                        <div class="level-assignment-group" style="margin-bottom: 4px; padding: 2px; background: rgba(0, 51, 102, 0.05); border-left: 2px solid #003366;">
-                            <div style="font-weight: 600; color: #003366;">${subject}</div>
-                            <div style="font-size: 0.65rem; color: #666;">
-                                <span title="Secciones">${sections}</span><br>
-                                <span title="Profesor(es)">${teachers}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                return html;
-            }
-
-            checkForConflicts(key) {
-                // Check if assignment has conflict status
-                const assignment = this.scheduleData[key];
-                return assignment && assignment.conflict_status && assignment.conflict_status !== 'none';
-            }
-
-            updateStatistics() {
-                const assignments = Object.keys(this.scheduleData).length;
-                const totalSlots = this.timePeriods.filter(p => !p.is_break).length * 5; // 5 days
-                const freeSlots = totalSlots - assignments;
-
-                // Count real conflicts
-                const conflictCount = Object.values(this.scheduleData).filter(assignment =>
-                    assignment.conflict_status && assignment.conflict_status !== 'none'
-                ).length;
-
-                // Calculate workload hours (40 min periods = 0.67 hours each)
-                const workloadHours = (assignments * 0.67).toFixed(1);
-
-                document.getElementById('totalAssignments').textContent = assignments;
-                document.getElementById('teacherWorkload').textContent = workloadHours;
-                document.getElementById('freeSlots').textContent = freeSlots;
-                document.getElementById('conflictCount').textContent = conflictCount;
-            }
-
-            quickAddAssignment(day, periodId) {
-                // Pre-fill the form with the selected slot and clear editing mode
-                document.getElementById('daySelect').value = day;
-                document.getElementById('periodSelect').value = periodId;
-
-                // Clear any editing state
-                delete document.getElementById('assignmentForm').dataset.editingId;
-                document.getElementById('saveAssignmentBtn').innerHTML = '<i class="fas fa-save"></i> Guardar Asignación';
-
-                // Clear form alerts
-                document.getElementById('conflictAlert').style.display = 'none';
-                document.getElementById('successAlert').style.display = 'none';
-
-                this.openAssignmentModal();
-            }
-
-            // Drag and Drop handlers
-            handleDragStart(e, key) {
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('assignmentKey', key);
-                e.target.classList.add('dragging');
-            }
-
-            handleDragOver(e) {
-                if (e.preventDefault) {
-                    e.preventDefault();
-                }
-                e.dataTransfer.dropEffect = 'move';
-                e.currentTarget.classList.add('drag-over');
-                return false;
-            }
-
-            handleDragLeave(e) {
-                e.currentTarget.classList.remove('drag-over');
-            }
-
-            async handleDrop(e, day, periodId) {
-                if (e.stopPropagation) {
-                    e.stopPropagation();
-                }
-                e.currentTarget.classList.remove('drag-over');
-
-                const sourceKey = e.dataTransfer.getData('assignmentKey');
-                const targetKey = `${day}_${periodId}`;
-
-                if (sourceKey !== targetKey) {
-                    const assignment = this.scheduleData[sourceKey];
-                    if (assignment && assignment.id) {
-                        // Check for conflicts first
-                        this.showLoading(true);
-
-                        try {
-                            const conflictResponse = await fetch('/bischeduler/api/schedule/conflicts/check', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                    teacher_id: assignment.teacher_id || assignment.teacher,
-                                    classroom_id: assignment.classroom_id || assignment.classroom,
-                                    day_of_week: day,
-                                    time_period_id: parseInt(periodId),
-                                    exclude_assignment_id: assignment.id
-                                })
-                            });
-
-                            const conflictResult = await conflictResponse.json();
-
-                            if (conflictResult.success && conflictResult.has_conflicts) {
-                                // Show conflict warning
-                                const confirmed = confirm(
-                                    `⚠️ Movimiento genera conflictos:\n\n${conflictResult.conflicts.map(c => `• ${c.message}`).join('\n')}\n\n¿Continuar de todas formas?`
-                                );
-
-                                if (!confirmed) {
-                                    return false;
-                                }
-                            }
-
-                            // Update assignment in database
-                            const updateResponse = await fetch(`/bischeduler/api/schedule/assignments/${assignment.id}`, {
-                                method: 'PUT',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                    day_of_week: day,
-                                    time_period_id: parseInt(periodId)
-                                })
-                            });
-
-                            const updateResult = await updateResponse.json();
-
-                            if (updateResult.success) {
-                                // Update UI immediately
-                                this.scheduleData[targetKey] = { ...assignment };
-                                delete this.scheduleData[sourceKey];
-                                this.renderScheduleGrid();
-                                this.updateStatistics();
-
-                                this.showNotification(`Asignación movida a ${day} ${this.getTimePeriodName(periodId)}`, 'success');
-                            } else {
-                                throw new Error(updateResult.error || 'Failed to update assignment');
-                            }
-
-                        } catch (error) {
-                            console.error('Error moving assignment:', error);
-                            this.showNotification('Error al mover la asignación: ' + error.message, 'error');
-                        } finally {
-                            this.showLoading(false);
-                        }
-                    }
-                }
-
-                // Remove dragging class from all elements
-                document.querySelectorAll('.dragging').forEach(el => {
-                    el.classList.remove('dragging');
-                });
-
-                return false;
-            }
-
-            getTimePeriodName(periodId) {
-                const period = this.timePeriods.find(p => p.id == periodId);
-                return period ? `${period.name} (${period.start_time}-${period.end_time})` : 'Unknown Period';
-            }
-
-            getCurrentTargetName() {
-                if (this.currentView === 'section') {
-                    const section = this.sections.find(s => s.id == this.currentTarget);
-                    return section ? section.name : 'Sección Desconocida';
-                } else if (this.currentView === 'level') {
-                    const levelNames = {
-                        'preescolar': 'Educación Inicial (Preescolar)',
-                        'primaria': 'Educación Primaria',
-                        'secundaria': 'Educación Media General (Secundaria)'
-                    };
-                    return levelNames[this.currentTarget] || 'Nivel Desconocido';
-                } else if (this.currentView === 'teacher') {
-                    const teacher = this.teachers.find(t => t.id == this.currentTarget);
-                    return teacher ? teacher.name : 'Profesor Desconocido';
-                } else if (this.currentView === 'classroom') {
-                    const classroom = this.classrooms.find(c => c.id == this.currentTarget);
-                    return classroom ? classroom.name : 'Aula Desconocida';
-                }
-                return 'N/A';
-            }
-
-            getLevelSections(levelId) {
-                const levelGrades = {
-                    'preescolar': ['1er Grupo', '2do Grupo', '3er Grupo'],
-                    'primaria': ['1er. Grado', '2do. Grado', '3er. Grado', '4to. Grado', '5to. Grado', '6to. Grado'],
-                    'secundaria': ['1er. Año', '2do. Año', '3er. Año', '4to. Año', '5to. Año']
-                };
-                const grades = levelGrades[levelId] || [];
-                return this.sections.filter(section => grades.includes(section.name));
-            }
-
-            openAssignmentModal() {
-                // Clear form when opening for new assignment
-                const form = document.getElementById('assignmentForm');
-                form.reset();
-
-                // Clear editing state
-                delete form.dataset.editingId;
-                document.getElementById('saveAssignmentBtn').innerHTML = '<i class="fas fa-save"></i> Guardar Asignación';
-
-                // Clear alerts
-                document.getElementById('conflictAlert').style.display = 'none';
-                document.getElementById('successAlert').style.display = 'none';
-
-                $('#assignmentModal').modal('show');
-            }
-
-            updateTeacherWorkload(teacherId) {
-                if (teacherId) {
-                    const teacher = this.teachers.find(t => t.id == teacherId);
-                    if (teacher) {
-                        const currentHours = (Math.random() * 30 + 10).toFixed(1); // Demo hours with 1 decimal
-                        document.getElementById('teacherWorkloadInfo').textContent =
-                            `Carga horaria: ${currentHours}/40 horas`;
-                    }
-                }
-            }
-
-            async saveAssignment() {
-                const form = document.getElementById('assignmentForm');
-                if (form.checkValidity()) {
-                    const data = {
-                        section_id: parseInt(document.getElementById('sectionSelect').value),
-                        subject_id: parseInt(document.getElementById('subjectSelect').value),
-                        teacher_id: parseInt(document.getElementById('teacherSelect').value),
-                        classroom_id: parseInt(document.getElementById('classroomSelect').value),
-                        day_of_week: document.getElementById('daySelect').value,
-                        time_period_id: parseInt(document.getElementById('periodSelect').value)
-                    };
-
-                    this.showLoading(true);
-
-                    try {
-                        // Save to database via API
-                        const response = await fetch('/bischeduler/api/schedule/assignments', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(data)
-                        });
-
-                        const result = await response.json();
-
-                        if (result.success) {
-                            $('#assignmentModal').modal('hide');
-                            form.reset();
-
-                            // Clear form alerts
-                            document.getElementById('conflictAlert').style.display = 'none';
-                            document.getElementById('successAlert').style.display = 'none';
-
-                            // Reload schedule to show new assignment
-                            await this.loadSchedule();
-
-                            // Show success message
-                            this.showNotification('Asignación guardada exitosamente', 'success');
-                        } else {
-                            // Handle conflicts or errors
-                            if (response.status === 409) {
-                                document.getElementById('conflictAlert').style.display = 'block';
-                                document.getElementById('conflictMessage').innerHTML =
-                                    result.conflicts.map(c => `• ${c.message}`).join('<br>');
-                                document.getElementById('successAlert').style.display = 'none';
-                            } else {
-                                throw new Error(result.error || 'Unknown error');
-                            }
-                        }
-
-                    } catch (error) {
-                        console.error('Error saving assignment:', error);
-                        this.showNotification('Error al guardar la asignación: ' + error.message, 'error');
-                    } finally {
-                        this.showLoading(false);
-                    }
-                } else {
-                    form.reportValidity();
-                }
-            }
-
-            async editAssignment(key) {
-                const assignment = this.scheduleData[key];
-                if (!assignment || !assignment.id) {
-                    this.showNotification('No se pudo cargar la información de la asignación', 'error');
-                    return;
-                }
-
-                // Load assignment data into form
-                try {
-                    const [day, periodId] = key.split('_');
-
-                    document.getElementById('sectionSelect').value = assignment.section_id;
-                    document.getElementById('subjectSelect').value = assignment.subject_id;
-                    document.getElementById('teacherSelect').value = assignment.teacher_id;
-                    document.getElementById('classroomSelect').value = assignment.classroom_id;
-                    document.getElementById('daySelect').value = day;
-                    document.getElementById('periodSelect').value = periodId;
-
-                    // Store assignment ID for update
-                    document.getElementById('assignmentForm').dataset.editingId = assignment.id;
-                    document.getElementById('saveAssignmentBtn').innerHTML = '<i class="fas fa-save"></i> Actualizar Asignación';
-
-                    $('#assignmentModal').modal('show');
-
-                } catch (error) {
-                    console.error('Error loading assignment for edit:', error);
-                    this.showNotification('Error al cargar la asignación para editar', 'error');
-                }
-            }
-
-            async updateAssignment(assignmentId, data) {
-                this.showLoading(true);
-
-                try {
-                    const response = await fetch(`/bischeduler/api/schedule/assignments/${assignmentId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data)
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        $('#assignmentModal').modal('hide');
-                        document.getElementById('assignmentForm').reset();
-                        delete document.getElementById('assignmentForm').dataset.editingId;
-                        document.getElementById('saveAssignmentBtn').innerHTML = '<i class="fas fa-save"></i> Guardar Asignación';
-
-                        // Clear form alerts
-                        document.getElementById('conflictAlert').style.display = 'none';
-                        document.getElementById('successAlert').style.display = 'none';
-
-                        // Reload schedule
-                        await this.loadSchedule();
-                        this.showNotification('Asignación actualizada exitosamente', 'success');
-                    } else {
-                        if (response.status === 409) {
-                            document.getElementById('conflictAlert').style.display = 'block';
-                            document.getElementById('conflictMessage').innerHTML =
-                                result.conflicts.map(c => `• ${c.message}`).join('<br>');
-                        } else {
-                            throw new Error(result.error || 'Unknown error');
-                        }
-                    }
-
-                } catch (error) {
-                    console.error('Error updating assignment:', error);
-                    this.showNotification('Error al actualizar la asignación: ' + error.message, 'error');
-                } finally {
-                    this.showLoading(false);
-                }
-            }
-
-            async deleteAssignment(key) {
-                const assignment = this.scheduleData[key];
-                if (!assignment || !assignment.id) {
-                    this.showNotification('No se pudo identificar la asignación', 'error');
-                    return;
-                }
-
-                if (!confirm('¿Está seguro de eliminar esta asignación?')) {
-                    return;
-                }
-
-                this.showLoading(true);
-
-                try {
-                    const response = await fetch(`/bischeduler/api/schedule/assignments/${assignment.id}`, {
-                        method: 'DELETE'
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        // Reload schedule to reflect deletion
-                        await this.loadSchedule();
-                        this.showNotification('Asignación eliminada exitosamente', 'success');
-                    } else {
-                        throw new Error(result.error || 'Unknown error');
-                    }
-
-                } catch (error) {
-                    console.error('Error deleting assignment:', error);
-                    this.showNotification('Error al eliminar la asignación: ' + error.message, 'error');
-                } finally {
-                    this.showLoading(false);
-                }
-            }
-
-            async checkAssignmentConflicts() {
-                const teacherId = document.getElementById('teacherSelect').value;
-                const classroomId = document.getElementById('classroomSelect').value;
-                const day = document.getElementById('daySelect').value;
-                const periodId = document.getElementById('periodSelect').value;
-
-                if (teacherId && classroomId && day && periodId) {
-                    try {
-                        const data = {
-                            teacher_id: parseInt(teacherId),
-                            classroom_id: parseInt(classroomId),
-                            day_of_week: day,
-                            time_period_id: parseInt(periodId)
-                        };
-
-                        // If editing, exclude current assignment
-                        const editingId = document.getElementById('assignmentForm').dataset.editingId;
-                        if (editingId) {
-                            data.exclude_assignment_id = parseInt(editingId);
-                        }
-
-                        const response = await fetch('/bischeduler/api/schedule/conflicts/check', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(data)
-                        });
-
-                        const result = await response.json();
-
-                        if (result.success) {
-                            if (result.has_conflicts) {
-                                document.getElementById('conflictAlert').style.display = 'block';
-                                document.getElementById('conflictMessage').innerHTML =
-                                    result.conflicts.map(c => `• ${c.message}`).join('<br>');
-                                document.getElementById('successAlert').style.display = 'none';
-                            } else {
-                                document.getElementById('conflictAlert').style.display = 'none';
-                                document.getElementById('successAlert').style.display = 'block';
-                            }
-                        }
-
-                    } catch (error) {
-                        console.error('Error checking conflicts:', error);
-                    }
-                }
-            }
-
-            async loadAllConflicts() {
-                try {
-                    // Get all assignments for comprehensive conflict detection
-                    const allConflicts = [];
-
-                    // Check every assignment against all others
-                    for (const [key, assignment] of Object.entries(this.scheduleData)) {
-                        if (!assignment.id) continue;
-
-                        const [day, periodId] = key.split('_');
-
-                        // Check this assignment for conflicts
-                        const response = await fetch('/bischeduler/api/schedule/conflicts/check', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                teacher_id: assignment.teacher_id || assignment.teacher,
-                                classroom_id: assignment.classroom_id || assignment.classroom,
-                                day_of_week: day,
-                                time_period_id: parseInt(periodId),
-                                exclude_assignment_id: assignment.id
-                            })
-                        });
-
-                        const result = await response.json();
-
-                        if (result.success && result.has_conflicts) {
-                            result.conflicts.forEach(conflict => {
-                                // Add assignment context to conflict
-                                conflict.assignment_key = key;
-                                conflict.assignment_info = {
-                                    subject: assignment.subject,
-                                    teacher: assignment.teacher,
-                                    classroom: assignment.classroom,
-                                    day: day,
-                                    period: periodId
-                                };
-                                allConflicts.push(conflict);
-                            });
-                        }
-                    }
-
-                    // Remove duplicates (conflicts detected from both sides)
-                    const uniqueConflicts = [];
-                    const seen = new Set();
-
-                    for (const conflict of allConflicts) {
-                        const key = `${conflict.type}_${conflict.message}`;
-                        if (!seen.has(key)) {
-                            seen.add(key);
-                            uniqueConflicts.push(conflict);
-                        }
-                    }
-
-                    return uniqueConflicts;
-
-                } catch (error) {
-                    console.error('Error loading conflicts:', error);
-                    throw error;
-                }
-            }
-
-            showNotification(message, type = 'info') {
-                // Create a temporary notification
-                const notification = document.createElement('div');
-                notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show`;
-                notification.style.position = 'fixed';
-                notification.style.top = '20px';
-                notification.style.right = '20px';
-                notification.style.zIndex = '9999';
-                notification.style.maxWidth = '400px';
-                notification.innerHTML = `
-                    ${message}
-                    <button type="button" class="close" data-dismiss="alert">
-                        <span>&times;</span>
-                    </button>
-                `;
-
-                document.body.appendChild(notification);
-
-                // Auto remove after 5 seconds
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 5000);
-            }
-
-            showLoading(show) {
-                document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
-            }
-        }
-
-        // Global schedule manager variable
-        let scheduleManager;
-
-        function openAssignmentModal() {
-            if (!scheduleManager) {
-                console.warn('Schedule manager not initialized yet');
-                return;
-            }
-            scheduleManager.openAssignmentModal();
-        }
-
-        function saveAssignment() {
-            if (!scheduleManager) {
-                console.warn('Schedule manager not initialized yet');
-                return;
-            }
-
-            // Check if we're editing or creating
-            const editingId = document.getElementById('assignmentForm').dataset.editingId;
-
-            if (editingId) {
-                // Update existing assignment
-                const data = {
-                    section_id: parseInt(document.getElementById('sectionSelect').value),
-                    subject_id: parseInt(document.getElementById('subjectSelect').value),
-                    teacher_id: parseInt(document.getElementById('teacherSelect').value),
-                    classroom_id: parseInt(document.getElementById('classroomSelect').value),
-                    day_of_week: document.getElementById('daySelect').value,
-                    time_period_id: parseInt(document.getElementById('periodSelect').value)
-                };
-
-                scheduleManager.updateAssignment(parseInt(editingId), data);
-            } else {
-                // Create new assignment
-                scheduleManager.saveAssignment();
-            }
-        }
-
-        async function generateSchedule() {
-            if (!scheduleManager) {
-                console.warn('Schedule manager not initialized yet');
-                return;
-            }
-
-            const generationType = await showGenerationModal();
-            if (!generationType) return;
-
-            scheduleManager.showLoading(true);
-
-            try {
-                const response = await fetch('/bischeduler/api/schedule/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        view_type: scheduleManager.currentView,
-                        target_id: scheduleManager.currentTarget,
-                        generation_type: generationType,
-                        academic_year: '2025-2026',
-                        preserve_existing: generationType === 'fill_gaps'
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    // Reload schedule to show generated assignments
-                    await scheduleManager.loadSchedule();
-                    scheduleManager.showNotification(
-                        `✨ Se generaron ${result.assignments_created} nuevas asignaciones automáticamente`,
-                        'success'
-                    );
-
-                    // Show generation summary
-                    if (result.summary) {
-                        showGenerationSummary(result.summary);
-                    }
-                } else {
-                    throw new Error(result.error || 'Error en la generación automática');
-                }
-
-            } catch (error) {
-                console.error('Generation error:', error);
-                scheduleManager.showNotification('Error en la generación automática: ' + error.message, 'error');
-            } finally {
-                scheduleManager.showLoading(false);
-            }
-        }
-
-        function showGenerationModal() {
-            return new Promise((resolve) => {
-                const modal = document.createElement('div');
-                modal.className = 'modal fade';
-                modal.innerHTML = `
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">
-                                    <i class="fas fa-magic"></i> Generación Automática de Horarios
-                                </h5>
-                                <button type="button" class="close" data-dismiss="modal">
-                                    <span>&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle"></i>
-                                    <strong>Algoritmo inteligente</strong> que respeta las regulaciones venezolanas K12
-                                </div>
-
-                                <p>Seleccione el tipo de generación:</p>
-                                <div class="list-group">
-                                    <button class="list-group-item list-group-item-action" onclick="selectGenerationType('complete_rebuild')">
-                                        <div class="d-flex w-100 justify-content-between">
-                                            <h6 class="mb-1">
-                                                <i class="fas fa-refresh text-primary"></i>
-                                                Regeneración Completa
-                                            </h6>
-                                            <small class="text-warning">⚠️ Destructivo</small>
-                                        </div>
-                                        <p class="mb-1">Elimina todas las asignaciones existentes y genera un horario completamente nuevo</p>
-                                        <small class="text-muted">Usa algoritmos de optimización para distribuir equitativamente la carga</small>
-                                    </button>
-
-                                    <button class="list-group-item list-group-item-action" onclick="selectGenerationType('fill_gaps')">
-                                        <div class="d-flex w-100 justify-content-between">
-                                            <h6 class="mb-1">
-                                                <i class="fas fa-puzzle-piece text-success"></i>
-                                                Completar Espacios Libres
-                                            </h6>
-                                            <small class="text-success">✅ Seguro</small>
-                                        </div>
-                                        <p class="mb-1">Mantiene las asignaciones existentes y llena los espacios vacíos</p>
-                                        <small class="text-muted">Ideal para optimizar horarios parcialmente configurados</small>
-                                    </button>
-
-                                    <button class="list-group-item list-group-item-action" onclick="selectGenerationType('optimize_workload')">
-                                        <div class="d-flex w-100 justify-content-between">
-                                            <h6 class="mb-1">
-                                                <i class="fas fa-balance-scale text-info"></i>
-                                                Optimizar Carga Docente
-                                            </h6>
-                                            <small class="text-info">📊 Inteligente</small>
-                                        </div>
-                                        <p class="mb-1">Redistribuye asignaciones para balancear la carga de trabajo</p>
-                                        <small class="text-muted">Respeta límite de 40 horas/semana por profesor</small>
-                                    </button>
-                                </div>
-
-                                <div class="mt-3">
-                                    <h6>Criterios de Generación:</h6>
-                                    <ul class="small text-muted">
-                                        <li>Límite de 40 horas semanales por profesor</li>
-                                        <li>Sin conflictos de horario (profesor/aula)</li>
-                                        <li>Distribución equitativa de materias</li>
-                                        <li>Respeto por especializaciones docentes</li>
-                                        <li>Optimización de uso de aulas</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                document.body.appendChild(modal);
-                $(modal).modal('show');
-
-                window.selectGenerationType = (type) => {
-                    $(modal).modal('hide');
-                    setTimeout(() => {
-                        document.body.removeChild(modal);
-                        delete window.selectGenerationType;
-                    }, 500);
-                    resolve(type);
-                };
-
-                $(modal).on('hidden.bs.modal', () => {
-                    setTimeout(() => {
-                        if (modal.parentNode) {
-                            document.body.removeChild(modal);
-                        }
-                        delete window.selectGenerationType;
-                    }, 100);
-                    resolve(null);
-                });
-            });
-        }
-
-        function showGenerationSummary(summary) {
-            const modal = document.createElement('div');
-            modal.className = 'modal fade';
-            modal.innerHTML = `
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header bg-success text-white">
-                            <h5 class="modal-title">
-                                <i class="fas fa-check-circle"></i> Generación Completada
-                            </h5>
-                            <button type="button" class="close text-white" data-dismiss="modal">
-                                <span>&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="text-center">
-                                        <i class="fas fa-calendar-plus fa-3x text-success mb-2"></i>
-                                        <h4>${summary.assignments_created || 0}</h4>
-                                        <small class="text-muted">Asignaciones Creadas</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="text-center">
-                                        <i class="fas fa-users fa-3x text-info mb-2"></i>
-                                        <h4>${summary.teachers_assigned || 0}</h4>
-                                        <small class="text-muted">Profesores Asignados</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            ${summary.conflicts_resolved ? `
-                                <div class="alert alert-success mt-3">
-                                    <i class="fas fa-shield-alt"></i>
-                                    Se resolvieron ${summary.conflicts_resolved} conflictos automáticamente
-                                </div>
-                            ` : ''}
-
-                            <div class="mt-3">
-                                <h6>Próximos pasos recomendados:</h6>
-                                <ul class="small">
-                                    <li>Revise las asignaciones generadas</li>
-                                    <li>Ejecute detección de conflictos</li>
-                                    <li>Ajuste manualmente si es necesario</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-primary" data-dismiss="modal">Entendido</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(modal);
-            $(modal).modal('show');
-
-            $(modal).on('hidden.bs.modal', () => {
-                setTimeout(() => {
-                    if (modal.parentNode) {
-                        document.body.removeChild(modal);
-                    }
-                }, 100);
-            });
-        }
-
-        async function checkConflicts() {
-            if (!scheduleManager) {
-                console.warn('Schedule manager not initialized yet');
-                return;
-            }
-
-            scheduleManager.showLoading(true);
-
-            try {
-                // Load all schedule conflicts for current view
-                const allConflicts = await scheduleManager.loadAllConflicts();
-
-                // Show conflicts modal
-                $('#conflictsModal').modal('show');
-
-                // Populate conflicts list
-                const conflictsList = document.getElementById('conflictsList');
-
-                if (allConflicts.length === 0) {
-                    conflictsList.innerHTML = `
-                        <div class="alert alert-success">
-                            <i class="fas fa-check-circle"></i>
-                            <strong>¡Excelente!</strong> No se detectaron conflictos en el horario actual.
-                        </div>
-                        <div class="text-center mt-3">
-                            <i class="fas fa-calendar-check fa-3x text-success"></i>
-                            <p class="mt-2 text-muted">El horario cumple con todas las restricciones venezolanas K12.</p>
-                        </div>
-                    `;
-                } else {
-                    let conflictsHtml = `
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <strong>Se detectaron ${allConflicts.length} conflicto(s)</strong> en el horario actual.
-                        </div>
-                    `;
-
-                    allConflicts.forEach((conflict, index) => {
-                        const iconClass = {
-                            'teacher_conflict': 'fas fa-user-times text-danger',
-                            'classroom_conflict': 'fas fa-door-closed text-warning',
-                            'workload_limit': 'fas fa-clock text-info',
-                            'schedule_overlap': 'fas fa-calendar-times text-danger'
-                        }[conflict.type] || 'fas fa-exclamation-triangle text-warning';
-
-                        conflictsHtml += `
-                            <div class="card mb-3">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-start">
-                                        <div class="mr-3">
-                                            <i class="${iconClass} fa-2x"></i>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <h6 class="card-title">
-                                                ${getConflictTitle(conflict.type)}
-                                            </h6>
-                                            <p class="card-text">${conflict.message}</p>
-                                            ${conflict.current_workload ? `
-                                                <div class="progress mb-2">
-                                                    <div class="progress-bar bg-warning" style="width: ${Math.min(conflict.current_workload / 40 * 100, 100)}%">
-                                                        ${conflict.current_workload.toFixed(1)} / 40 horas
-                                                    </div>
-                                                </div>
-                                            ` : ''}
-                                            <div class="mt-2">
-                                                <small class="text-muted">
-                                                    <i class="fas fa-info-circle"></i>
-                                                    ${getConflictSolution(conflict.type)}
-                                                </small>
-                                            </div>
-                                        </div>
-                                        <div class="ml-2">
-                                            <button class="btn btn-sm btn-outline-primary" onclick="resolveConflict(${index})">
-                                                <i class="fas fa-magic"></i> Resolver
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    });
-
-                    conflictsList.innerHTML = conflictsHtml;
-                }
-
-            } catch (error) {
-                console.error('Error loading conflicts:', error);
-                const conflictsList = document.getElementById('conflictsList');
-                conflictsList.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Error al cargar conflictos: ${error.message}
-                    </div>
-                `;
-            } finally {
-                scheduleManager.showLoading(false);
-            }
-        }
-
-        function getConflictTitle(type) {
-            const titles = {
-                'teacher_conflict': 'Conflicto de Profesor',
-                'classroom_conflict': 'Conflicto de Aula',
-                'workload_limit': 'Límite de Carga Horaria',
-                'schedule_overlap': 'Solapamiento de Horario'
-            };
-            return titles[type] || 'Conflicto Detectado';
-        }
-
-        function getConflictSolution(type) {
-            const solutions = {
-                'teacher_conflict': 'Reasigne el profesor a otro período o cambie la asignación existente.',
-                'classroom_conflict': 'Seleccione un aula diferente o cambie el período de tiempo.',
-                'workload_limit': 'Redistribuya las clases del profesor para no exceder 40 horas semanales.',
-                'schedule_overlap': 'Ajuste los horarios para evitar solapamientos.'
-            };
-            return solutions[type] || 'Revise y ajuste la asignación según las reglas venezolanas K12.';
-        }
-
-        async function resolveConflict(conflictIndex) {
-            try {
-                scheduleManager.showNotification('Función de resolución automática en desarrollo', 'info');
-                // Future: Implement intelligent conflict resolution algorithms
-            } catch (error) {
-                scheduleManager.showNotification('Error al resolver conflicto: ' + error.message, 'error');
-            }
-        }
-
-        async function resolveAllConflicts() {
-            if (!confirm('¿Desea intentar resolver automáticamente todos los conflictos detectados?')) {
-                return;
-            }
-
-            scheduleManager.showLoading(true);
-
-            try {
-                // Future: Implement batch conflict resolution
-                scheduleManager.showNotification('Resolución automática de conflictos en desarrollo (Fase 3)', 'info');
-
-                // For now, just refresh the conflicts view
-                setTimeout(async () => {
-                    await checkConflicts();
-                }, 1000);
-
-            } catch (error) {
-                scheduleManager.showNotification('Error en resolución automática: ' + error.message, 'error');
-            } finally {
-                scheduleManager.showLoading(false);
-            }
-        }
-
-        async function exportSchedule() {
-            if (!scheduleManager) {
-                console.warn('Schedule manager not initialized yet');
-                return;
-            }
-
-            try {
-                // Check if we have schedule data to export BEFORE showing modal
-                if (!scheduleManager.scheduleData || Object.keys(scheduleManager.scheduleData).length === 0) {
-                    // Try to load a default section's schedule
-                    if (scheduleManager.sections && scheduleManager.sections.length > 0) {
-                        scheduleManager.showNotification('Cargando datos para exportar...', 'info');
-                        scheduleManager.currentView = 'section';
-                        scheduleManager.currentTarget = scheduleManager.sections[0].id;
-
-                        // Update UI to show the selected section (if elements exist)
-                        const viewSelect = document.getElementById('viewSelect');
-                        const targetSelect = document.getElementById('targetSelect');
-
-                        if (viewSelect) {
-                            viewSelect.value = 'section';
-                        }
-                        if (targetSelect) {
-                            targetSelect.value = scheduleManager.sections[0].id;
-                        }
-
-                        // Load schedule data
-                        await scheduleManager.loadSchedule();
-
-                        // Check again if we now have data
-                        if (!scheduleManager.scheduleData || Object.keys(scheduleManager.scheduleData).length === 0) {
-                            scheduleManager.showNotification('No hay horarios configurados en el sistema. Configure primero algunos horarios.', 'warning');
-                            return;
-                        }
-                    } else {
-                        scheduleManager.showNotification('No hay datos disponibles para exportar. Configure primero algunas secciones y horarios.', 'warning');
-                        return;
-                    }
-                }
-
-                const exportType = await showExportModal();
-                if (!exportType) return;
-
-                scheduleManager.showLoading(true);
-
-                // For fallback exports, we'll use the current schedule data
-                const targetId = scheduleManager.currentTarget || 'all';
-                const viewType = scheduleManager.currentView || 'general';
-
-                // For all formats, use client-side export for now
-                if (exportType === 'csv' || exportType === 'xlsx') {
-                    exportToCSV();
-                    scheduleManager.showNotification('Horario exportado como CSV', 'success');
-                    return;
-                } else if (exportType === 'pdf') {
-                    await exportToPDF();
-                    scheduleManager.showNotification('Horario exportado como PDF', 'success');
-                    return;
-                }
-
-                // If API is needed in the future, try the full API endpoint
-                const response = await fetch('/bischeduler/api/schedule/export', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        view_type: viewType,
-                        target_id: targetId,
-                        format: exportType,
-                        academic_year: '2025-2026'
-                    })
-                });
-
-                if (response.ok) {
-                    // Handle file download
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `horario_${scheduleManager.currentView}_${new Date().toISOString().split('T')[0]}.${exportType}`;
-                    document.body.appendChild(a);
-                    a.click();
-
-                    // Clean up
-                    setTimeout(() => {
-                        window.URL.revokeObjectURL(url);
-                        if (a.parentNode) {
-                            document.body.removeChild(a);
-                        }
-                    }, 100);
-
-                    scheduleManager.showNotification('Horario exportado exitosamente', 'success');
-                } else {
-                    // Fallback to CSV if API fails
-                    console.warn('API export failed, falling back to CSV');
-                    exportToCSV();
-                    scheduleManager.showNotification('Exportado como CSV (API en desarrollo)', 'info');
-                }
-
-            } catch (error) {
-                console.error('Export error:', error);
-                // Fallback to CSV export
-                try {
-                    exportToCSV();
-                    scheduleManager.showNotification('Exportado como CSV debido a error técnico', 'warning');
-                } catch (csvError) {
-                    scheduleManager.showNotification('Error al exportar: ' + error.message, 'error');
-                }
-            } finally {
-                scheduleManager.showLoading(false);
-            }
-        }
-
-        function exportToCSV() {
-            // Create CSV from current schedule data
-            const scheduleData = scheduleManager.scheduleData;
-            const csvContent = [];
-
-            // CSV Headers
-            csvContent.push(['Día', 'Hora', 'Materia', 'Profesor', 'Aula', 'Sección']);
-
-            // Add data rows
-            Object.entries(scheduleData).forEach(([key, assignment]) => {
-                const [day, periodId] = key.split('_');
-                const period = scheduleManager.timePeriods.find(p => p.id == periodId);
-                const timeString = period ? `${period.start_time}-${period.end_time}` : 'N/A';
-
-                csvContent.push([
-                    day.charAt(0).toUpperCase() + day.slice(1),
-                    timeString,
-                    assignment.subject || 'N/A',
-                    assignment.teacher || 'N/A',
-                    assignment.classroom || 'N/A',
-                    scheduleManager.getCurrentTargetName()
-                ]);
-            });
-
-            // Create and download CSV
-            const csvString = csvContent.map(row =>
-                row.map(field => `"${field}"`).join(',')
-            ).join('\n');
-
-            const blob = new Blob(['\ufeff' + csvString], { type: 'text/csv;charset=utf-8;' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `horario_${scheduleManager.currentView}_${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-
-            setTimeout(() => {
-                window.URL.revokeObjectURL(url);
-                if (a.parentNode) {
-                    document.body.removeChild(a);
-                }
-            }, 100);
-        }
-
-        function exportToHTML() {
-            // Create a professional HTML schedule that can be printed as PDF
-            const scheduleData = scheduleManager.scheduleData;
-            const targetName = scheduleManager.getCurrentTargetName();
-            const currentDate = new Date().toLocaleDateString('es-VE');
-
-            // Group data by day
-            const daySchedule = {};
-            const days = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
-
-            days.forEach(day => {
-                daySchedule[day] = [];
-            });
-
-            Object.entries(scheduleData).forEach(([key, assignment]) => {
-                const [day, periodId] = key.split('_');
-                const period = scheduleManager.timePeriods.find(p => p.id == periodId);
-
-                if (period && daySchedule[day]) {
-                    daySchedule[day].push({
-                        time: `${period.start_time} - ${period.end_time}`,
-                        subject: assignment.subject || 'N/A',
-                        teacher: assignment.teacher || 'N/A',
-                        classroom: assignment.classroom || 'N/A',
-                        period: period
-                    });
-                }
-            });
-
-            // Sort by time for each day
-            days.forEach(day => {
-                daySchedule[day].sort((a, b) => a.period.start_time.localeCompare(b.period.start_time));
-            });
-
-            const htmlContent = `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horario Académico - ${targetName}</title>
-    <style>
-        @media print {
-            @page { margin: 1cm; }
-            body { margin: 0; }
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 20px;
-            line-height: 1.4;
-            color: #333;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-    <!-- Print styles extracted to external CSS file -->
                 document.documentElement.setAttribute('data-theme', theme);
                 this.updateThemeToggle(theme);
             }
