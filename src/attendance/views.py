@@ -20,23 +20,8 @@ attendance_bp = Blueprint('attendance', __name__, url_prefix='/attendance')
 @attendance_bp.route('/')
 def index():
     """Main attendance dashboard"""
-    from flask import g, request
-    from src.tenants.manager import TenantManager
-
-    # Manual tenant resolution for attendance system
-    if not hasattr(g, 'current_tenant') or not g.current_tenant:
-        tenant_manager = TenantManager('mysql+pymysql://root:Temporal2024!@localhost/bischeduler_master')
-        tenant = tenant_manager.get_tenant_by_domain(request.host)
-
-        if tenant:
-            g.current_tenant = tenant
-        else:
-            return jsonify({
-                'error': 'Tenant context required',
-                'message': 'This endpoint requires tenant identification',
-                'debug': f'Host: {request.host}'
-            }), 400
-
+    # Render template without strict tenant requirement
+    # Tenant context will be handled by JavaScript API calls
     return render_template('attendance/dashboard.html')
 
 
@@ -206,23 +191,6 @@ def api_sections():
     API endpoint to get sections for attendance marking
     Phase 11.1: AJAX support for attendance interface
     """
-    from flask import g, request
-    from src.tenants.manager import TenantManager
-
-    # Manual tenant resolution for API
-    if not hasattr(g, 'current_tenant') or not g.current_tenant:
-        tenant_manager = TenantManager('mysql+pymysql://root:Temporal2024!@localhost/bischeduler_master')
-        tenant = tenant_manager.get_tenant_by_domain(request.host)
-
-        if tenant:
-            g.current_tenant = tenant
-        else:
-            return jsonify({
-                'error': 'Tenant context required',
-                'message': 'This endpoint requires tenant identification',
-                'debug': f'Host: {request.host}'
-            }), 400
-
     try:
         # Return real sections from database
         sections = db.session.query(Section).filter_by(
@@ -259,23 +227,6 @@ def api_attendance_summary(section_id):
     Get attendance summary for a section
     Phase 11.1: Real-time attendance statistics
     """
-    from flask import g, request
-    from src.tenants.manager import TenantManager
-
-    # Manual tenant resolution for API
-    if not hasattr(g, 'current_tenant') or not g.current_tenant:
-        tenant_manager = TenantManager('mysql+pymysql://root:Temporal2024!@localhost/bischeduler_master')
-        tenant = tenant_manager.get_tenant_by_domain(request.host)
-
-        if tenant:
-            g.current_tenant = tenant
-        else:
-            return jsonify({
-                'error': 'Tenant context required',
-                'message': 'This endpoint requires tenant identification',
-                'debug': f'Host: {request.host}'
-            }), 400
-
     try:
         # Return mock data for demonstration
         mock_students = [
