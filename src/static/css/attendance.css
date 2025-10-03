@@ -1,0 +1,331 @@
+/* ============================================================================
+   BiScheduler - Attendance System Styles
+   Venezuelan K12 Absence Monitoring (Phase 11.1)
+   ============================================================================ */
+
+/* Attendance Card Styles
+   ========================================================================== */
+.attendance-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.attendance-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow-color-lg);
+}
+
+/* Status Indicators with Dark Mode Support
+   ========================================================================== */
+.status-excellent {
+    border-left: 4px solid var(--success-color);
+}
+
+.status-good {
+    border-left: 4px solid #6f42c1;
+}
+
+.status-concerning {
+    border-left: 4px solid var(--warning-color);
+}
+
+.status-critical {
+    border-left: 4px solid var(--danger-color);
+}
+
+/* Dark Mode: Bootstrap Card Overrides
+   ========================================================================== */
+[data-theme="dark"] .card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .card-body {
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .card-title {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .card-text {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .text-muted {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .badge {
+    background-color: var(--primary-color) !important;
+    color: var(--text-inverse) !important;
+}
+
+/* Dark Mode: Modal Styles
+   ========================================================================== */
+[data-theme="dark"] .modal-content {
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .modal-header {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .modal-body {
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Dark Mode: Table Styles
+   ========================================================================== */
+[data-theme="dark"] .table {
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .table td,
+[data-theme="dark"] .table th {
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .table-responsive {
+    background-color: var(--card-bg) !important;
+}
+
+/* Dark Mode: Form Controls
+   ========================================================================== */
+[data-theme="dark"] .form-control {
+    background-color: var(--input-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .form-control:focus {
+    background-color: var(--input-bg) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(77, 121, 164, 0.25) !important;
+}
+
+[data-theme="dark"] .form-label {
+    color: var(--text-primary) !important;
+}
+
+/* Dark Mode: Comprehensive Text Fixes
+   ========================================================================== */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+    color: var(--text-primary, #ffffff) !important;
+}
+
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] div,
+[data-theme="dark"] label,
+[data-theme="dark"] .navbar-brand,
+[data-theme="dark"] .nav-link,
+[data-theme="dark"] .breadcrumb-item,
+[data-theme="dark"] .alert,
+[data-theme="dark"] .btn,
+[data-theme="dark"] .dropdown-item {
+    color: var(--text-primary, #ffffff) !important;
+}
+
+[data-theme="dark"] .text-primary {
+    color: var(--text-primary, #ffffff) !important;
+}
+
+[data-theme="dark"] .text-secondary {
+    color: var(--text-secondary, #b0b0b0) !important;
+}
+
+/* Dark Mode: Spinner
+   ========================================================================== */
+[data-theme="dark"] .spinner-border {
+    color: var(--primary-color) !important;
+}
+
+/* User Bar Dropdown Positioning
+   ========================================================================== */
+.user-bar .dropdown {
+    position: relative;
+}
+
+.user-bar .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 1050 !important;
+    min-width: 200px;
+    margin-top: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--shadow-color-lg);
+    background-color: var(--card-bg) !important;
+}
+
+[data-theme="dark"] .user-bar .dropdown-menu {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+.user-bar .dropdown-item {
+    padding: 10px 15px;
+    color: var(--text-primary) !important;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.user-bar .dropdown-item:hover {
+    background-color: var(--hover-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .user-bar .dropdown-item {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .user-bar .dropdown-item:hover {
+    background-color: var(--hover-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+.user-bar .dropdown-divider {
+    margin: 5px 0;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .user-bar .dropdown-divider {
+    border-color: var(--border-color) !important;
+}
+
+/* User Bar Styling
+   ========================================================================== */
+.user-bar {
+    z-index: 1000 !important;
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    backdrop-filter: blur(10px);
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+    padding: 10px 20px !important;
+    border-radius: 25px !important;
+    background: var(--card-bg) !important;
+    box-shadow: 0 4px 15px var(--shadow-color-lg) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+[data-theme="dark"] .user-bar {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Dropdown Toggle State
+   ========================================================================== */
+.user-bar .dropdown-menu.show {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+}
+
+.user-bar .dropdown-menu {
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+}
+
+/* Dropdown Toggle Button
+   ========================================================================== */
+.user-bar .user-dropdown-toggle {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 8px !important;
+    color: var(--text-primary) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+}
+
+.user-bar .user-dropdown-toggle:hover,
+.user-bar .user-dropdown-toggle:focus,
+.user-bar .user-dropdown-toggle:active {
+    background: var(--hover-bg) !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .user-bar .user-dropdown-toggle {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .user-bar .user-dropdown-toggle:hover,
+[data-theme="dark"] .user-bar .user-dropdown-toggle:focus,
+[data-theme="dark"] .user-bar .user-dropdown-toggle:active {
+    background: var(--hover-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Body and Container Background
+   ========================================================================== */
+body {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+[data-theme="dark"] body {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .container-fluid {
+    background-color: var(--bg-primary) !important;
+}
+
+/* Dark Mode: Button Styling
+   ========================================================================== */
+[data-theme="dark"] .btn-outline-primary {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .btn-outline-primary:hover {
+    color: var(--text-inverse) !important;
+    background-color: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+    color: var(--text-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+    color: var(--text-primary) !important;
+    background-color: var(--bg-secondary) !important;
+}

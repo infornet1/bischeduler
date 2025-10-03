@@ -1094,6 +1094,279 @@
             color: #ffffff !important;
         }
 
+        /* Compliance Modal specific dark mode fixes */
+        [data-theme="dark"] #complianceModal .modal-header {
+            background: linear-gradient(135deg, #b8860b, #cd853f) !important;
+            color: #000000 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .modal-header .modal-title {
+            color: #000000 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .modal-header .close {
+            color: #000000 !important;
+            opacity: 0.8;
+        }
+
+        [data-theme="dark"] #complianceModal .modal-header .close:hover {
+            color: #000000 !important;
+            opacity: 1;
+        }
+
+        /* Compliance Modal body content */
+        [data-theme="dark"] #complianceModal .card {
+            background-color: #3d3d3d !important;
+            border-color: #555555 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .card.bg-light {
+            background-color: #3d3d3d !important;
+        }
+
+        [data-theme="dark"] #complianceModal .card-body {
+            background-color: transparent !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #complianceModal .card-title {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #complianceModal .card-text {
+            color: #ffffff !important;
+        }
+
+        /* Alert components in compliance modal */
+        [data-theme="dark"] #complianceModal .alert {
+            background-color: #3d3d3d !important;
+            border-color: #555555 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .alert-success {
+            background-color: #1e4d3e !important;
+            border-color: #28a745 !important;
+            color: #d4edda !important;
+        }
+
+        [data-theme="dark"] #complianceModal .alert-warning {
+            background-color: #4d3e1e !important;
+            border-color: #ffc107 !important;
+            color: #fff3cd !important;
+        }
+
+        [data-theme="dark"] #complianceModal .alert-danger {
+            background-color: #4d1e1e !important;
+            border-color: #dc3545 !important;
+            color: #f8d7da !important;
+        }
+
+        [data-theme="dark"] #complianceModal .alert-info {
+            background-color: #1e3a4d !important;
+            border-color: #17a2b8 !important;
+            color: #d1ecf1 !important;
+        }
+
+        /* Lists and text in compliance modal */
+        [data-theme="dark"] #complianceModal .list-unstyled {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #complianceModal .list-unstyled li {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] #complianceModal small {
+            color: #cccccc !important;
+        }
+
+        [data-theme="dark"] #complianceModal .text-muted {
+            color: #cccccc !important;
+        }
+
+        [data-theme="dark"] #complianceModal h5,
+        [data-theme="dark"] #complianceModal h6 {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #complianceModal p {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #complianceModal strong {
+            color: #ffffff !important;
+        }
+
+        /* Background sections in compliance modal */
+        [data-theme="dark"] #complianceModal .bg-light {
+            background-color: #3d3d3d !important;
+        }
+
+        [data-theme="dark"] #complianceModal .rounded {
+            background-color: #3d3d3d !important;
+            border: 1px solid #555555;
+        }
+
+        /* Status colors in compliance modal (keep original colors for visibility) */
+        [data-theme="dark"] #complianceModal .text-success {
+            color: #28a745 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .text-warning {
+            color: #ffc107 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .text-danger {
+            color: #dc3545 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .text-primary {
+            color: #007bff !important;
+        }
+
+        /* Icons in compliance modal */
+        [data-theme="dark"] #complianceModal i.fas {
+            color: inherit !important;
+        }
+
+        [data-theme="dark"] #complianceModal .fa-check {
+            color: #28a745 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .fa-times-circle {
+            color: #dc3545 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .fa-exclamation-triangle {
+            color: #ffc107 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .fa-info-circle {
+            color: #17a2b8 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .fa-gavel {
+            color: #007bff !important;
+        }
+
+        [data-theme="dark"] #complianceModal .fa-flag {
+            color: #000000 !important;
+        }
+
+        /* Stronger overrides for compliance modal transparency issues */
+        [data-theme="dark"] #complianceModal .modal-body {
+            background-color: #2d2d2d !important;
+            color: #ffffff !important;
+        }
+
+        /* Override generic text color but preserve semantic colors */
+        [data-theme="dark"] #complianceModal .modal-body *:not(.text-success):not(.text-danger):not(.text-warning):not(.text-info):not(.text-primary):not(.fa-check):not(.fa-times-circle):not(.fa-exclamation-triangle):not(.fa-info-circle):not(.fa-gavel) {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #complianceModal .modal-body p,
+        [data-theme="dark"] #complianceModal .modal-body div,
+        [data-theme="dark"] #complianceModal .modal-body span {
+            background: none !important;
+            opacity: 1 !important;
+        }
+
+        /* Force visibility for all text elements in compliance modal */
+        [data-theme="dark"] #complianceModal h1,
+        [data-theme="dark"] #complianceModal h2,
+        [data-theme="dark"] #complianceModal h3,
+        [data-theme="dark"] #complianceModal h4,
+        [data-theme="dark"] #complianceModal h5,
+        [data-theme="dark"] #complianceModal h6 {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #complianceModal p {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #complianceModal strong,
+        [data-theme="dark"] #complianceModal b {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #complianceModal small {
+            color: #cccccc !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        /* Force icon visibility in compliance modal */
+        [data-theme="dark"] #complianceModal i,
+        [data-theme="dark"] #complianceModal .fas,
+        [data-theme="dark"] #complianceModal .far,
+        [data-theme="dark"] #complianceModal .fal,
+        [data-theme="dark"] #complianceModal .fab {
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        /* Specific fixes for alert content */
+        [data-theme="dark"] #complianceModal .alert * {
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .alert h1,
+        [data-theme="dark"] #complianceModal .alert h2,
+        [data-theme="dark"] #complianceModal .alert h3,
+        [data-theme="dark"] #complianceModal .alert h4,
+        [data-theme="dark"] #complianceModal .alert h5,
+        [data-theme="dark"] #complianceModal .alert h6 {
+            color: inherit !important;
+        }
+
+        [data-theme="dark"] #complianceModal .alert p {
+            color: inherit !important;
+        }
+
+        /* List items visibility */
+        [data-theme="dark"] #complianceModal ul,
+        [data-theme="dark"] #complianceModal ol,
+        [data-theme="dark"] #complianceModal li {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        /* Row and column visibility */
+        [data-theme="dark"] #complianceModal .row,
+        [data-theme="dark"] #complianceModal .col,
+        [data-theme="dark"] #complianceModal [class^="col-"],
+        [data-theme="dark"] #complianceModal [class*=" col-"] {
+            background: none !important;
+            opacity: 1 !important;
+        }
+
+        /* Modal footer buttons */
+        [data-theme="dark"] #complianceModal .modal-footer .btn {
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] #complianceModal .modal-footer .btn i {
+            opacity: 1 !important;
+            color: inherit !important;
+        }
+
+        /* Ensure text content in specific containers is visible */
+        [data-theme="dark"] #complianceModal .alert-success h5,
+        [data-theme="dark"] #complianceModal .alert-warning h5,
+        [data-theme="dark"] #complianceModal .alert-danger h5,
+        [data-theme="dark"] #complianceModal .alert-info h5 {
+            color: inherit !important;
+        }
+
         /* Alert icons - maintain specific colors */
         [data-theme="dark"] .alert-info i {
             color: #17a2b8 !important;
@@ -1101,6 +1374,188 @@
 
         [data-theme="dark"] .alert-success i {
             color: #28a745 !important;
+        }
+
+        /* Conflictos Detectados Modal dark mode fixes */
+        [data-theme="dark"] #conflictsModal .modal-header {
+            background: var(--danger-color, #dc3545) !important;
+            color: white !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .modal-header .modal-title {
+            color: white !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .modal-header .close {
+            color: white !important;
+            opacity: 0.8;
+        }
+
+        [data-theme="dark"] #conflictsModal .modal-header .close:hover {
+            color: white !important;
+            opacity: 1;
+        }
+
+        /* Conflicts Modal body content */
+        [data-theme="dark"] #conflictsModal .modal-body {
+            background-color: #2d2d2d !important;
+            color: #ffffff !important;
+        }
+
+        /* Force visibility for all text elements in conflicts modal */
+        [data-theme="dark"] #conflictsModal h1,
+        [data-theme="dark"] #conflictsModal h2,
+        [data-theme="dark"] #conflictsModal h3,
+        [data-theme="dark"] #conflictsModal h4,
+        [data-theme="dark"] #conflictsModal h5,
+        [data-theme="dark"] #conflictsModal h6 {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #conflictsModal p {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #conflictsModal strong,
+        [data-theme="dark"] #conflictsModal b {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #conflictsModal small {
+            color: #cccccc !important;
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .text-muted {
+            color: #cccccc !important;
+            opacity: 1 !important;
+        }
+
+        /* Cards in conflicts modal */
+        [data-theme="dark"] #conflictsModal .card {
+            background-color: #3d3d3d !important;
+            border-color: #555555 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .card-body {
+            background-color: transparent !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .card-title {
+            color: #ffffff !important;
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .card-text {
+            color: #ffffff !important;
+            opacity: 1 !important;
+        }
+
+        /* Alert components in conflicts modal */
+        [data-theme="dark"] #conflictsModal .alert {
+            background-color: #3d3d3d !important;
+            border-color: #555555 !important;
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .alert-success {
+            background-color: #1e4d3e !important;
+            border-color: #28a745 !important;
+            color: #d4edda !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .alert-warning {
+            background-color: #4d3e1e !important;
+            border-color: #ffc107 !important;
+            color: #fff3cd !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .alert-danger {
+            background-color: #4d1e1e !important;
+            border-color: #dc3545 !important;
+            color: #f8d7da !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .alert-info {
+            background-color: #1e3a4d !important;
+            border-color: #17a2b8 !important;
+            color: #d1ecf1 !important;
+        }
+
+        /* Alert text content - ensure visibility */
+        [data-theme="dark"] #conflictsModal .alert * {
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .alert strong {
+            color: inherit !important;
+        }
+
+        /* Progress bars in conflicts modal */
+        [data-theme="dark"] #conflictsModal .progress {
+            background-color: #495057 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .progress-bar {
+            opacity: 1 !important;
+            color: #000000 !important;
+        }
+
+        /* Icons in conflicts modal */
+        [data-theme="dark"] #conflictsModal i,
+        [data-theme="dark"] #conflictsModal .fas,
+        [data-theme="dark"] #conflictsModal .far,
+        [data-theme="dark"] #conflictsModal .fal,
+        [data-theme="dark"] #conflictsModal .fab {
+            opacity: 1 !important;
+            background: none !important;
+        }
+
+        /* Status icons - preserve semantic colors */
+        [data-theme="dark"] #conflictsModal .text-danger {
+            color: #dc3545 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .text-warning {
+            color: #ffc107 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .text-info {
+            color: #17a2b8 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .text-success {
+            color: #28a745 !important;
+        }
+
+        /* Buttons in conflicts modal */
+        [data-theme="dark"] #conflictsModal .btn {
+            opacity: 1 !important;
+        }
+
+        [data-theme="dark"] #conflictsModal .btn i {
+            opacity: 1 !important;
+            color: inherit !important;
+        }
+
+        /* Ensure all content containers are visible */
+        [data-theme="dark"] #conflictsModal .modal-body div,
+        [data-theme="dark"] #conflictsModal .modal-body span {
+            background: none !important;
+            opacity: 1 !important;
+        }
+
+        /* Override generic transparency rules for conflicts modal */
+        [data-theme="dark"] #conflictsModal .modal-body *:not(.text-success):not(.text-danger):not(.text-warning):not(.text-info):not(.fa-user-times):not(.fa-door-closed):not(.fa-clock):not(.fa-calendar-times):not(.fa-exclamation-triangle) {
+            color: #ffffff !important;
         }
 
         [data-theme="dark"] .alert-warning i {

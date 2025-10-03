@@ -33,9 +33,9 @@ def create_app(config_name='development'):
         Flask: Configured Flask application instance
     """
     app = Flask(__name__,
-    static_folder='../static',
-    template_folder='../../templates',
-    static_url_path='/bischeduler/static')
+                static_folder='../static',
+                template_folder='../../templates',
+                static_url_path='/bischeduler/static')
 
     # Load configuration
     app.config.from_object(f'src.core.config.{config_name.title()}Config')
