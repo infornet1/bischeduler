@@ -26,7 +26,7 @@ class AttendanceService:
     def __init__(self, db_session: Session):
         self.db = db_session
 
-    def mark_attendance(self, student_id: int, attendance_date: date,
+    def mark_attendance(self, student_id: int, section_id: int, attendance_date: date,
                        present: bool, teacher_id: int, **kwargs) -> DailyAttendance:
         """
         Mark attendance for a student on a specific date
@@ -45,21 +45,21 @@ class AttendanceService:
         existing = self.db.query(DailyAttendance).filter(
             and_(
                 DailyAttendance.student_id == student_id,
-                func.date(DailyAttendance.date) == attendance_date
+                func.date(DailyAttendance.attendance_date) == attendance_date
             )
         ).first()
 
         if existing:
             # Update existing record
+            existing.section_id = section_id
             existing.present = present
             existing.excused = kwargs.get('excused', False)
             existing.late_arrival = kwargs.get('late_arrival', False)
             existing.early_departure = kwargs.get('early_departure', False)
             existing.absence_reason = kwargs.get('absence_reason')
             existing.notes = kwargs.get('notes')
-            existing.recorded_by = teacher_id
+            existing.teacher_id = teacher_id
             existing.recorded_at = datetime.now()
-
             self.db.commit()
             return existing
         else:
@@ -67,15 +67,14 @@ class AttendanceService:
             student = self.db.query(Student).get(student_id)
             attendance = DailyAttendance(
                 student_id=student_id,
-                date=datetime.combine(attendance_date, datetime.min.time()),
+                section_id=section_id,
+                attendance_date=attendance_date,
                 present=present,
                 excused=kwargs.get('excused', False),
                 late_arrival=kwargs.get('late_arrival', False),
-                early_departure=kwargs.get('early_departure', False),
                 absence_reason=kwargs.get('absence_reason'),
                 notes=kwargs.get('notes'),
-                recorded_by=teacher_id,
-                academic_year=student.academic_year
+                teacher_id=teacher_id
             )
 
             self.db.add(attendance)
@@ -108,6 +107,7 @@ class AttendanceService:
 
             attendance = self.mark_attendance(
                 student_id=student.id,
+                section_id=section_id,
                 attendance_date=attendance_date,
                 teacher_id=teacher_id,
                 **student_attendance
@@ -122,10 +122,10 @@ class AttendanceService:
         return self.db.query(DailyAttendance).filter(
             and_(
                 DailyAttendance.student_id == student_id,
-                func.date(DailyAttendance.date) >= start_date,
-                func.date(DailyAttendance.date) <= end_date
+                func.date(DailyAttendance.attendance_date) >= start_date,
+                func.date(DailyAttendance.attendance_date) <= end_date
             )
-        ).order_by(DailyAttendance.date).all()
+        ).order_by(DailyAttendance.attendance_date).all()
 
     def get_section_attendance(self, section_id: int, attendance_date: date) -> Dict:
         """Get attendance for all students in a section on specific date"""
@@ -138,7 +138,7 @@ class AttendanceService:
             attendance = self.db.query(DailyAttendance).filter(
                 and_(
                     DailyAttendance.student_id == student.id,
-                    func.date(DailyAttendance.date) == attendance_date
+                    func.date(DailyAttendance.attendance_date) == attendance_date
                 )
             ).first()
 
@@ -318,8 +318,8 @@ class MonthlyReportService:
             and_(
                 Student.grade_level == grade_level,
                 Student.academic_year == academic_year,
-                func.date(DailyAttendance.date) >= start_date,
-                func.date(DailyAttendance.date) <= end_date,
+                func.date(DailyAttendance.attendance_date) >= start_date,
+                func.date(DailyAttendance.attendance_date) <= end_date,
                 DailyAttendance.present == True
             )
         )

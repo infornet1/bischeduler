@@ -16,7 +16,7 @@ from src.models.master import TenantInvitation
 
 
 # Create authentication blueprint
-auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
+auth_bp = Blueprint('auth', __name__)
 
 # Initialize services
 jwt_service = JWTService()

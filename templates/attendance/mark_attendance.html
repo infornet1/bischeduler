@@ -1,100 +1,80 @@
-<!DOCTYPE html>
 <html lang="es" data-theme="light">
 <head>
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marcar Asistencia - {{ section.name }} - BiScheduler</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="/bischeduler/static/css/main.css" rel="stylesheet">
+    <link href="/bischeduler/static/css/styles.css" rel="stylesheet">
+    <link href="/bischeduler/static/css/dark-mode.css" rel="stylesheet">
     <style>
-        .student-row {
-            transition: background-color 0.2s;
-        }
-        .student-row:hover {
-            background-color: var(--bs-light);
-        }
-        .present-student {
-            background-color: rgba(40, 167, 69, 0.1);
-        }
-        .absent-student {
-            background-color: rgba(220, 53, 69, 0.1);
-        }
-        .quick-actions {
-            position: sticky;
-            top: 10px;
-            z-index: 1000;
-        }
+        /* Base Styles */
+        body { background-color: var(--bg-secondary) !important; }
+        .quick-actions { position: sticky; top: 10px; z-index: 1000; }
+        .student-row { transition: background-color 0.2s; }
+        .present-student { background-color: rgba(40, 167, 69, 0.1); }
+        .absent-student { background-color: rgba(220, 53, 69, 0.1); }
 
-        /* Comprehensive dark mode text fixes */
-        [data-theme="dark"] h1,
-        [data-theme="dark"] h2,
-        [data-theme="dark"] h3,
-        [data-theme="dark"] h4,
-        [data-theme="dark"] h5,
-        [data-theme="dark"] h6 {
-            color: var(--text-primary, #ffffff) !important;
+        /* Dark Mode Overrides */
+        [data-theme="dark"] body { background-color: var(--bg-primary) !important; }
+        [data-theme="dark"] .card, 
+        [data-theme="dark"] .card-header, 
+        [data-theme="dark"] .card-body, 
+        [data-theme="dark"] .table-responsive, 
+        [data-theme="dark"] .table {
+            background-color: var(--card-bg) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-color) !important;
         }
-
-        [data-theme="dark"] p,
-        [data-theme="dark"] span,
-        [data-theme="dark"] div,
-        [data-theme="dark"] label,
-        [data-theme="dark"] .navbar-brand,
-        [data-theme="dark"] .nav-link,
-        [data-theme="dark"] .breadcrumb-item,
-        [data-theme="dark"] .alert,
-        [data-theme="dark"] .btn,
-        [data-theme="dark"] .dropdown-item,
-        [data-theme="dark"] .card-title,
-        [data-theme="dark"] .card-text,
-        [data-theme="dark"] .form-label,
-        [data-theme="dark"] .form-control,
-        [data-theme="dark"] .table,
-        [data-theme="dark"] .table td,
-        [data-theme="dark"] .table th {
-            color: var(--text-primary, #ffffff) !important;
+        [data-theme="dark"] .table-light {
+            --bs-table-bg: var(--bg-secondary) !important;
+            --bs-table-color: var(--text-primary) !important;
+            border-color: var(--border-color) !important;
         }
-
-        [data-theme="dark"] .text-primary {
-            color: var(--text-primary, #ffffff) !important;
+        [data-theme="dark"] .table-hover > tbody > tr:hover > * {
+            --bs-table-accent-bg: var(--hover-bg) !important;
+            color: var(--text-primary) !important;
         }
-
-        [data-theme="dark"] .text-secondary {
-            color: var(--text-secondary, #b0b0b0) !important;
+        [data-theme="dark"] .form-control, 
+        [data-theme="dark"] .form-select {
+            background-color: var(--input-bg) !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-primary) !important;
         }
-
-        [data-theme="dark"] .text-muted {
-            color: var(--text-secondary, #b0b0b0) !important;
+        [data-theme="dark"] .form-control:focus, 
+        [data-theme="dark"] .form-select:focus {
+            background-color: var(--input-bg) !important;
+            border-color: var(--primary-color) !important;
+            box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25) !important;
         }
-
-        [data-theme="dark"] .card {
-            background-color: var(--card-bg, rgba(30, 30, 30, 0.95)) !important;
-            border-color: var(--border-color, #444) !important;
-        }
-
-        [data-theme="dark"] .card-body {
-            background-color: var(--card-bg, rgba(30, 30, 30, 0.95)) !important;
-        }
+        [data-theme="dark"] .present-student { background-color: rgba(40, 167, 69, 0.2) !important; }
+        [data-theme="dark"] .absent-student { background-color: rgba(220, 53, 69, 0.2) !important; }
+        [data-theme="dark"] .breadcrumb-item a { color: var(--primary-color) !important; }
+        [data-theme="dark"] .breadcrumb-item.active { color: var(--text-secondary) !important; }
     </style>
 </head>
 <body>
     <div class="user-bar">
-        <div class="user-name">Profesor UEIPAB</div>
-        <div class="dropdown">
-            <button class="btn user-dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                <i class="bi bi-person-circle"></i>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="/bischeduler/attendance"><i class="bi bi-person-check"></i> Control Asistencia</a></li>
-                <li><a class="dropdown-item" href="/bischeduler/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="/bischeduler/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
-            </ul>
+        <div class="user-info">
+            <div class="user-name">Profesor UEIPAB</div>
+            <div class="user-role">Marcando Asistencia</div>
         </div>
-        <button class="btn btn-outline-light btn-sm ms-2" onclick="toggleTheme()">
-            <i class="bi bi-moon-stars" id="theme-icon"></i>
-        </button>
+        <div class="user-actions">
+            <div class="dropdown">
+                <button class="btn user-dropdown-toggle" type="button" id="userDropdown" aria-expanded="false">
+                    <i class="bi bi-person-circle"></i>
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="/bischeduler/attendance"><i class="bi bi-person-check"></i> Panel de Asistencia</a></li>
+                    <li><a class="dropdown-item" href="/bischeduler/dashboard"><i class="bi bi-speedometer2"></i> Dashboard Principal</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="/bischeduler/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                </ul>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" onclick="toggleTheme()" title="Cambiar tema">
+                <i class="bi bi-moon-stars" id="theme-icon"></i>
+            </button>
+        </div>
     </div>
 
     <div class="container-fluid">
@@ -127,7 +107,6 @@
                                 <p class="mb-1">
                                     <span class="badge bg-primary">Grado {{ section.grade_level }}</span>
                                     <span class="badge bg-secondary">{{ students|length }} estudiantes</span>
-                                    <span class="badge bg-info">Año Académico {{ section.academic_year }}</span>
                                 </p>
                             </div>
                             <div class="col-md-4 text-end">
@@ -139,7 +118,7 @@
                     </div>
                 </div>
 
-                <form method="POST" id="attendanceForm">
+                <form method="POST" id="attendanceForm" action="{{ url_for('attendance.submit_attendance', section_id=section.id) }}">
                     <input type="hidden" name="attendance_date" value="{{ attendance_date.strftime('%Y-%m-%d') }}">
 
                     <!-- Quick Actions -->
@@ -373,6 +352,31 @@
 
             if (!confirm(`¿Confirmar asistencia para {{ section.name }}?\n\nPresentes: ${presentCount}\nAusentes: ${absentCount}\nTotal: ${totalStudents}`)) {
                 e.preventDefault();
+            }
+        });
+
+        // Manual dropdown functionality
+        window.addEventListener('load', function() {
+            const dropdownToggle = document.getElementById('userDropdown');
+            if (dropdownToggle) {
+                dropdownToggle.removeAttribute('data-bs-toggle');
+                const dropdownMenu = dropdownToggle.nextElementSibling;
+
+                dropdownToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const isOpen = dropdownMenu.classList.toggle('show');
+                    dropdownToggle.setAttribute('aria-expanded', isOpen);
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                        if (dropdownMenu.classList.contains('show')) {
+                            dropdownMenu.classList.remove('show');
+                            dropdownToggle.setAttribute('aria-expanded', 'false');
+                        }
+                    }
+                });
             }
         });
 

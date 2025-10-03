@@ -3,6 +3,7 @@ Venezuelan Absence Monitoring Views
 Phase 11: Teacher and administrator interfaces for attendance tracking
 """
 
+import logging
 from datetime import datetime, date, timedelta
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, g
 from sqlalchemy import and_, func, desc
@@ -11,10 +12,33 @@ from src.core.app import db
 from src.models.tenant import Student, DailyAttendance, MonthlyAttendanceSummary, Section, Teacher
 from src.attendance.services import AttendanceService, MonthlyReportService
 from src.tenants.middleware import require_tenant, get_current_tenant
-
-
 # Create blueprint
 attendance_bp = Blueprint('attendance', __name__, url_prefix='/attendance')
+
+
+def ensure_tenant_context():
+    """Helper function to ensure tenant context is set"""
+    from flask import g
+    from src.models.master import Tenant
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    
+    if not hasattr(g, 'current_tenant') or not g.current_tenant:
+        try:
+            master_engine = create_engine('mysql+pymysql://root:0000@localhost/bischeduler_master')
+            MasterSession = sessionmaker(bind=master_engine)
+            master_session = MasterSession()
+            
+            tenant = master_session.query(Tenant).filter_by(institution_code='UEIPAB001').first()
+            master_session.close()
+            
+            if tenant:
+                g.current_tenant = tenant
+                return True
+            return False
+        except Exception as e:
+            return False
+    return True
 
 
 @attendance_bp.route('/')
@@ -25,17 +49,32 @@ def index():
 
     # Manual tenant resolution for attendance system
     if not hasattr(g, 'current_tenant') or not g.current_tenant:
-        tenant_manager = TenantManager('mysql+pymysql://root:Temporal2024!@localhost/bischeduler_master')
-        tenant = tenant_manager.get_tenant_by_domain(request.host)
-
-        if tenant:
-            g.current_tenant = tenant
-        else:
+        from src.models.master import Tenant
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        
+        # For development, always use UEIPAB tenant
+        # Connect to master database to get tenant info
+        try:
+            master_engine = create_engine('mysql+pymysql://root:0000@localhost/bischeduler_master')
+            MasterSession = sessionmaker(bind=master_engine)
+            master_session = MasterSession()
+            
+            tenant = master_session.query(Tenant).filter_by(institution_code='UEIPAB001').first()
+            master_session.close()
+            
+            if tenant:
+                g.current_tenant = tenant
+            else:
+                return jsonify({
+                    'error': 'Tenant not found',
+                    'message': 'UEIPAB tenant not configured in database'
+                }), 400
+        except Exception as e:
             return jsonify({
-                'error': 'Tenant context required',
-                'message': 'This endpoint requires tenant identification',
-                'debug': f'Host: {request.host}'
-            }), 400
+                'error': 'Database error',
+                'message': str(e)
+            }), 500
 
     return render_template('attendance/dashboard.html')
 
@@ -47,7 +86,7 @@ def force_tenant():
     from src.tenants.manager import TenantManager
 
     # Manually set tenant context
-    tenant_manager = TenantManager('mysql+pymysql://root:Temporal2024!@localhost/bischeduler_master')
+    tenant_manager = TenantManager('mysql+pymysql://root:0000@localhost/bischeduler_master')
     tenant = tenant_manager.get_tenant_by_domain('dev.ueipab.edu.ve')
 
     if tenant:
@@ -58,12 +97,18 @@ def force_tenant():
 
 
 @attendance_bp.route('/mark/<int:section_id>')
-@require_tenant
 def mark_attendance_form(section_id):
     """
     Display attendance marking form for a section
     Phase 11.1: Teacher daily attendance interface
     """
+    # Ensure tenant context
+    if not ensure_tenant_context():
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': 'UEIPAB tenant not configured in database'
+        }), 400
+    
     # Get section with students
     section = db.session.query(Section).get(section_id)
     if not section:
@@ -97,94 +142,76 @@ def mark_attendance_form(section_id):
 
 
 @attendance_bp.route('/mark/<int:section_id>', methods=['POST'])
-@require_tenant
 def submit_attendance(section_id):
     """
     Submit attendance for a section
-    Phase 11.1: Process teacher attendance marking
+    Phase 11.1: Process teacher attendance marking (Corrected Logic)
     """
+    if not ensure_tenant_context():
+        return jsonify({'error': 'Tenant not found'}), 400
+
     try:
-        # Get form data
-        attendance_date = datetime.strptime(request.form['attendance_date'], '%Y-%m-%d').date()
+        attendance_date_str = request.form.get('attendance_date')
+        if not attendance_date_str:
+            flash('Fecha de asistencia no proporcionada.', 'error')
+            return redirect(url_for('attendance.mark_attendance_form', section_id=section_id))
+
+        attendance_date = datetime.strptime(attendance_date_str, '%Y-%m-%d').date()
         teacher_id = 1  # TODO: Get from session/auth
 
-        # Process attendance data
+        # Get all students for the section to ensure every student is processed
+        students = db.session.query(Student).filter_by(section_id=section_id, is_active=True).all()
+        
         attendance_data = {}
-        for key, value in request.form.items():
-            if key.startswith('student_'):
-                student_id = int(key.split('_')[1])
-                field = key.split('_')[2] if len(key.split('_')) > 2 else 'present'
+        for student in students:
+            student_id = student.id
+            present_key = f'student_{student_id}_present'
+            
+            # Determine presence. If the checkbox is in the form, it's 'on'. Otherwise, the student is absent.
+            is_present = request.form.get(present_key) == 'on'
+            
+            # Build the data dictionary for this student
+            absence_reason = request.form.get(f'student_{student_id}_reason', '')
+            notes = request.form.get(f'student_{student_id}_notes', '')
+            
+            attendance_data[student_id] = {
+                'present': is_present,
+                'excused': request.form.get(f'student_{student_id}_excused') == 'on',
+                'late_arrival': request.form.get(f'student_{student_id}_late') == 'on',
+                'absence_reason': absence_reason if absence_reason else None,
+                'notes': notes if notes else None
+            }
 
-                if student_id not in attendance_data:
-                    attendance_data[student_id] = {}
-
-                if field == 'present':
-                    attendance_data[student_id]['present'] = value == 'on'
-                elif field == 'excused':
-                    attendance_data[student_id]['excused'] = value == 'on'
-                elif field == 'late':
-                    attendance_data[student_id]['late_arrival'] = value == 'on'
-                elif field == 'reason':
-                    attendance_data[student_id]['absence_reason'] = value
-                elif field == 'notes':
-                    attendance_data[student_id]['notes'] = value
-
-        # Mark attendance
+        # Mark attendance using the service
         attendance_service = AttendanceService(db.session)
         results = attendance_service.mark_section_attendance(
             section_id, attendance_date, attendance_data, teacher_id
         )
 
-        flash(f'Asistencia registrada para {len(results)} estudiantes', 'success')
-        return redirect(url_for('attendance.mark_attendance_form', section_id=section_id))
+        logging.info(f"SUCCESS: Attendance saved for {len(results)} students in section {section_id} for date {attendance_date}.")
+        flash(f'Asistencia registrada para {len(results)} estudiantes.', 'success')
+        return redirect(url_for('attendance.mark_attendance_form', section_id=section_id, date=attendance_date.strftime('%Y-%m-%d')))
 
     except Exception as e:
+        logging.error(f"ERROR saving attendance for section {section_id}: {str(e)}", exc_info=True)
+        db.session.rollback() # Rollback in case of error
         flash(f'Error al registrar asistencia: {str(e)}', 'error')
         return redirect(url_for('attendance.mark_attendance_form', section_id=section_id))
 
 
-@attendance_bp.route('/student/<int:student_id>')
-@require_tenant
-def student_attendance(student_id):
-    """
-    View individual student attendance history
-    Phase 11.1: Student attendance details
-    """
-    student = db.session.query(Student).get(student_id)
-    if not student:
-        flash('Estudiante no encontrado', 'error')
-        return redirect(url_for('attendance.index'))
-
-    # Get date range (default to current month)
-    end_date = date.today()
-    start_date = end_date.replace(day=1)
-
-    # Get attendance records
-    attendance_service = AttendanceService(db.session)
-    records = attendance_service.get_student_attendance(student_id, start_date, end_date)
-
-    # Calculate statistics
-    percentage, present_days, total_days = attendance_service.calculate_attendance_percentage(
-        student_id, start_date, end_date
-    )
-
-    return render_template('attendance/student_detail.html',
-                         student=student,
-                         records=records,
-                         start_date=start_date,
-                         end_date=end_date,
-                         attendance_percentage=percentage,
-                         present_days=present_days,
-                         total_days=total_days)
-
-
 @attendance_bp.route('/reports')
-@require_tenant
 def reports_dashboard():
     """
     Attendance reports dashboard
     Phase 11.1: Basic reporting interface
     """
+    # Ensure tenant context
+    if not ensure_tenant_context():
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': 'UEIPAB tenant not configured in database'
+        }), 400
+    
     # Get current month data
     current_date = date.today()
     month = current_date.month
@@ -211,22 +238,37 @@ def api_sections():
 
     # Manual tenant resolution for API
     if not hasattr(g, 'current_tenant') or not g.current_tenant:
-        tenant_manager = TenantManager('mysql+pymysql://root:Temporal2024!@localhost/bischeduler_master')
-        tenant = tenant_manager.get_tenant_by_domain(request.host)
-
-        if tenant:
-            g.current_tenant = tenant
-        else:
+        from src.models.master import Tenant
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        
+        # For development, always use UEIPAB tenant
+        # Connect to master database to get tenant info
+        try:
+            master_engine = create_engine('mysql+pymysql://root:0000@localhost/bischeduler_master')
+            MasterSession = sessionmaker(bind=master_engine)
+            master_session = MasterSession()
+            
+            tenant = master_session.query(Tenant).filter_by(institution_code='UEIPAB001').first()
+            master_session.close()
+            
+            if tenant:
+                g.current_tenant = tenant
+            else:
+                return jsonify({
+                    'error': 'Tenant not found',
+                    'message': 'UEIPAB tenant not configured in database'
+                }), 400
+        except Exception as e:
             return jsonify({
-                'error': 'Tenant context required',
-                'message': 'This endpoint requires tenant identification',
-                'debug': f'Host: {request.host}'
-            }), 400
+                'error': 'Database error',
+                'message': str(e)
+            }), 500
 
     try:
         # Return real sections from database
         sections = db.session.query(Section).filter_by(
-            academic_year='2025-2026', is_active=True
+            is_active=True
         ).order_by(Section.grade_level, Section.section_letter).all()
 
         sections_data = []
@@ -264,7 +306,7 @@ def api_attendance_summary(section_id):
 
     # Manual tenant resolution for API
     if not hasattr(g, 'current_tenant') or not g.current_tenant:
-        tenant_manager = TenantManager('mysql+pymysql://root:Temporal2024!@localhost/bischeduler_master')
+        tenant_manager = TenantManager('mysql+pymysql://root:0000@localhost/bischeduler_master')
         tenant = tenant_manager.get_tenant_by_domain(request.host)
 
         if tenant:
@@ -333,12 +375,18 @@ def api_attendance_summary(section_id):
 
 
 @attendance_bp.route('/api/monthly/calculate', methods=['POST'])
-@require_tenant
 def api_calculate_monthly():
     """
     Calculate monthly attendance summaries
     Phase 11.2: Government compliance calculations
     """
+    # Ensure tenant context
+    if not ensure_tenant_context():
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': 'UEIPAB tenant not configured in database'
+        }), 400
+    
     try:
         data = request.get_json()
         month = data.get('month', date.today().month)
@@ -366,22 +414,34 @@ def api_calculate_monthly():
 
 
 @attendance_bp.route('/admin')
-@require_tenant
 def admin_dashboard():
     """
     Administrator attendance dashboard
     Phase 11.1: Administrative oversight interface
     """
+    # Ensure tenant context
+    if not ensure_tenant_context():
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': 'UEIPAB tenant not configured in database'
+        }), 400
+    
     return render_template('attendance/admin_dashboard.html')
 
 
 @attendance_bp.route('/api/admin/statistics')
-@require_tenant
 def api_admin_statistics():
     """
     Get overall attendance statistics for administrator dashboard
     Phase 11.1: Administrative statistics API
     """
+    # Ensure tenant context
+    if not ensure_tenant_context():
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': 'UEIPAB tenant not configured in database'
+        }), 400
+    
     try:
         # Get current month stats
         current_date = date.today()
@@ -389,32 +449,27 @@ def api_admin_statistics():
 
         # Total active students
         total_students = db.session.query(Student).filter_by(
-            academic_year='2025-2026', is_active=True
+            is_active=True
         ).count()
 
-        # Overall attendance percentage
-        attendance_service = AttendanceService(db.session)
+        # Total attendance records this month
+        attendance_count = db.session.query(DailyAttendance).filter(
+            DailyAttendance.attendance_date >= start_date
+        ).count()
 
-        # Calculate average attendance across all students
-        students = db.session.query(Student).filter_by(
-            academic_year='2025-2026', is_active=True
-        ).all()
-
-        total_percentage = 0
-        student_count = 0
-        critical_alerts = 0
-
-        for student in students:
-            percentage, _, _ = attendance_service.calculate_attendance_percentage(
-                student.id, start_date, current_date
+        # Present count this month
+        present_count = db.session.query(DailyAttendance).filter(
+            and_(
+                DailyAttendance.attendance_date >= start_date,
+                DailyAttendance.present == True
             )
-            total_percentage += percentage
-            student_count += 1
+        ).count()
 
-            if percentage < 70:  # Critical threshold
-                critical_alerts += 1
+        # Calculate overall attendance percentage
+        overall_attendance = (present_count / attendance_count * 100) if attendance_count > 0 else 0
 
-        overall_attendance = total_percentage / student_count if student_count > 0 else 0
+        # Count critical alerts (simplified for now)
+        critical_alerts = 0
 
         # Monthly reports count
         monthly_reports = db.session.query(MonthlyAttendanceSummary).filter_by(
@@ -423,7 +478,7 @@ def api_admin_statistics():
 
         return jsonify({
             'total_students': total_students,
-            'overall_attendance': overall_attendance,
+            'overall_attendance': round(overall_attendance, 1),
             'critical_alerts': critical_alerts,
             'monthly_reports': monthly_reports
         })
@@ -435,12 +490,18 @@ def api_admin_statistics():
 
 
 @attendance_bp.route('/api/admin/grade-summary')
-@require_tenant
 def api_admin_grade_summary():
     """
     Get attendance summary by grade level for administrator dashboard
     Phase 11.1: Grade-level administrative statistics
     """
+    # Ensure tenant context
+    if not ensure_tenant_context():
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': 'UEIPAB tenant not configured in database'
+        }), 400
+    
     try:
         current_date = date.today()
         start_date = current_date.replace(day=1)
@@ -507,12 +568,18 @@ def api_admin_grade_summary():
 
 
 @attendance_bp.route('/api/admin/critical-alerts')
-@require_tenant
 def api_admin_critical_alerts():
     """
     Get critical attendance alerts for administrator dashboard
     Phase 11.1: Critical attendance monitoring
     """
+    # Ensure tenant context
+    if not ensure_tenant_context():
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': 'UEIPAB tenant not configured in database'
+        }), 400
+    
     try:
         current_date = date.today()
         start_date = current_date.replace(day=1)
@@ -559,12 +626,18 @@ def api_admin_critical_alerts():
 
 
 @attendance_bp.route('/api/admin/chart-data')
-@require_tenant
 def api_admin_chart_data():
     """
     Get chart data for administrator dashboard
     Phase 11.1: Visual analytics for administrators
     """
+    # Ensure tenant context
+    if not ensure_tenant_context():
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': 'UEIPAB tenant not configured in database'
+        }), 400
+    
     try:
         current_date = date.today()
         start_date = current_date.replace(day=1)
@@ -675,12 +748,18 @@ def debug_tenant():
 
 
 @attendance_bp.route('/export/matricula/<int:month>/<int:year>')
-@require_tenant
 def export_matricula(month, year):
     """
     Export attendance data in Venezuelan Matrícula format
     Phase 11.2: Government compliance export
     """
+    # Ensure tenant context
+    if not ensure_tenant_context():
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': 'UEIPAB tenant not configured in database'
+        }), 400
+    
     try:
         academic_year = '2025-2026'
         report_service = MonthlyReportService(db.session)

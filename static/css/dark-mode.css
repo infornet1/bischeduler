@@ -1,0 +1,37 @@
+/*
+==============================================
+DARK MODE STYLES - BiScheduler
+==============================================
+*/
+
+[data-theme='dark'] {
+    /* Primary Palette */
+    --primary-color: #4D79A4; /* Muted Blue */
+    --primary-rgb: 77, 121, 164;
+    --secondary-color: #7C9EC2; /* Lighter Blue */
+    --accent-color: #F28E2B; /* Orange */
+
+    /* Status Colors */
+    --success-color: #59A14F; /* Green */
+    --warning-color: #EDC948; /* Yellow */
+    --danger-color: #E15759; /* Red */
+    --info-color: #76B7B2; /* Teal */
+
+    /* Backgrounds */
+    --bg-primary: #1a1a1a; /* Very Dark Gray */
+    --bg-secondary: #2c2c2c; /* Dark Gray */
+    --card-bg: #242424; /* Slightly lighter than secondary */
+    --input-bg: #333333;
+    --hover-bg: #3a3a3a;
+
+    /* Text */
+    --text-primary: #e0e0e0; /* Light Gray */
+    --text-secondary: #a0a0a0; /* Medium Gray */
+    --text-inverse: #ffffff;
+
+    /* Borders & Shadows */
+    --border-color: #444444;
+    --shadow-color-sm: rgba(0, 0, 0, 0.2);
+    --shadow-color-md: rgba(0, 0, 0, 0.3);
+    --shadow-color-lg: rgba(0, 0, 0, 0.4);
+}

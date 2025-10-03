@@ -33,9 +33,9 @@ def create_app(config_name='development'):
         Flask: Configured Flask application instance
     """
     app = Flask(__name__,
-                static_folder='../static',
-                template_folder='../../templates',
-                static_url_path='/bischeduler/static')
+    static_folder='../static',
+    template_folder='../../templates',
+    static_url_path='/bischeduler/static')
 
     # Load configuration
     app.config.from_object(f'src.core.config.{config_name.title()}Config')
@@ -73,7 +73,7 @@ def create_app(config_name='development'):
     app.jwt_service = jwt_service
 
     # Register blueprints
-    app.register_blueprint(auth_bp)
+    app.register_blueprint(auth_bp, url_prefix='/bischeduler/api/auth')
 
     # Import and register scheduling blueprint
     from src.scheduling.views import scheduling_bp
@@ -85,10 +85,12 @@ def create_app(config_name='development'):
 
     # Import and register attendance blueprint (Phase 11)
     from src.attendance.views import attendance_bp
-    app.register_blueprint(attendance_bp)
+    app.register_blueprint(attendance_bp, url_prefix='/bischeduler/attendance')
 
     # Main landing page
     @app.route('/')
+    @app.route('/bischeduler')
+    @app.route('/bischeduler/')
     def index():
         from flask import render_template, g
         from src.tenants.middleware import get_current_tenant, get_current_schema_name
@@ -116,6 +118,7 @@ def create_app(config_name='development'):
 
     # Login page
     @app.route('/login')
+    @app.route('/bischeduler/login')
     def login_page():
         from flask import render_template
         return render_template('login.html')
@@ -150,6 +153,7 @@ def create_app(config_name='development'):
 
     # Dashboard page (post-login landing)
     @app.route('/dashboard')
+    @app.route('/bischeduler/dashboard')
     def dashboard():
         from flask import render_template
         from src.tenants.middleware import get_current_tenant, get_current_schema_name
@@ -199,72 +203,191 @@ def create_app(config_name='development'):
 
     # Teacher portal page (Phase 4 - Teacher Self-Service)
     @app.route('/teacher-portal')
+    @app.route('/bischeduler/teacher-portal')
     def teacher_portal():
         from flask import render_template
         return render_template('teacher_portal.html')
 
     # Exam calendar page (Phase 6 - Exam Scheduling)
     @app.route('/exam-calendar')
+    @app.route('/bischeduler/exam-calendar')
     def exam_calendar():
         from flask import render_template
         return render_template('exam_calendar.html')
 
     # Student exam dashboard (Phase 6 - Student exam alerts)
     @app.route('/student-exams')
+    @app.route('/bischeduler/student-exams')
     def student_exam_dashboard():
         from flask import render_template
         return render_template('student_exam_dashboard.html')
 
     # Core Management Routes (Should exist from Phases 1-4)
     @app.route('/schedules')
+    @app.route('/bischeduler/schedules')
     def schedules():
         from flask import render_template
         return render_template('schedules.html')
 
     @app.route('/schedule-management')
+    @app.route('/bischeduler/schedule-management')
     def schedule_management():
         from flask import render_template
         return render_template('schedule_management.html')
 
     @app.route('/section-schedules')
+    @app.route('/bischeduler/section-schedules')
     def section_schedules():
         from flask import render_template
         return render_template('section_schedules.html')
 
     @app.route('/conflict-resolution')
+    @app.route('/bischeduler/conflict-resolution')
     def conflict_resolution():
         from flask import render_template
         return render_template('conflict_resolution.html')
 
     @app.route('/students')
+    @app.route('/bischeduler/students')
     def students():
         from flask import render_template
         return render_template('students.html')
 
     @app.route('/teachers')
+    @app.route('/bischeduler/teachers')
     def teachers():
         from flask import render_template
         return render_template('teachers.html')
 
     @app.route('/classrooms')
+    @app.route('/bischeduler/classrooms')
     def classrooms():
         from flask import render_template
         return render_template('classrooms.html')
 
+    # API Routes for data retrieval
+    @app.route('/api/teachers')
+    @app.route('/bischeduler/api/teachers')
+    def get_teachers():
+        """Get all teachers"""
+        from flask import jsonify
+        from src.models.tenant import Teacher
+        
+        try:
+            teachers = db.session.query(Teacher).filter_by(is_active=True).all()
+            return jsonify({
+                'success': True,
+                'teachers': [{
+                    'id': t.id,
+                    'cedula': t.cedula,
+                    'first_name': t.first_name,
+                    'last_name': t.last_name,
+                    'email': t.email,
+                    'phone': t.phone,
+                    'specialization': t.specialization,
+                    'employment_type': t.employment_type,
+                    'weekly_hours': t.weekly_hours,
+                    'is_active': t.is_active
+                } for t in teachers]
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    @app.route('/api/students')
+    @app.route('/bischeduler/api/students')
+    def get_students():
+        """Get all students"""
+        from flask import jsonify
+        from src.models.tenant import Student
+        
+        try:
+            students = db.session.query(Student).filter_by(is_active=True).all()
+            return jsonify({
+                'success': True,
+                'students': [{
+                    'id': s.id,
+                    'cedula': s.cedula,
+                    'first_name': s.first_name,
+                    'last_name': s.last_name,
+                    'date_of_birth': s.date_of_birth.isoformat() if s.date_of_birth else None,
+                    'gender': s.gender,
+                    'section_id': s.section_id,
+                    'parent_name': s.parent_name,
+                    'parent_phone': s.parent_phone,
+                    'parent_email': s.parent_email,
+                    'is_active': s.is_active
+                } for s in students]
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    @app.route('/api/sections')
+    @app.route('/bischeduler/api/sections')
+    def get_sections():
+        """Get all sections"""
+        from flask import jsonify
+        from src.models.tenant import Section
+        
+        try:
+            sections = db.session.query(Section).all()
+            return jsonify({
+                'success': True,
+                'sections': [{
+                    'id': s.id,
+                    'name': s.name,
+                    'grade_level': s.grade_level,
+                    'academic_year': s.academic_year,
+                    'capacity': s.capacity,
+                    'shift': s.shift
+                } for s in sections]
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    @app.route('/api/classrooms')
+    @app.route('/bischeduler/api/classrooms')
+    def get_classrooms():
+        """Get all classrooms"""
+        from flask import jsonify
+        from src.models.tenant import Classroom
+        
+        try:
+            classrooms = db.session.query(Classroom).all()
+            return jsonify({
+                'success': True,
+                'classrooms': [{
+                    'id': c.id,
+                    'name': c.name,
+                    'building': c.building,
+                    'floor': c.floor,
+                    'capacity': c.capacity,
+                    'classroom_type': c.classroom_type,
+                    'has_projector': c.has_projector,
+                    'has_computer': c.has_computer,
+                    'has_ac': c.has_ac,
+                    'is_lab': c.is_lab
+                } for c in classrooms]
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
     # Phase 7: Parent Portal
     @app.route('/parent-portal')
+    @app.route('/bischeduler/parent-portal')
     def parent_portal():
         from flask import render_template
         return render_template('parent_portal.html')
 
     # Phase 8: Schedule Optimizer
     @app.route('/schedule-optimizer')
+    @app.route('/bischeduler/schedule-optimizer')
     def schedule_optimizer():
         from flask import render_template
         return render_template('schedule_optimizer.html')
 
     # Future Phase Routes (Placeholder pages)
     @app.route('/bimodal')
+    @app.route('/bischeduler/bimodal')
     def bimodal():
         from flask import render_template
         return render_template('coming_soon.html',
@@ -273,6 +396,7 @@ def create_app(config_name='development'):
                              phase="Fase 7")
 
     @app.route('/matricula')
+    @app.route('/bischeduler/matricula')
     def matricula():
         from flask import render_template
         return render_template('coming_soon.html',
@@ -281,6 +405,7 @@ def create_app(config_name='development'):
                              phase="Fase 8")
 
     @app.route('/reports')
+    @app.route('/bischeduler/reports')
     def reports():
         from flask import render_template
         return render_template('coming_soon.html',
@@ -289,6 +414,7 @@ def create_app(config_name='development'):
                              phase="Fase 9")
 
     @app.route('/admin')
+    @app.route('/bischeduler/admin')
     def admin():
         from flask import render_template
         return render_template('coming_soon.html',
@@ -364,6 +490,7 @@ def create_app(config_name='development'):
     # ============================================================================
 
     @app.route('/excel-integration')
+    @app.route('/bischeduler/excel-integration')
     def excel_integration():
         """Excel import/export management page"""
         from flask import render_template
@@ -566,6 +693,7 @@ def create_app(config_name='development'):
     # ============================================================================
 
     @app.route('/substitute-management')
+    @app.route('/bischeduler/substitute-management')
     def substitute_management():
         """Substitute teacher management page"""
         from flask import render_template
@@ -901,12 +1029,12 @@ def create_app(config_name='development'):
 
         except Exception as e:
             return jsonify({'error': str(e)}), 500
-
     # ============================================================================
     # SCHEDULE MANAGEMENT API ENDPOINTS
     # ============================================================================
 
     @app.route('/api/schedule/reference-data')
+    @app.route('/bischeduler/api/schedule/reference-data')
     def schedule_reference_data():
         """Get all reference data needed for schedule management"""
         from flask import jsonify
@@ -1009,6 +1137,7 @@ def create_app(config_name='development'):
             return jsonify({'error': f"Failed to load reference data: {str(e)}"}), 500
 
     @app.route('/api/schedule/assignments')
+    @app.route('/bischeduler/api/schedule/assignments')
     def get_schedule_assignments():
         """Get schedule assignments for a specific view (section/teacher/classroom)"""
         from flask import jsonify, request

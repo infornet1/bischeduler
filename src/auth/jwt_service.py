@@ -282,7 +282,7 @@ class JWTService:
             master_db_config = {
                 'host': 'localhost',
                 'user': 'root',
-                'password': 'Temporal2024!',
+                'password': '0000',
                 'database': 'bischeduler_master',
                 'charset': 'utf8mb4'
             }
@@ -437,7 +437,7 @@ class AuthenticationService:
         master_db_config = {
             'host': 'localhost',
             'user': 'root',
-            'password': 'Temporal2024!',
+            'password': '0000',
             'database': 'bischeduler_master',
             'charset': 'utf8mb4'
         }
@@ -629,7 +629,7 @@ class AuthenticationService:
         master_db_config = {
             'host': 'localhost',
             'user': 'root',
-            'password': 'Temporal2024!',
+            'password': '0000',
             'database': 'bischeduler_master',
             'charset': 'utf8mb4'
         }
@@ -663,7 +663,7 @@ class AuthenticationService:
         master_db_config = {
             'host': 'localhost',
             'user': 'root',
-            'password': 'Temporal2024!',
+            'password': '0000',
             'database': 'bischeduler_master',
             'charset': 'utf8mb4'
         }
@@ -692,7 +692,7 @@ class AuthenticationService:
         master_db_config = {
             'host': 'localhost',
             'user': 'root',
-            'password': 'Temporal2024!',
+            'password': '0000',
             'database': 'bischeduler_master',
             'charset': 'utf8mb4'
         }

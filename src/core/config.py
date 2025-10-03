@@ -29,7 +29,7 @@ class BaseConfig:
 
     # Multi-tenant settings
     MASTER_DATABASE_URL = os.environ.get('MASTER_DATABASE_URL') or \
-        'mysql+pymysql://root:Temporal2024!@localhost/bischeduler_master'
+    'mysql+pymysql://root:0000@localhost/bischeduler_master'
 
     # Venezuelan education settings
     DEFAULT_TIMEZONE = 'America/Caracas'
@@ -57,7 +57,7 @@ class DevelopmentConfig(BaseConfig):
 
     # Development database - use tenant database for UEIPAB data
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'mysql+pymysql://root:Temporal2024!@localhost/ueipab_2025_data'
+        'mysql+pymysql://root:0000@localhost/ueipab_2025_data'
 
     # Relaxed CORS for development
     CORS_ORIGINS = ["*"]
@@ -91,7 +91,7 @@ class ProductionConfig(BaseConfig):
 
     # Production database (from environment)
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'mysql+pymysql://root:Temporal2024!@localhost/bischeduler_prod'
+        'mysql+pymysql://root:0000@localhost/bischeduler_prod'
 
     # Enhanced security
     SESSION_COOKIE_SECURE = True

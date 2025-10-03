@@ -6,7 +6,7 @@ Based on real 2025-2026 schedule analysis
 
 from datetime import datetime, timezone
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Time, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Text, DateTime, Date, Boolean, ForeignKey, Time, Enum as SQLEnum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import CHAR, DECIMAL
@@ -70,7 +70,7 @@ class TimePeriod(Base):
     is_break = Column(Boolean, default=False)  # True for REC1, REC2
     schedule_type = Column(String(20), default='bimodal')
     display_order = Column(Integer, nullable=False)
-    academic_year = Column(String(10), nullable=False)  # "2025-2026"
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB  # "2025-2026"
     is_active = Column(Boolean, default=True)
 
     def __repr__(self):
@@ -125,7 +125,7 @@ class Section(Base):
     educational_level = Column(SQLEnum(EducationalLevel), default=EducationalLevel.BACHILLERATO)
     max_students = Column(Integer, default=35)
     current_students = Column(Integer, default=0)
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
     is_active = Column(Boolean, default=True)
 
     # Metadata
@@ -170,7 +170,7 @@ class Subject(Base):
 
     # Prerequisites and relationships
     prerequisite_subjects = Column(Text)  # JSON array of prerequisite subject IDs
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
     is_active = Column(Boolean, default=True)
 
     # Metadata
@@ -218,7 +218,7 @@ class Teacher(Base):
     user_id = Column(String(100))  # Reference to authentication system
     last_login = Column(DateTime)
     is_active = Column(Boolean, default=True)
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
 
     # Metadata
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
@@ -254,7 +254,7 @@ class TeacherSubject(Base):
     competency_level = Column(String(20), default='expert')  # expert, qualified, substitute
 
     # Administrative
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
     assigned_date = Column(DateTime, default=datetime.now(timezone.utc))
     is_active = Column(Boolean, default=True)
 
@@ -275,7 +275,7 @@ class TeacherWorkload(Base):
 
     id = Column(Integer, primary_key=True)
     teacher_id = Column(Integer, ForeignKey('teachers.id'), nullable=False)
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
 
     # Hour tracking
     total_weekly_hours = Column(Integer, default=0)  # Total assigned hours
@@ -366,7 +366,7 @@ class ScheduleAssignment(Base):
 
     # Schedule timing
     day_of_week = Column(SQLEnum(DayOfWeek), nullable=False)
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
     effective_date = Column(DateTime, default=datetime.now(timezone.utc))
     end_date = Column(DateTime)  # For schedule changes
 
@@ -445,7 +445,7 @@ class ScheduleConflict(Base):
 
     # Metadata
     detected_at = Column(DateTime, default=datetime.now(timezone.utc))
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
 
     # Relationships
     assignment_1 = relationship("ScheduleAssignment", foreign_keys=[assignment_1_id])
@@ -506,7 +506,7 @@ class TeacherPreference(Base):
     # Validity period
     effective_date = Column(DateTime, default=datetime.now(timezone.utc))
     end_date = Column(DateTime)  # Optional expiration
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
 
     # Status
     is_active = Column(Boolean, default=True)
@@ -580,7 +580,7 @@ class TeacherAvailability(Base):
     # Validity period
     effective_date = Column(DateTime, default=datetime.now(timezone.utc))
     end_date = Column(DateTime)
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
 
     # Recurring pattern
     is_recurring = Column(Boolean, default=True)  # Weekly recurring
@@ -638,7 +638,7 @@ class ScheduleChangeRequest(Base):
     # Validity
     requested_date = Column(DateTime, nullable=False)  # When change should take effect
     expiration_date = Column(DateTime)  # When request expires
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
 
     # Metadata
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
@@ -664,7 +664,7 @@ class TeacherDashboardStats(Base):
 
     id = Column(Integer, primary_key=True)
     teacher_id = Column(Integer, ForeignKey('teachers.id'), nullable=False)
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
 
     # Weekly statistics
     total_weekly_hours = Column(Integer, default=0)
@@ -708,7 +708,7 @@ class Student(Base):
     address = Column(Text)
 
     # Academic status
-    academic_year = Column(String(10), nullable=False)  # "2025-2026"
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB  # "2025-2026"
     enrollment_date = Column(DateTime, default=datetime.now(timezone.utc))
     is_active = Column(Boolean, default=True)
 
@@ -732,32 +732,31 @@ class DailyAttendance(Base):
 
     id = Column(Integer, primary_key=True)
     student_id = Column(Integer, ForeignKey('students.id'), nullable=False)
-    date = Column(DateTime, nullable=False)  # Attendance date
+    section_id = Column(Integer, ForeignKey('sections.id'))
+    attendance_date = Column(Date, nullable=False)  # Attendance date
 
     # Attendance status
     present = Column(Boolean, nullable=False, default=False)
     excused = Column(Boolean, default=False)  # Justified absence
     late_arrival = Column(Boolean, default=False)
-    early_departure = Column(Boolean, default=False)
 
     # Details
     absence_reason = Column(String(100))  # Medical, family, etc.
     notes = Column(Text)
 
     # Recording metadata
-    recorded_by = Column(Integer, ForeignKey('teachers.id'))
+    teacher_id = Column(Integer, ForeignKey('teachers.id'))
     recorded_at = Column(DateTime, default=datetime.now(timezone.utc))
-
-    # Academic context
-    academic_year = Column(String(10), nullable=False)
+    updated_at = Column(DateTime, onupdate=datetime.now(timezone.utc))
 
     # Relationships
     student = relationship("Student", backref="attendance_records")
+    section = relationship("Section")
     teacher = relationship("Teacher", backref="attendance_entries")
 
     def __repr__(self):
         status = "Present" if self.present else "Absent"
-        return f'<DailyAttendance {self.student.full_name} - {self.date.strftime("%Y-%m-%d")} - {status}>'
+        return f'<DailyAttendance {self.student.full_name} - {self.attendance_date.strftime("%Y-%m-%d")} - {status}>'
 
 
 class MonthlyAttendanceSummary(Base):
@@ -785,7 +784,7 @@ class MonthlyAttendanceSummary(Base):
     # Period information
     month = Column(Integer, nullable=False)  # 1-12
     year = Column(Integer, nullable=False)
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
 
     # Calculation metadata
     calculated_at = Column(DateTime, default=datetime.now(timezone.utc))
@@ -893,7 +892,7 @@ def get_tenant_session():
     from sqlalchemy.orm import sessionmaker
 
     # Use the UEIPAB tenant database directly
-    tenant_db_url = 'mysql+pymysql://root:Temporal2024!@localhost/ueipab_2025_data'
+    tenant_db_url = 'mysql+pymysql://root:0000@localhost/ueipab_2025_data'
     engine = create_engine(tenant_db_url)
     SessionLocal = sessionmaker(bind=engine)
 
@@ -974,7 +973,7 @@ class Exam(Base):
     requires_supervisor = Column(Boolean, default=True)
 
     # Academic context
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
     academic_period = Column(String(50))  # "Primer Lapso", "Segundo Lapso"
     weight_percentage = Column(DECIMAL(5,2))  # Exam weight in final grade
 
@@ -1110,7 +1109,7 @@ class ExamConflict(Base):
 
     # Metadata
     detected_at = Column(DateTime, default=datetime.now(timezone.utc))
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
 
     # Relationships
     exam_1 = relationship("Exam", foreign_keys=[exam_1_id], backref="conflicts_as_primary")
@@ -1161,7 +1160,7 @@ class StudentExamSchedule(Base):
     passed = Column(Boolean)
 
     # Academic year
-    academic_year = Column(String(10), nullable=False)
+    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
 
     # Metadata
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
