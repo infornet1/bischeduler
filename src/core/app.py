@@ -85,7 +85,7 @@ def create_app(config_name='development'):
     app.jwt_service = jwt_service
 
     # Register blueprints
-    app.register_blueprint(auth_bp, url_prefix='/bischeduler/api/auth')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
 
     # Import and register scheduling blueprint
     from src.scheduling.views import scheduling_bp
