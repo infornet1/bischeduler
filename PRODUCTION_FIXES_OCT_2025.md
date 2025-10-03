@@ -201,6 +201,75 @@ html[data-theme="dark"] .table th * {
 
 ---
 
+---
+
+## Additional Fixes Applied (October 3, 2025 - Evening Session)
+
+### 5. Authentication Service Database Credentials
+**Problem**: Login endpoint returned 500 errors. Remaining hardcoded `root` credentials in auth service helper functions.
+
+**Solution**:
+- Updated all remaining `root:0000` credentials to `bischeduler:BischPass2024` in `src/auth/jwt_service.py`
+- Fixed auth blueprint URL prefix (removed double `/bischeduler` prefix)
+- Changed from: `app.register_blueprint(auth_bp, url_prefix='/bischeduler/api/auth')`
+- Changed to: `app.register_blueprint(auth_bp, url_prefix='/api/auth')`
+
+**Result**: Login endpoint now returns proper JSON errors instead of 500 internal server error.
+
+### 6. Form Redirect URL Prefix Issue
+**Problem**: After saving attendance, form redirected to `/attendance/mark/29` instead of `/bischeduler/attendance/mark/29` causing 404 error.
+
+**Root Cause**: Flask context processor only works in Jinja2 templates, not in Python code (redirects, views).
+
+**Solution**:
+- Created `url_for_with_prefix()` helper function in `src/attendance/views.py`
+- Updated all `redirect(url_for(...))` calls to use `redirect(url_for_with_prefix(...))`
+- Helper manually adds `/bischeduler` prefix when needed
+
+```python
+def url_for_with_prefix(endpoint, **values):
+    """Helper to add /bischeduler prefix to url_for in Python code"""
+    url = url_for(endpoint, **values)
+    if not url.startswith('/bischeduler'):
+        url = '/bischeduler' + url
+    return url
+```
+
+### 7. HTML Quirks Mode Warning
+**Problem**: Browser console warned "This page is in Quirks Mode. Page layout may be impacted."
+
+**Root Cause**: Missing `<!DOCTYPE html>` declaration in `templates/attendance/mark_attendance.html`
+
+**Solution**:
+- Added `<!DOCTYPE html>` as the first line of the template
+- Browser now renders page in Standards Mode with proper CSS rendering
+
+---
+
+## Final Testing Status (October 3, 2025 - 20:50)
+
+✅ **All Critical Issues Resolved**:
+- Database authentication working (bischeduler user)
+- All routes responding correctly with /bischeduler prefix
+- Form submissions save and redirect properly
+- Dark mode fully functional across all pages
+- Login endpoint returns proper JSON responses
+- No more Quirks Mode warnings
+- CSS loading correctly from static files
+
+✅ **Production Ready**: All systems operational and tested
+
+---
+
+## Git Commit History
+
+1. `82303ef` - Initial production fixes (DB auth, URL routing, dark mode CSS)
+2. `a158696` - Complete database credentials update in auth service
+3. `7337ca8` - Attendance form redirects with /bischeduler prefix
+4. `492f5fb` - Add DOCTYPE to mark_attendance template
+
+---
+
 **Completed By**: Claude Code Assistant
 **Verified By**: Production testing on dev.ueipab.edu.ve
-**Sign-off**: All systems operational as of October 3, 2025
+**Final Sign-off**: All systems operational as of October 3, 2025 20:50 VET
