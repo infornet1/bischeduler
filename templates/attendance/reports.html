@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes de Asistencia - BiScheduler</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📊%3C/text%3E%3C/svg%3E">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/bischeduler/static/css/styles.css" rel="stylesheet">
+    <link href="/bischeduler/static/css/dark-mode.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .grade-row {
+            border-left: 4px solid var(--primary-color);
+            background-color: var(--card-bg);
+            transition: background-color 0.2s;
+        }
+
+        .grade-row:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .attendance-excellent { border-left-color: var(--success-color) !important; }
+        .attendance-good { border-left-color: #6f42c1 !important; }
+        .attendance-concerning { border-left-color: var(--warning-color) !important; }
+        .attendance-critical { border-left-color: var(--danger-color) !important; }
+
+        [data-theme="dark"] .table {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .table td,
+        [data-theme="dark"] .table th {
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .user-bar {
+            z-index: 1000;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            background: var(--card-bg);
+            box-shadow: 0 4px 15px var(--shadow-color-lg);
+            border: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="user-bar">
+        <div class="user-info">
+            <div class="user-name">Profesor UEIPAB</div>
+            <div class="user-role">Reportes de Asistencia</div>
+        </div>
+        <div class="user-actions">
+            <button class="btn btn-outline-primary btn-sm" onclick="toggleTheme()" title="Cambiar tema">
+                <i class="bi bi-moon-stars" id="theme-icon"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2><i class="bi bi-file-earmark-bar-graph"></i> Reportes de Asistencia</h2>
+                        <p class="text-muted">Resúmenes mensuales por grado - Formato Matrícula Venezolana</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-success" onclick="calculateMonthly()">
+                            <i class="bi bi-calculator"></i> Calcular Mes Actual
+                        </button>
+                        <a href="/bischeduler/attendance" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Summary Statistics -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="bi bi-people display-4 text-primary"></i>
+                                <h5 class="card-title mt-2">Total Estudiantes</h5>
+                                <p class="card-text display-6">{{ summaries|length > 0 and summaries|sum(attribute='total_students') or 0 }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="bi bi-collection display-4 text-info"></i>
+                                <h5 class="card-title mt-2">Grados</h5>
+                                <p class="card-text display-6">{{ summaries|length }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="bi bi-calendar-check display-4 text-success"></i>
+                                <h5 class="card-title mt-2">Asistencia Promedio</h5>
+                                <p class="card-text display-6">
+                                    {% if summaries|length > 0 %}
+                                        {{ "%.1f"|format(summaries|sum(attribute='attendance_percentage')/summaries|length) }}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="bi bi-calendar3 display-4 text-warning"></i>
+                                <h5 class="card-title mt-2">Días Hábiles</h5>
+                                <p class="card-text display-6">{{ summaries[0].working_days if summaries|length > 0 else 0 }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Summaries Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-table"></i> Resumen Mensual por Grado - Formato Matrícula MPPE</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if summaries and summaries|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>GRADO</th>
+                                        <th class="text-center">SECCIONES</th>
+                                        <th class="text-center">V (Varones)</th>
+                                        <th class="text-center">H (Hembras)</th>
+                                        <th class="text-center">TOTAL</th>
+                                        <th class="text-center">DÍAS HÁBILES</th>
+                                        <th class="text-center">SUMATORIA</th>
+                                        <th class="text-center">PROMEDIO</th>
+                                        <th class="text-center">% ASISTENCIA</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for summary in summaries %}
+                                    <tr class="grade-row {% if summary.attendance_percentage >= 90 %}attendance-excellent{% elif summary.attendance_percentage >= 80 %}attendance-good{% elif summary.attendance_percentage >= 70 %}attendance-concerning{% else %}attendance-critical{% endif %}">
+                                        <td><strong>{{ summary.grade_level }}° año</strong></td>
+                                        <td class="text-center">{{ summary.section_count }}</td>
+                                        <td class="text-center">{{ summary.male_students }}</td>
+                                        <td class="text-center">{{ summary.female_students }}</td>
+                                        <td class="text-center"><strong>{{ summary.total_students }}</strong></td>
+                                        <td class="text-center">{{ summary.working_days }}</td>
+                                        <td class="text-center">{{ summary.attendance_sum }}</td>
+                                        <td class="text-center">{{ "%.2f"|format(summary.average_attendance) }}</td>
+                                        <td class="text-center">
+                                            <span class="badge {% if summary.attendance_percentage >= 90 %}bg-success{% elif summary.attendance_percentage >= 80 %}bg-primary{% elif summary.attendance_percentage >= 70 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ "%.1f"|format(summary.attendance_percentage) }}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-secondary">
+                                        <td><strong>TOTAL INSTITUCIÓN</strong></td>
+                                        <td class="text-center"><strong>{{ summaries|sum(attribute='section_count') }}</strong></td>
+                                        <td class="text-center"><strong>{{ summaries|sum(attribute='male_students') }}</strong></td>
+                                        <td class="text-center"><strong>{{ summaries|sum(attribute='female_students') }}</strong></td>
+                                        <td class="text-center"><strong>{{ summaries|sum(attribute='total_students') }}</strong></td>
+                                        <td class="text-center">-</td>
+                                        <td class="text-center"><strong>{{ summaries|sum(attribute='attendance_sum') }}</strong></td>
+                                        <td class="text-center">-</td>
+                                        <td class="text-center">
+                                            <strong>{{ "%.1f"|format(summaries|sum(attribute='attendance_percentage')/summaries|length) }}%</strong>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No hay datos de asistencia para el período seleccionado.
+                            <br><br>
+                            <button class="btn btn-primary" onclick="calculateMonthly()">
+                                <i class="bi bi-calculator"></i> Calcular Resumen Mensual
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h6><i class="bi bi-info-circle"></i> Leyenda de Colores</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <span class="badge bg-success">Excelente</span> ≥ 90%
+                            </div>
+                            <div class="col-md-3">
+                                <span class="badge bg-primary">Bueno</span> 80% - 89%
+                            </div>
+                            <div class="col-md-3">
+                                <span class="badge bg-warning">Preocupante</span> 70% - 79%
+                            </div>
+                            <div class="col-md-3">
+                                <span class="badge bg-danger">Crítico</span> < 70%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function calculateMonthly() {
+            const month = {{ month }};
+            const year = {{ year }};
+            const academicYear = '2025-2026';
+
+            fetch('/bischeduler/attendance/api/monthly/calculate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    month: parseInt(month),
+                    year: parseInt(year),
+                    academic_year: academicYear
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`✅ ${data.message}`);
+                    location.reload();
+                } else {
+                    alert(`❌ Error: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al calcular resumen mensual');
+            });
+        }
+
+        // Theme toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            document.getElementById('theme-icon').className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.getElementById('theme-icon').className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+    </script>
+</body>
+</html>
