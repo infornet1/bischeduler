@@ -1,0 +1,10 @@
+-- Fix monthly_attendance_summary table
+-- Make academic_year nullable since the model doesn't use it
+
+USE ueipab_2025_data;
+
+-- Make academic_year nullable
+ALTER TABLE monthly_attendance_summary MODIFY COLUMN academic_year VARCHAR(10) NULL;
+
+-- Verify the change
+DESCRIBE monthly_attendance_summary;

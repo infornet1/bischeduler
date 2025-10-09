@@ -1,0 +1,9 @@
+-- Fix monthly_attendance_summary table
+-- Make total_days nullable
+
+USE ueipab_2025_data;
+
+ALTER TABLE monthly_attendance_summary MODIFY COLUMN total_days INT NULL;
+
+-- Verify the change
+DESCRIBE monthly_attendance_summary;

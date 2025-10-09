@@ -219,7 +219,7 @@ def reports_dashboard():
 
     # Get monthly summaries
     report_service = MonthlyReportService(db.session)
-    summaries = report_service.get_monthly_summaries(month, year, '2025-2026')
+    summaries = report_service.get_monthly_summaries(month, year)
 
     return render_template('attendance/reports.html',
                          summaries=summaries,
@@ -542,10 +542,9 @@ def api_calculate_monthly():
         data = request.get_json()
         month = data.get('month', date.today().month)
         year = data.get('year', date.today().year)
-        academic_year = data.get('academic_year', '2025-2026')
 
         report_service = MonthlyReportService(db.session)
-        summaries = report_service.calculate_monthly_summary(month, year, academic_year)
+        summaries = report_service.calculate_monthly_summary(month, year)
 
         return jsonify({
             'success': True,
@@ -912,14 +911,13 @@ def export_matricula(month, year):
         }), 400
     
     try:
-        academic_year = '2025-2026'
         report_service = MonthlyReportService(db.session)
 
         # Calculate summaries if they don't exist
-        summaries = report_service.calculate_monthly_summary(month, year, academic_year)
+        summaries = report_service.calculate_monthly_summary(month, year)
 
         # Export in government format
-        export_data = report_service.export_matricula_format(month, year, academic_year)
+        export_data = report_service.export_matricula_format(month, year)
 
         return jsonify({
             'success': True,
