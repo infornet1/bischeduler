@@ -400,13 +400,16 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="attendanceDate" class="form-label">Fecha de Asistencia:</label>
-                        <input type="date" class="form-control" id="attendanceDate" value="">
+                        <input type="date" class="form-control" id="attendanceDate" value="" onchange="loadSections()">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">&nbsp;</label>
                         <div class="d-flex gap-2">
                             <button class="btn btn-outline-secondary" onclick="setToday()">Hoy</button>
                             <button class="btn btn-outline-secondary" onclick="setPrevious()">Ayer</button>
+                            <button class="btn btn-outline-primary" onclick="loadSections()">
+                                <i class="bi bi-arrow-clockwise"></i> Actualizar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -447,7 +450,8 @@
         });
 
         function loadSections() {
-            fetch('/bischeduler/attendance/api/sections')
+            const date = document.getElementById('attendanceDate').value;
+            fetch(`/bischeduler/attendance/api/sections?date=${date}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -486,16 +490,42 @@
                                     <h6 class="card-title">
                                         <i class="bi bi-people"></i> ${section.name}
                                     </h6>
-                                    <p class="card-text">
+                                    <p class="card-text mb-2">
                                         <small class="text-muted">Grado ${section.grade_level}</small><br>
                                         <span class="badge bg-primary">${section.student_count} estudiantes</span>
                                     </p>
+                                    ${section.attendance ? `
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="fw-bold">Asistencia Hoy:</small>
+                                                <span class="badge ${section.attendance.total.percentage >= 90 ? 'bg-success' : section.attendance.total.percentage >= 75 ? 'bg-warning' : 'bg-danger'}">
+                                                    ${section.attendance.total.percentage}%
+                                                </span>
+                                            </div>
+                                            <div class="row g-1 text-center">
+                                                <div class="col-6">
+                                                    <div class="border rounded p-1" style="background-color: rgba(13, 110, 253, 0.1);">
+                                                        <i class="bi bi-gender-male text-primary"></i>
+                                                        <small class="d-block fw-bold">${section.attendance.male.present}/${section.attendance.male.total}</small>
+                                                        <small class="text-muted">${section.attendance.male.percentage}%</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="border rounded p-1" style="background-color: rgba(220, 53, 69, 0.1);">
+                                                        <i class="bi bi-gender-female text-danger"></i>
+                                                        <small class="d-block fw-bold">${section.attendance.female.present}/${section.attendance.female.total}</small>
+                                                        <small class="text-muted">${section.attendance.female.percentage}%</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ` : ''}
                                     <div class="d-flex justify-content-between align-items-center">
                                         <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openAttendance(${section.id})">
-                                            <i class="bi bi-check-square"></i> Marcar Asistencia
+                                            <i class="bi bi-check-square"></i> Marcar
                                         </button>
                                         <button class="btn btn-outline-secondary btn-sm" onclick="event.stopPropagation(); viewSummary(${section.id})">
-                                            <i class="bi bi-graph-up"></i> Ver Resumen
+                                            <i class="bi bi-graph-up"></i> Resumen
                                         </button>
                                     </div>
                                 </div>
@@ -546,9 +576,18 @@
             window.location.href = `/bischeduler/attendance/mark/${sectionId}?date=${date}`;
         }
 
-        function viewSummary(sectionId) {
+        function getWeekNumber(date) {
+            // Calculate ISO week number
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        function viewSummary(sectionId, period = 'monthly') {
             // Open modal or navigate to summary page
-            fetch(`/bischeduler/attendance/api/attendance/summary/${sectionId}`)
+            fetch(`/bischeduler/attendance/api/attendance/summary/${sectionId}?period=${period}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -561,7 +600,7 @@
                         alert(`Error: ${data.message}`);
                         return;
                     }
-                    showSummaryModal(data);
+                    showSummaryModal(data, sectionId);
                 })
                 .catch(error => {
                     console.error('Error loading summary:', error);
@@ -569,18 +608,156 @@
                 });
         }
 
-        function showSummaryModal(data) {
+        function switchPeriod(sectionId, period) {
+            // Close current modal
+            const existingModal = document.getElementById('summaryModal');
+            if (existingModal) {
+                const modalInstance = bootstrap.Modal.getInstance(existingModal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            }
+            // Load new data with selected period (current date by default)
+            viewSummary(sectionId, period);
+        }
+
+        function applyPeriodFilter(sectionId) {
+            // Determine current period from modal state
+            const monthSelect = document.getElementById(`monthSelect-${sectionId}`);
+            const weekSelect = document.getElementById(`weekSelect-${sectionId}`);
+            
+            let url = `/bischeduler/attendance/api/attendance/summary/${sectionId}?`;
+            
+            if (monthSelect) {
+                // Monthly view
+                const month = monthSelect.value;
+                const year = document.getElementById(`yearSelect-${sectionId}`).value;
+                url += `period=monthly&month=${month}&year=${year}`;
+            } else if (weekSelect) {
+                // Weekly view
+                const week = weekSelect.value;
+                const year = document.getElementById(`yearSelectWeek-${sectionId}`).value;
+                url += `period=weekly&week=${week}&year=${year}`;
+            }
+            
+            // Close current modal
+            const existingModal = document.getElementById('summaryModal');
+            if (existingModal) {
+                const modalInstance = bootstrap.Modal.getInstance(existingModal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            }
+            
+            // Fetch and display new data
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        alert(`Error: ${data.message}`);
+                        return;
+                    }
+                    showSummaryModal(data, sectionId);
+                })
+                .catch(error => {
+                    console.error('Error loading summary:', error);
+                    alert(`Error al cargar el resumen: ${error.message}`);
+                });
+        }
+
+        function showSummaryModal(data, sectionId) {
             // Create and show modal with attendance summary
+            const currentPeriod = data.period || 'monthly';
+            
+            // Get current date info for default selections
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1;
+            const currentYear = now.getFullYear();
+            const currentWeek = getWeekNumber(now);
+            
             const modalHtml = `
                 <div class="modal fade" id="summaryModal" tabindex="-1">
                     <div class="modal-dialog modal-lg">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title">Resumen de Asistencia</h5>
+                                <h5 class="modal-title">Resumen de Asistencia - ${data.section_name}</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
-                                <p><strong>Promedio de la Sección:</strong> ${data.section_average.toFixed(1)}%</p>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <p class="mb-0"><strong>Promedio de la Sección:</strong> <span class="badge bg-primary fs-6">${data.section_average.toFixed(1)}%</span></p>
+                                        </div>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm ${currentPeriod === 'weekly' ? 'btn-primary' : 'btn-outline-primary'}" onclick="switchPeriod(${sectionId}, 'weekly')">
+                                                <i class="bi bi-calendar-week"></i> Semanal
+                                            </button>
+                                            <button type="button" class="btn btn-sm ${currentPeriod === 'monthly' ? 'btn-primary' : 'btn-outline-primary'}" onclick="switchPeriod(${sectionId}, 'monthly')">
+                                                <i class="bi bi-calendar-month"></i> Mensual
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row align-items-end">
+                                        <div class="col-md-8">
+                                            <label class="form-label mb-1"><strong>Período:</strong></label>
+                                            <div id="periodSelector-${sectionId}">
+                                                ${currentPeriod === 'monthly' ? `
+                                                    <div class="row g-2">
+                                                        <div class="col-md-6">
+                                                            <select class="form-select form-select-sm" id="monthSelect-${sectionId}">
+                                                                <option value="1" ${currentMonth === 1 ? 'selected' : ''}>Enero</option>
+                                                                <option value="2" ${currentMonth === 2 ? 'selected' : ''}>Febrero</option>
+                                                                <option value="3" ${currentMonth === 3 ? 'selected' : ''}>Marzo</option>
+                                                                <option value="4" ${currentMonth === 4 ? 'selected' : ''}>Abril</option>
+                                                                <option value="5" ${currentMonth === 5 ? 'selected' : ''}>Mayo</option>
+                                                                <option value="6" ${currentMonth === 6 ? 'selected' : ''}>Junio</option>
+                                                                <option value="7" ${currentMonth === 7 ? 'selected' : ''}>Julio</option>
+                                                                <option value="8" ${currentMonth === 8 ? 'selected' : ''}>Agosto</option>
+                                                                <option value="9" ${currentMonth === 9 ? 'selected' : ''}>Septiembre</option>
+                                                                <option value="10" ${currentMonth === 10 ? 'selected' : ''}>Octubre</option>
+                                                                <option value="11" ${currentMonth === 11 ? 'selected' : ''}>Noviembre</option>
+                                                                <option value="12" ${currentMonth === 12 ? 'selected' : ''}>Diciembre</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <select class="form-select form-select-sm" id="yearSelect-${sectionId}">
+                                                                <option value="2024" ${currentYear === 2024 ? 'selected' : ''}>2024</option>
+                                                                <option value="2025" ${currentYear === 2025 ? 'selected' : ''}>2025</option>
+                                                                <option value="2026" ${currentYear === 2026 ? 'selected' : ''}>2026</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                ` : `
+                                                    <div class="row g-2">
+                                                        <div class="col-md-6">
+                                                            <select class="form-select form-select-sm" id="weekSelect-${sectionId}">
+                                                                ${Array.from({length: 52}, (_, i) => `<option value="${i + 1}" ${currentWeek === i + 1 ? 'selected' : ''}>Semana ${i + 1}</option>`).join('')}
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <select class="form-select form-select-sm" id="yearSelectWeek-${sectionId}">
+                                                                <option value="2024" ${currentYear === 2024 ? 'selected' : ''}>2024</option>
+                                                                <option value="2025" ${currentYear === 2025 ? 'selected' : ''}>2025</option>
+                                                                <option value="2026" ${currentYear === 2026 ? 'selected' : ''}>2026</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                `}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button class="btn btn-success btn-sm w-100" onclick="applyPeriodFilter(${sectionId})">
+                                                <i class="bi bi-search"></i> Aplicar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="table-responsive">
                                     <table class="table table-sm">
                                         <thead>
@@ -605,6 +782,28 @@
                                                 </tr>
                                             `).join('')}
                                         </tbody>
+                                        <tfoot class="table-secondary">
+                                            ${data.gender_stats ? `
+                                                <tr class="fw-bold border-top border-2">
+                                                    <td><i class="bi bi-gender-male text-primary"></i> Varones (${data.gender_stats.male.count})</td>
+                                                    <td>${data.gender_stats.male.percentage}%</td>
+                                                    <td>⌀ ${data.gender_stats.male.avg_present_days}/${data.gender_stats.male.avg_total_days}</td>
+                                                    <td><span class="badge bg-info">Promedio</span></td>
+                                                </tr>
+                                                <tr class="fw-bold">
+                                                    <td><i class="bi bi-gender-female text-danger"></i> Hembras (${data.gender_stats.female.count})</td>
+                                                    <td>${data.gender_stats.female.percentage}%</td>
+                                                    <td>⌀ ${data.gender_stats.female.avg_present_days}/${data.gender_stats.female.avg_total_days}</td>
+                                                    <td><span class="badge bg-info">Promedio</span></td>
+                                                </tr>
+                                                <tr class="fw-bold border-top border-2 table-dark">
+                                                    <td><i class="bi bi-people-fill"></i> TOTAL (${data.gender_stats.total.count})</td>
+                                                    <td>${data.gender_stats.total.percentage}%</td>
+                                                    <td>⌀ ${data.gender_stats.total.avg_present_days}/${data.gender_stats.total.avg_total_days}</td>
+                                                    <td><span class="badge bg-success">Promedio General</span></td>
+                                                </tr>
+                                            ` : ''}
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
@@ -628,12 +827,14 @@
         function setToday() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('attendanceDate').value = today;
+            loadSections();
         }
 
         function setPrevious() {
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             document.getElementById('attendanceDate').value = yesterday.toISOString().split('T')[0];
+            loadSections();
         }
 
         // Theme toggle function

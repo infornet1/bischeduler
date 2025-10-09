@@ -219,7 +219,7 @@ def reports_dashboard():
 
     # Get monthly summaries
     report_service = MonthlyReportService(db.session)
-    summaries = report_service.get_monthly_summaries(month, year)
+    summaries = report_service.get_monthly_summaries(month, year, '2025-2026')
 
     return render_template('attendance/reports.html',
                          summaries=summaries,
@@ -266,6 +266,16 @@ def api_sections():
             }), 500
 
     try:
+        # Get selected date from query parameter (default to today)
+        selected_date_str = request.args.get('date')
+        if selected_date_str:
+            try:
+                selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                selected_date = date.today()
+        else:
+            selected_date = date.today()
+        
         # Return real sections from database
         sections = db.session.query(Section).filter_by(
             is_active=True
@@ -273,17 +283,63 @@ def api_sections():
 
         sections_data = []
         for section in sections:
-            # Count students in this section
-            student_count = db.session.query(Student).filter_by(
+            # Get all students in this section
+            students = db.session.query(Student).filter_by(
                 section_id=section.id, is_active=True
-            ).count()
+            ).all()
+            
+            student_count = len(students)
+            
+            # Count by gender
+            male_count = sum(1 for s in students if s.gender == 'M')
+            female_count = sum(1 for s in students if s.gender == 'F')
+            
+            # Get attendance for selected date
+            male_present = 0
+            female_present = 0
+            
+            for student in students:
+                attendance = db.session.query(DailyAttendance).filter(
+                    and_(
+                        DailyAttendance.student_id == student.id,
+                        func.date(DailyAttendance.attendance_date) == selected_date
+                    )
+                ).first()
+                
+                if attendance and attendance.present:
+                    if student.gender == 'M':
+                        male_present += 1
+                    elif student.gender == 'F':
+                        female_present += 1
+            
+            # Calculate percentages
+            male_percentage = (male_present / male_count * 100) if male_count > 0 else 0.0
+            female_percentage = (female_present / female_count * 100) if female_count > 0 else 0.0
+            total_present = male_present + female_present
+            total_percentage = (total_present / student_count * 100) if student_count > 0 else 0.0
 
             sections_data.append({
                 'id': section.id,
                 'name': section.name,
                 'grade_level': section.grade_level,
                 'section_letter': section.section_letter,
-                'student_count': student_count
+                'student_count': student_count,
+                'attendance': {
+                    'male': {
+                        'total': male_count,
+                        'present': male_present,
+                        'percentage': round(male_percentage, 1)
+                    },
+                    'female': {
+                        'total': female_count,
+                        'present': female_present,
+                        'percentage': round(female_percentage, 1)
+                    },
+                    'total': {
+                        'present': total_present,
+                        'percentage': round(total_percentage, 1)
+                    }
+                }
             })
 
         return jsonify(sections_data)
@@ -300,6 +356,7 @@ def api_attendance_summary(section_id):
     """
     Get attendance summary for a section
     Phase 11.1: Real-time attendance statistics
+    Supports weekly and monthly views via 'period' query parameter
     """
     # Ensure tenant context
     if not ensure_tenant_context():
@@ -309,9 +366,49 @@ def api_attendance_summary(section_id):
         }), 400
 
     try:
-        # Get date range (last 30 days by default)
-        end_date = date.today()
-        start_date = end_date - timedelta(days=30)
+        # Get period parameter (default: monthly)
+        period = request.args.get('period', 'monthly')
+        
+        # Get custom date parameters
+        year = request.args.get('year', type=int)
+        month = request.args.get('month', type=int)
+        week = request.args.get('week', type=int)
+        
+        # Calculate date range based on period
+        if period == 'weekly':
+            if year and week:
+                # Calculate specific week
+                from datetime import datetime
+                jan_1 = datetime(year, 1, 1).date()
+                # Find the Monday of week 1
+                days_to_monday = (7 - jan_1.weekday()) % 7
+                if days_to_monday > 3:  # If Jan 1 is Thu-Sun, week 1 starts next Monday
+                    days_to_monday -= 7
+                week_1_monday = jan_1 + timedelta(days=days_to_monday)
+                # Calculate the target week
+                start_date = week_1_monday + timedelta(weeks=week - 1)
+                end_date = start_date + timedelta(days=6)
+                period_label = f'Semana {week} de {year}'
+            else:
+                # Last 7 days (default)
+                end_date = date.today()
+                start_date = end_date - timedelta(days=7)
+                period_label = 'Última Semana'
+        else:  # monthly
+            if year and month:
+                # Specific month
+                from calendar import monthrange
+                start_date = date(year, month, 1)
+                last_day = monthrange(year, month)[1]
+                end_date = date(year, month, last_day)
+                month_names = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                              'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+                period_label = f'{month_names[month - 1]} {year}'
+            else:
+                # Last 30 days (default)
+                end_date = date.today()
+                start_date = end_date - timedelta(days=30)
+                period_label = 'Último Mes'
         
         # Get section info
         section = db.session.query(Section).get(section_id)
@@ -327,6 +424,14 @@ def api_attendance_summary(section_id):
         attendance_service = AttendanceService(db.session)
         students_data = []
         total_percentage = 0
+        
+        # Gender statistics
+        male_count = 0
+        female_count = 0
+        male_present = 0
+        female_present = 0
+        male_total_days = 0
+        female_total_days = 0
         
         for student in students:
             percentage, present_days, total_days = attendance_service.calculate_attendance_percentage(
@@ -346,20 +451,71 @@ def api_attendance_summary(section_id):
             students_data.append({
                 'student_id': student.id,
                 'student_name': student.full_name,
+                'gender': student.gender,
                 'attendance_percentage': round(percentage, 1),
                 'present_days': present_days,
                 'total_days': total_days,
                 'status': status
             })
             total_percentage += percentage
+            
+            # Accumulate gender statistics
+            if student.gender == 'M':
+                male_count += 1
+                male_present += present_days
+                male_total_days += total_days
+            elif student.gender == 'F':
+                female_count += 1
+                female_present += present_days
+                female_total_days += total_days
         
         section_average = total_percentage / len(students) if students else 0.0
+        
+        # Calculate gender averages
+        male_percentage = (male_present / male_total_days * 100) if male_total_days > 0 else 0.0
+        female_percentage = (female_present / female_total_days * 100) if female_total_days > 0 else 0.0
+        
+        # Calculate average present days per student (not sum)
+        male_avg_present = (male_present / male_count) if male_count > 0 else 0.0
+        male_avg_total = (male_total_days / male_count) if male_count > 0 else 0.0
+        female_avg_present = (female_present / female_count) if female_count > 0 else 0.0
+        female_avg_total = (female_total_days / female_count) if female_count > 0 else 0.0
+        total_avg_present = ((male_present + female_present) / len(students)) if len(students) > 0 else 0.0
+        total_avg_total = ((male_total_days + female_total_days) / len(students)) if len(students) > 0 else 0.0
+        
+        gender_stats = {
+            'male': {
+                'count': male_count,
+                'avg_present_days': round(male_avg_present, 1),
+                'avg_total_days': round(male_avg_total, 1),
+                'percentage': round(male_percentage, 1)
+            },
+            'female': {
+                'count': female_count,
+                'avg_present_days': round(female_avg_present, 1),
+                'avg_total_days': round(female_avg_total, 1),
+                'percentage': round(female_percentage, 1)
+            },
+            'total': {
+                'count': len(students),
+                'avg_present_days': round(total_avg_present, 1),
+                'avg_total_days': round(total_avg_total, 1),
+                'percentage': round(section_average, 1)
+            }
+        }
         
         return jsonify({
             'section_id': section_id,
             'section_name': section.name,
+            'period': period,
+            'period_label': period_label,
+            'date_range': {
+                'start': start_date.isoformat(),
+                'end': end_date.isoformat()
+            },
             'students': students_data,
-            'section_average': round(section_average, 1)
+            'section_average': round(section_average, 1),
+            'gender_stats': gender_stats
         })
 
     except Exception as e:
@@ -389,7 +545,7 @@ def api_calculate_monthly():
         academic_year = data.get('academic_year', '2025-2026')
 
         report_service = MonthlyReportService(db.session)
-        summaries = report_service.calculate_monthly_summary(month, year)
+        summaries = report_service.calculate_monthly_summary(month, year, academic_year)
 
         return jsonify({
             'success': True,
@@ -760,10 +916,10 @@ def export_matricula(month, year):
         report_service = MonthlyReportService(db.session)
 
         # Calculate summaries if they don't exist
-        summaries = report_service.calculate_monthly_summary(month, year)
+        summaries = report_service.calculate_monthly_summary(month, year, academic_year)
 
         # Export in government format
-        export_data = report_service.export_matricula_format(month, year)
+        export_data = report_service.export_matricula_format(month, year, academic_year)
 
         return jsonify({
             'success': True,
