@@ -12,17 +12,8 @@ from src.core.app import db
 from src.models.tenant import Student, DailyAttendance, MonthlyAttendanceSummary, Section, Teacher
 from src.attendance.services import AttendanceService, MonthlyReportService
 from src.tenants.middleware import require_tenant, get_current_tenant
-
 # Create blueprint
-attendance_bp = Blueprint('attendance', __name__)
-
-
-def url_for_with_prefix(endpoint, **values):
-    """Helper to add /bischeduler prefix to url_for in Python code"""
-    url = url_for(endpoint, **values)
-    if not url.startswith('/bischeduler'):
-        url = '/bischeduler' + url
-    return url
+attendance_bp = Blueprint('attendance', __name__, url_prefix='/attendance')
 
 
 def ensure_tenant_context():
@@ -34,7 +25,7 @@ def ensure_tenant_context():
     
     if not hasattr(g, 'current_tenant') or not g.current_tenant:
         try:
-            master_engine = create_engine('mysql+pymysql://bischeduler:BischPass2024@localhost/bischeduler_master')
+            master_engine = create_engine('mysql+pymysql://root:0000@localhost/bischeduler_master')
             MasterSession = sessionmaker(bind=master_engine)
             master_session = MasterSession()
             
@@ -65,7 +56,7 @@ def index():
         # For development, always use UEIPAB tenant
         # Connect to master database to get tenant info
         try:
-            master_engine = create_engine('mysql+pymysql://bischeduler:BischPass2024@localhost/bischeduler_master')
+            master_engine = create_engine('mysql+pymysql://root:0000@localhost/bischeduler_master')
             MasterSession = sessionmaker(bind=master_engine)
             master_session = MasterSession()
             
@@ -95,7 +86,7 @@ def force_tenant():
     from src.tenants.manager import TenantManager
 
     # Manually set tenant context
-    tenant_manager = TenantManager('mysql+pymysql://bischeduler:BischPass2024@localhost/bischeduler_master')
+    tenant_manager = TenantManager('mysql+pymysql://root:0000@localhost/bischeduler_master')
     tenant = tenant_manager.get_tenant_by_domain('dev.ueipab.edu.ve')
 
     if tenant:
@@ -122,7 +113,7 @@ def mark_attendance_form(section_id):
     section = db.session.query(Section).get(section_id)
     if not section:
         flash('Sección no encontrada', 'error')
-        return redirect(url_for_with_prefix('attendance.index'))
+        return redirect(url_for('attendance.index'))
 
     # Get students in section
     students = db.session.query(Student).filter_by(
@@ -163,7 +154,7 @@ def submit_attendance(section_id):
         attendance_date_str = request.form.get('attendance_date')
         if not attendance_date_str:
             flash('Fecha de asistencia no proporcionada.', 'error')
-            return redirect(url_for_with_prefix('attendance.mark_attendance_form', section_id=section_id))
+            return redirect(url_for('attendance.mark_attendance_form', section_id=section_id))
 
         attendance_date = datetime.strptime(attendance_date_str, '%Y-%m-%d').date()
         teacher_id = 1  # TODO: Get from session/auth
@@ -199,13 +190,13 @@ def submit_attendance(section_id):
 
         logging.info(f"SUCCESS: Attendance saved for {len(results)} students in section {section_id} for date {attendance_date}.")
         flash(f'Asistencia registrada para {len(results)} estudiantes.', 'success')
-        return redirect(url_for_with_prefix('attendance.mark_attendance_form', section_id=section_id, date=attendance_date.strftime('%Y-%m-%d')))
+        return redirect(url_for('attendance.mark_attendance_form', section_id=section_id, date=attendance_date.strftime('%Y-%m-%d')))
 
     except Exception as e:
         logging.error(f"ERROR saving attendance for section {section_id}: {str(e)}", exc_info=True)
         db.session.rollback() # Rollback in case of error
         flash(f'Error al registrar asistencia: {str(e)}', 'error')
-        return redirect(url_for_with_prefix('attendance.mark_attendance_form', section_id=section_id))
+        return redirect(url_for('attendance.mark_attendance_form', section_id=section_id))
 
 
 @attendance_bp.route('/reports')
@@ -228,7 +219,7 @@ def reports_dashboard():
 
     # Get monthly summaries
     report_service = MonthlyReportService(db.session)
-    summaries = report_service.get_monthly_summaries(month, year)
+    summaries = report_service.get_monthly_summaries(month, year, '2025-2026')
 
     return render_template('attendance/reports.html',
                          summaries=summaries,
@@ -254,7 +245,7 @@ def api_sections():
         # For development, always use UEIPAB tenant
         # Connect to master database to get tenant info
         try:
-            master_engine = create_engine('mysql+pymysql://bischeduler:BischPass2024@localhost/bischeduler_master')
+            master_engine = create_engine('mysql+pymysql://root:0000@localhost/bischeduler_master')
             MasterSession = sessionmaker(bind=master_engine)
             master_session = MasterSession()
             
@@ -275,16 +266,6 @@ def api_sections():
             }), 500
 
     try:
-        # Get selected date from query parameter (default to today)
-        selected_date_str = request.args.get('date')
-        if selected_date_str:
-            try:
-                selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
-            except ValueError:
-                selected_date = date.today()
-        else:
-            selected_date = date.today()
-        
         # Return real sections from database
         sections = db.session.query(Section).filter_by(
             is_active=True
@@ -292,63 +273,17 @@ def api_sections():
 
         sections_data = []
         for section in sections:
-            # Get all students in this section
-            students = db.session.query(Student).filter_by(
+            # Count students in this section
+            student_count = db.session.query(Student).filter_by(
                 section_id=section.id, is_active=True
-            ).all()
-            
-            student_count = len(students)
-            
-            # Count by gender
-            male_count = sum(1 for s in students if s.gender == 'M')
-            female_count = sum(1 for s in students if s.gender == 'F')
-            
-            # Get attendance for selected date
-            male_present = 0
-            female_present = 0
-            
-            for student in students:
-                attendance = db.session.query(DailyAttendance).filter(
-                    and_(
-                        DailyAttendance.student_id == student.id,
-                        func.date(DailyAttendance.attendance_date) == selected_date
-                    )
-                ).first()
-                
-                if attendance and attendance.present:
-                    if student.gender == 'M':
-                        male_present += 1
-                    elif student.gender == 'F':
-                        female_present += 1
-            
-            # Calculate percentages
-            male_percentage = (male_present / male_count * 100) if male_count > 0 else 0.0
-            female_percentage = (female_present / female_count * 100) if female_count > 0 else 0.0
-            total_present = male_present + female_present
-            total_percentage = (total_present / student_count * 100) if student_count > 0 else 0.0
+            ).count()
 
             sections_data.append({
                 'id': section.id,
                 'name': section.name,
                 'grade_level': section.grade_level,
                 'section_letter': section.section_letter,
-                'student_count': student_count,
-                'attendance': {
-                    'male': {
-                        'total': male_count,
-                        'present': male_present,
-                        'percentage': round(male_percentage, 1)
-                    },
-                    'female': {
-                        'total': female_count,
-                        'present': female_present,
-                        'percentage': round(female_percentage, 1)
-                    },
-                    'total': {
-                        'present': total_present,
-                        'percentage': round(total_percentage, 1)
-                    }
-                }
+                'student_count': student_count
             })
 
         return jsonify(sections_data)
@@ -365,7 +300,6 @@ def api_attendance_summary(section_id):
     """
     Get attendance summary for a section
     Phase 11.1: Real-time attendance statistics
-    Supports weekly and monthly views via 'period' query parameter
     """
     # Ensure tenant context
     if not ensure_tenant_context():
@@ -375,156 +309,52 @@ def api_attendance_summary(section_id):
         }), 400
 
     try:
-        # Get period parameter (default: monthly)
-        period = request.args.get('period', 'monthly')
-        
-        # Get custom date parameters
-        year = request.args.get('year', type=int)
-        month = request.args.get('month', type=int)
-        week = request.args.get('week', type=int)
-        
-        # Calculate date range based on period
-        if period == 'weekly':
-            if year and week:
-                # Calculate specific week
-                from datetime import datetime
-                jan_1 = datetime(year, 1, 1).date()
-                # Find the Monday of week 1
-                days_to_monday = (7 - jan_1.weekday()) % 7
-                if days_to_monday > 3:  # If Jan 1 is Thu-Sun, week 1 starts next Monday
-                    days_to_monday -= 7
-                week_1_monday = jan_1 + timedelta(days=days_to_monday)
-                # Calculate the target week
-                start_date = week_1_monday + timedelta(weeks=week - 1)
-                end_date = start_date + timedelta(days=6)
-                period_label = f'Semana {week} de {year}'
-            else:
-                # Last 7 days (default)
-                end_date = date.today()
-                start_date = end_date - timedelta(days=7)
-                period_label = 'Última Semana'
-        else:  # monthly
-            if year and month:
-                # Specific month
-                from calendar import monthrange
-                start_date = date(year, month, 1)
-                last_day = monthrange(year, month)[1]
-                end_date = date(year, month, last_day)
-                month_names = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                              'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-                period_label = f'{month_names[month - 1]} {year}'
-            else:
-                # Last 30 days (default)
-                end_date = date.today()
-                start_date = end_date - timedelta(days=30)
-                period_label = 'Último Mes'
-        
-        # Get section info
-        section = db.session.query(Section).get(section_id)
-        if not section:
-            return jsonify({'error': 'Section not found'}), 404
-        
-        # Get all students in this section
-        students = db.session.query(Student).filter_by(
-            section_id=section_id, is_active=True
-        ).order_by(Student.last_name, Student.first_name).all()
-        
-        # Calculate attendance for each student
-        attendance_service = AttendanceService(db.session)
-        students_data = []
-        total_percentage = 0
-        
-        # Gender statistics
-        male_count = 0
-        female_count = 0
-        male_present = 0
-        female_present = 0
-        male_total_days = 0
-        female_total_days = 0
-        
-        for student in students:
-            percentage, present_days, total_days = attendance_service.calculate_attendance_percentage(
-                student.id, start_date, end_date
-            )
-            
-            # Determine status
-            if percentage >= 90:
-                status = 'excellent'
-            elif percentage >= 80:
-                status = 'good'
-            elif percentage >= 70:
-                status = 'concerning'
-            else:
-                status = 'critical'
-            
-            students_data.append({
-                'student_id': student.id,
-                'student_name': student.full_name,
-                'gender': student.gender,
-                'attendance_percentage': round(percentage, 1),
-                'present_days': present_days,
-                'total_days': total_days,
-                'status': status
-            })
-            total_percentage += percentage
-            
-            # Accumulate gender statistics
-            if student.gender == 'M':
-                male_count += 1
-                male_present += present_days
-                male_total_days += total_days
-            elif student.gender == 'F':
-                female_count += 1
-                female_present += present_days
-                female_total_days += total_days
-        
-        section_average = total_percentage / len(students) if students else 0.0
-        
-        # Calculate gender averages
-        male_percentage = (male_present / male_total_days * 100) if male_total_days > 0 else 0.0
-        female_percentage = (female_present / female_total_days * 100) if female_total_days > 0 else 0.0
-        
-        # Calculate average present days per student (not sum)
-        male_avg_present = (male_present / male_count) if male_count > 0 else 0.0
-        male_avg_total = (male_total_days / male_count) if male_count > 0 else 0.0
-        female_avg_present = (female_present / female_count) if female_count > 0 else 0.0
-        female_avg_total = (female_total_days / female_count) if female_count > 0 else 0.0
-        total_avg_present = ((male_present + female_present) / len(students)) if len(students) > 0 else 0.0
-        total_avg_total = ((male_total_days + female_total_days) / len(students)) if len(students) > 0 else 0.0
-        
-        gender_stats = {
-            'male': {
-                'count': male_count,
-                'avg_present_days': round(male_avg_present, 1),
-                'avg_total_days': round(male_avg_total, 1),
-                'percentage': round(male_percentage, 1)
+        # Return mock data for demonstration
+        mock_students = [
+            {
+                'student_id': 1,
+                'student_name': 'María García',
+                'attendance_percentage': 92.5,
+                'present_days': 37,
+                'total_days': 40,
+                'status': 'excellent'
             },
-            'female': {
-                'count': female_count,
-                'avg_present_days': round(female_avg_present, 1),
-                'avg_total_days': round(female_avg_total, 1),
-                'percentage': round(female_percentage, 1)
+            {
+                'student_id': 2,
+                'student_name': 'Carlos Rodríguez',
+                'attendance_percentage': 85.0,
+                'present_days': 34,
+                'total_days': 40,
+                'status': 'good'
             },
-            'total': {
-                'count': len(students),
-                'avg_present_days': round(total_avg_present, 1),
-                'avg_total_days': round(total_avg_total, 1),
-                'percentage': round(section_average, 1)
+            {
+                'student_id': 3,
+                'student_name': 'Ana Pérez',
+                'attendance_percentage': 75.0,
+                'present_days': 30,
+                'total_days': 40,
+                'status': 'concerning'
+            },
+            {
+                'student_id': 4,
+                'student_name': 'José López',
+                'attendance_percentage': 62.5,
+                'present_days': 25,
+                'total_days': 40,
+                'status': 'critical'
             }
-        }
-        
+        ]
+
+        section_average = sum(s['attendance_percentage'] for s in mock_students) / len(mock_students)
+
         return jsonify({
             'section_id': section_id,
-            'section_name': section.name,
-            'period': period,
-            'period_label': period_label,
             'date_range': {
-                'start': start_date.isoformat(),
-                'end': end_date.isoformat()
+                'start': (date.today() - timedelta(days=30)).isoformat(),
+                'end': date.today().isoformat()
             },
-            'students': students_data,
-            'section_average': round(section_average, 1),
-            'gender_stats': gender_stats
+            'students': mock_students,
+            'section_average': round(section_average, 1)
         })
 
     except Exception as e:
@@ -551,9 +381,10 @@ def api_calculate_monthly():
         data = request.get_json()
         month = data.get('month', date.today().month)
         year = data.get('year', date.today().year)
+        academic_year = data.get('academic_year', '2025-2026')
 
         report_service = MonthlyReportService(db.session)
-        summaries = report_service.calculate_monthly_summary(month, year)
+        summaries = report_service.calculate_monthly_summary(month, year, academic_year)
 
         return jsonify({
             'success': True,
@@ -920,13 +751,14 @@ def export_matricula(month, year):
         }), 400
     
     try:
+        academic_year = '2025-2026'
         report_service = MonthlyReportService(db.session)
 
         # Calculate summaries if they don't exist
-        summaries = report_service.calculate_monthly_summary(month, year)
+        summaries = report_service.calculate_monthly_summary(month, year, academic_year)
 
         # Export in government format
-        export_data = report_service.export_matricula_format(month, year)
+        export_data = report_service.export_matricula_format(month, year, academic_year)
 
         return jsonify({
             'success': True,

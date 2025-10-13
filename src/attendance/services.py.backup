@@ -243,7 +243,8 @@ class MonthlyReportService:
     def __init__(self, db_session: Session):
         self.db = db_session
 
-    def calculate_monthly_summary(self, month: int, year: int) -> List[MonthlyAttendanceSummary]:
+    def calculate_monthly_summary(self, month: int, year: int,
+                                 academic_year: str) -> List[MonthlyAttendanceSummary]:
         """
         Calculate monthly attendance summary by grade level
         Following Venezuelan Matrícula format requirements
@@ -251,6 +252,7 @@ class MonthlyReportService:
         Args:
             month: Month number (1-12)
             year: Year
+            academic_year: Academic year string
 
         Returns:
             List of MonthlyAttendanceSummary records
@@ -260,14 +262,17 @@ class MonthlyReportService:
 
         # Get all grade levels with active students
         grade_levels = self.db.query(Student.grade_level).filter(
-            Student.is_active == True
+            and_(
+                Student.academic_year == academic_year,
+                Student.is_active == True
+            )
         ).distinct().all()
 
         summaries = []
 
         for (grade_level,) in grade_levels:
             summary = self._calculate_grade_summary(
-                grade_level, month, year, working_days
+                grade_level, month, year, academic_year, working_days
             )
             if summary:
                 summaries.append(summary)
@@ -275,13 +280,14 @@ class MonthlyReportService:
         return summaries
 
     def _calculate_grade_summary(self, grade_level: int, month: int, year: int,
-                                working_days: int) -> Optional[MonthlyAttendanceSummary]:
+                                academic_year: str, working_days: int) -> Optional[MonthlyAttendanceSummary]:
         """Calculate summary for specific grade level"""
 
         # Get students by gender for this grade
         students_query = self.db.query(Student).filter(
             and_(
                 Student.grade_level == grade_level,
+                Student.academic_year == academic_year,
                 Student.is_active == True
             )
         )
@@ -297,6 +303,7 @@ class MonthlyReportService:
         section_count = self.db.query(Section.id).join(Student).filter(
             and_(
                 Student.grade_level == grade_level,
+                Student.academic_year == academic_year,
                 Student.is_active == True
             )
         ).distinct().count()
@@ -310,6 +317,7 @@ class MonthlyReportService:
         attendance_query = self.db.query(DailyAttendance).join(Student).filter(
             and_(
                 Student.grade_level == grade_level,
+                Student.academic_year == academic_year,
                 func.date(DailyAttendance.attendance_date) >= start_date,
                 func.date(DailyAttendance.attendance_date) <= end_date,
                 DailyAttendance.present == True
@@ -328,7 +336,8 @@ class MonthlyReportService:
             and_(
                 MonthlyAttendanceSummary.grade_level == grade_level,
                 MonthlyAttendanceSummary.month == month,
-                MonthlyAttendanceSummary.year == year
+                MonthlyAttendanceSummary.year == year,
+                MonthlyAttendanceSummary.academic_year == academic_year
             )
         ).first()
 
@@ -361,6 +370,7 @@ class MonthlyReportService:
                 attendance_percentage=attendance_percentage,
                 month=month,
                 year=year,
+                academic_year=academic_year,
                 calculated_by='system_auto'
             )
 
@@ -380,16 +390,19 @@ class MonthlyReportService:
 
         return working_days
 
-    def get_monthly_summaries(self, month: int, year: int) -> List[MonthlyAttendanceSummary]:
+    def get_monthly_summaries(self, month: int, year: int,
+                             academic_year: str) -> List[MonthlyAttendanceSummary]:
         """Get all monthly summaries for a specific month/year"""
         return self.db.query(MonthlyAttendanceSummary).filter(
             and_(
                 MonthlyAttendanceSummary.month == month,
-                MonthlyAttendanceSummary.year == year
+                MonthlyAttendanceSummary.year == year,
+                MonthlyAttendanceSummary.academic_year == academic_year
             )
         ).order_by(MonthlyAttendanceSummary.grade_level).all()
 
-    def export_matricula_format(self, month: int, year: int) -> Dict:
+    def export_matricula_format(self, month: int, year: int,
+                               academic_year: str) -> Dict:
         """
         Export data in Venezuelan Matrícula format
         Phase 11.2: Government compliance export
@@ -397,7 +410,7 @@ class MonthlyReportService:
         Returns:
             Dict with data formatted for Excel export matching government template
         """
-        summaries = self.get_monthly_summaries(month, year)
+        summaries = self.get_monthly_summaries(month, year, academic_year)
 
         # Build data in exact government format
         export_data = {
@@ -416,6 +429,7 @@ class MonthlyReportService:
             'metadata': {
                 'month': month,
                 'year': year,
+                'academic_year': academic_year,
                 'generated_at': datetime.now(),
                 'total_students': sum(s.total_students for s in summaries),
                 'average_attendance': sum(s.attendance_percentage for s in summaries) / len(summaries) if summaries else 0
