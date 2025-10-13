@@ -13,7 +13,7 @@ from src.models.tenant import Student, DailyAttendance, MonthlyAttendanceSummary
 from src.attendance.services import AttendanceService, MonthlyReportService
 from src.tenants.middleware import require_tenant, get_current_tenant
 # Create blueprint
-attendance_bp = Blueprint('attendance', __name__, url_prefix='/attendance')
+attendance_bp = Blueprint('attendance', __name__)
 
 
 def ensure_tenant_context():
@@ -25,7 +25,7 @@ def ensure_tenant_context():
     
     if not hasattr(g, 'current_tenant') or not g.current_tenant:
         try:
-            master_engine = create_engine('mysql+pymysql://root:0000@localhost/bischeduler_master')
+            master_engine = create_engine('mysql+pymysql://bischeduler:BischPass2024@localhost/bischeduler_master')
             MasterSession = sessionmaker(bind=master_engine)
             master_session = MasterSession()
             
@@ -56,7 +56,7 @@ def index():
         # For development, always use UEIPAB tenant
         # Connect to master database to get tenant info
         try:
-            master_engine = create_engine('mysql+pymysql://root:0000@localhost/bischeduler_master')
+            master_engine = create_engine('mysql+pymysql://bischeduler:BischPass2024@localhost/bischeduler_master')
             MasterSession = sessionmaker(bind=master_engine)
             master_session = MasterSession()
             
@@ -86,7 +86,7 @@ def force_tenant():
     from src.tenants.manager import TenantManager
 
     # Manually set tenant context
-    tenant_manager = TenantManager('mysql+pymysql://root:0000@localhost/bischeduler_master')
+    tenant_manager = TenantManager('mysql+pymysql://bischeduler:BischPass2024@localhost/bischeduler_master')
     tenant = tenant_manager.get_tenant_by_domain('dev.ueipab.edu.ve')
 
     if tenant:
@@ -245,7 +245,7 @@ def api_sections():
         # For development, always use UEIPAB tenant
         # Connect to master database to get tenant info
         try:
-            master_engine = create_engine('mysql+pymysql://root:0000@localhost/bischeduler_master')
+            master_engine = create_engine('mysql+pymysql://bischeduler:BischPass2024@localhost/bischeduler_master')
             MasterSession = sessionmaker(bind=master_engine)
             master_session = MasterSession()
             
