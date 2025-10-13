@@ -1,0 +1,14 @@
+-- Fix monthly_attendance_summary table
+-- Make student_id and other old columns nullable
+
+USE ueipab_2025_data;
+
+-- Make student_id nullable (this is the main fix)
+ALTER TABLE monthly_attendance_summary MODIFY COLUMN student_id INT NULL;
+
+-- Make other old columns nullable if they exist
+ALTER TABLE monthly_attendance_summary MODIFY COLUMN present_days INT NULL;
+ALTER TABLE monthly_attendance_summary MODIFY COLUMN absent_days INT NULL;
+ALTER TABLE monthly_attendance_summary MODIFY COLUMN excused_absences INT NULL;
+ALTER TABLE monthly_attendance_summary MODIFY COLUMN unexcused_absences INT NULL;
+ALTER TABLE monthly_attendance_summary MODIFY COLUMN late_arrivals INT NULL;

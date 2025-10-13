@@ -1,0 +1,10 @@
+-- Fix monthly_attendance_summary table
+-- Make student_id nullable to allow grade-level summaries
+
+USE ueipab_2025_data;
+
+-- Make student_id nullable (this is the main fix needed)
+ALTER TABLE monthly_attendance_summary MODIFY COLUMN student_id INT NULL;
+
+-- Show the updated structure
+DESCRIBE monthly_attendance_summary;
