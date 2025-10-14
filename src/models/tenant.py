@@ -892,7 +892,7 @@ def get_tenant_session():
     from sqlalchemy.orm import sessionmaker
 
     # Use the UEIPAB tenant database directly
-    tenant_db_url = 'mysql+pymysql://root:0000@localhost/ueipab_2025_data'
+    tenant_db_url = 'mysql+pymysql://bischeduler:BischPass2024@localhost/ueipab_2025_data'
     engine = create_engine(tenant_db_url)
     SessionLocal = sessionmaker(bind=engine)
 

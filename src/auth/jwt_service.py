@@ -281,8 +281,8 @@ class JWTService:
 
             master_db_config = {
                 'host': 'localhost',
-                'user': 'root',
-                'password': '0000',
+                'user': 'bischeduler',
+                'password': 'BischPass2024',
                 'database': 'bischeduler_master',
                 'charset': 'utf8mb4'
             }
@@ -436,8 +436,8 @@ class AuthenticationService:
         user = None
         master_db_config = {
             'host': 'localhost',
-            'user': 'root',
-            'password': '0000',
+            'user': 'bischeduler',
+            'password': 'BischPass2024',
             'database': 'bischeduler_master',
             'charset': 'utf8mb4'
         }
@@ -628,8 +628,8 @@ class AuthenticationService:
 
         master_db_config = {
             'host': 'localhost',
-            'user': 'root',
-            'password': '0000',
+            'user': 'bischeduler',
+            'password': 'BischPass2024',
             'database': 'bischeduler_master',
             'charset': 'utf8mb4'
         }
@@ -662,8 +662,8 @@ class AuthenticationService:
 
         master_db_config = {
             'host': 'localhost',
-            'user': 'root',
-            'password': '0000',
+            'user': 'bischeduler',
+            'password': 'BischPass2024',
             'database': 'bischeduler_master',
             'charset': 'utf8mb4'
         }
@@ -691,8 +691,8 @@ class AuthenticationService:
 
         master_db_config = {
             'host': 'localhost',
-            'user': 'root',
-            'password': '0000',
+            'user': 'bischeduler',
+            'password': 'BischPass2024',
             'database': 'bischeduler_master',
             'charset': 'utf8mb4'
         }

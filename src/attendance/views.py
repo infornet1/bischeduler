@@ -12,8 +12,17 @@ from src.core.app import db
 from src.models.tenant import Student, DailyAttendance, MonthlyAttendanceSummary, Section, Teacher
 from src.attendance.services import AttendanceService, MonthlyReportService
 from src.tenants.middleware import require_tenant, get_current_tenant
+
 # Create blueprint
-attendance_bp = Blueprint('attendance', __name__, url_prefix='/attendance')
+attendance_bp = Blueprint('attendance', __name__)
+
+
+def url_for_with_prefix(endpoint, **values):
+    """Helper to add /bischeduler prefix to url_for in Python code"""
+    url = url_for(endpoint, **values)
+    if not url.startswith('/bischeduler'):
+        url = '/bischeduler' + url
+    return url
 
 
 def ensure_tenant_context():
@@ -25,7 +34,7 @@ def ensure_tenant_context():
     
     if not hasattr(g, 'current_tenant') or not g.current_tenant:
         try:
-            master_engine = create_engine('mysql+pymysql://root:0000@localhost/bischeduler_master')
+            master_engine = create_engine('mysql+pymysql://bischeduler:BischPass2024@localhost/bischeduler_master')
             MasterSession = sessionmaker(bind=master_engine)
             master_session = MasterSession()
             
@@ -56,7 +65,7 @@ def index():
         # For development, always use UEIPAB tenant
         # Connect to master database to get tenant info
         try:
-            master_engine = create_engine('mysql+pymysql://root:0000@localhost/bischeduler_master')
+            master_engine = create_engine('mysql+pymysql://bischeduler:BischPass2024@localhost/bischeduler_master')
             MasterSession = sessionmaker(bind=master_engine)
             master_session = MasterSession()
             
@@ -86,7 +95,7 @@ def force_tenant():
     from src.tenants.manager import TenantManager
 
     # Manually set tenant context
-    tenant_manager = TenantManager('mysql+pymysql://root:0000@localhost/bischeduler_master')
+    tenant_manager = TenantManager('mysql+pymysql://bischeduler:BischPass2024@localhost/bischeduler_master')
     tenant = tenant_manager.get_tenant_by_domain('dev.ueipab.edu.ve')
 
     if tenant:
@@ -113,7 +122,7 @@ def mark_attendance_form(section_id):
     section = db.session.query(Section).get(section_id)
     if not section:
         flash('Sección no encontrada', 'error')
-        return redirect(url_for('attendance.index'))
+        return redirect(url_for_with_prefix('attendance.index'))
 
     # Get students in section
     students = db.session.query(Student).filter_by(
@@ -154,7 +163,7 @@ def submit_attendance(section_id):
         attendance_date_str = request.form.get('attendance_date')
         if not attendance_date_str:
             flash('Fecha de asistencia no proporcionada.', 'error')
-            return redirect(url_for('attendance.mark_attendance_form', section_id=section_id))
+            return redirect(url_for_with_prefix('attendance.mark_attendance_form', section_id=section_id))
 
         attendance_date = datetime.strptime(attendance_date_str, '%Y-%m-%d').date()
         teacher_id = 1  # TODO: Get from session/auth
@@ -190,13 +199,13 @@ def submit_attendance(section_id):
 
         logging.info(f"SUCCESS: Attendance saved for {len(results)} students in section {section_id} for date {attendance_date}.")
         flash(f'Asistencia registrada para {len(results)} estudiantes.', 'success')
-        return redirect(url_for('attendance.mark_attendance_form', section_id=section_id, date=attendance_date.strftime('%Y-%m-%d')))
+        return redirect(url_for_with_prefix('attendance.mark_attendance_form', section_id=section_id, date=attendance_date.strftime('%Y-%m-%d')))
 
     except Exception as e:
         logging.error(f"ERROR saving attendance for section {section_id}: {str(e)}", exc_info=True)
         db.session.rollback() # Rollback in case of error
         flash(f'Error al registrar asistencia: {str(e)}', 'error')
-        return redirect(url_for('attendance.mark_attendance_form', section_id=section_id))
+        return redirect(url_for_with_prefix('attendance.mark_attendance_form', section_id=section_id))
 
 
 @attendance_bp.route('/reports')
@@ -245,7 +254,7 @@ def api_sections():
         # For development, always use UEIPAB tenant
         # Connect to master database to get tenant info
         try:
-            master_engine = create_engine('mysql+pymysql://root:0000@localhost/bischeduler_master')
+            master_engine = create_engine('mysql+pymysql://bischeduler:BischPass2024@localhost/bischeduler_master')
             MasterSession = sessionmaker(bind=master_engine)
             master_session = MasterSession()
             

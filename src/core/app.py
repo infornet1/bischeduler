@@ -44,6 +44,18 @@ def create_app(config_name='development'):
     app.config['APPLICATION_ROOT'] = '/bischeduler'
     app.config['PREFERRED_URL_SCHEME'] = 'https'
 
+    # Add context processor to inject url_for with prefix
+    @app.context_processor
+    def inject_url_prefix():
+        def url_for_with_prefix(endpoint, **values):
+            from flask import url_for as flask_url_for
+            url = flask_url_for(endpoint, **values)
+            # Add /bischeduler prefix if not already present
+            if not url.startswith('/bischeduler'):
+                url = '/bischeduler' + url
+            return url
+        return dict(url_for=url_for_with_prefix)
+
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
@@ -73,7 +85,7 @@ def create_app(config_name='development'):
     app.jwt_service = jwt_service
 
     # Register blueprints
-    app.register_blueprint(auth_bp, url_prefix='/bischeduler/api/auth')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
 
     # Import and register scheduling blueprint
     from src.scheduling.views import scheduling_bp
@@ -85,7 +97,7 @@ def create_app(config_name='development'):
 
     # Import and register attendance blueprint (Phase 11)
     from src.attendance.views import attendance_bp
-    app.register_blueprint(attendance_bp, url_prefix='/bischeduler/attendance')
+    app.register_blueprint(attendance_bp, url_prefix='/attendance')
 
     # Main landing page
     @app.route('/')
