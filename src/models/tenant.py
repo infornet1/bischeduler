@@ -768,6 +768,9 @@ class MonthlyAttendanceSummary(Base):
 
     id = Column(Integer, primary_key=True)
 
+    # Optional student-specific fields (NULL for grade-level summaries)
+    student_id = Column(Integer, ForeignKey('students.id'), nullable=True)
+
     # Government format requirements
     grade_level = Column(Integer, nullable=False)  # GRADO (J)
     section_count = Column(Integer, nullable=False)  # CANTIDAD DE SECCIONES (K)
@@ -777,6 +780,11 @@ class MonthlyAttendanceSummary(Base):
 
     # Attendance calculations
     working_days = Column(Integer, nullable=False)  # DÍAS HABILES (O)
+    total_days = Column(Integer, nullable=False)  # Total attendance days tracked
+    present_days = Column(Integer, nullable=False)  # Total present days
+    absent_days = Column(Integer, nullable=False)  # Total absent days
+    excused_days = Column(Integer, nullable=True, default=0)  # Excused absences
+    late_days = Column(Integer, nullable=True, default=0)  # Late arrivals
     attendance_sum = Column(Integer, nullable=False)  # SUMATORIA DE LA ASISTENCIA (P)
     average_attendance = Column(DECIMAL(5,2), nullable=False)  # PROMEDIO DE ASISTENCIA (Q)
     attendance_percentage = Column(DECIMAL(5,2), nullable=False)  # PORCENTAJE DE ASISTENCIA (R)
@@ -784,7 +792,7 @@ class MonthlyAttendanceSummary(Base):
     # Period information
     month = Column(Integer, nullable=False)  # 1-12
     year = Column(Integer, nullable=False)
-    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
+    academic_year = Column(String(20), nullable=False)  # Format: "YYYY-YYYY" (e.g., "2025-2026")
 
     # Calculation metadata
     calculated_at = Column(DateTime, default=datetime.now(timezone.utc))

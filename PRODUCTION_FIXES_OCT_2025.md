@@ -273,3 +273,91 @@ def url_for_with_prefix(endpoint, **values):
 **Completed By**: Claude Code Assistant
 **Verified By**: Production testing on dev.ueipab.edu.ve
 **Final Sign-off**: All systems operational as of October 3, 2025 20:50 VET
+
+---
+
+## Additional Fixes Applied (October 15, 2025 - Monthly Reports Fix)
+
+### 8. Monthly Attendance Summary SQL Insert Error
+**Problem**: When clicking the "Calculate Monthly Reports" button in the reports menu, the system returned SQL error: `Field 'academic_year' doesn't have a default value` followed by errors for `total_days`, `present_days`, and `absent_days` fields.
+
+**Root Cause**: Database schema evolution - the `monthly_attendance_summary` table had multiple required (NOT NULL) fields that weren't being populated by the application code:
+1. `academic_year` field was commented out in the SQLAlchemy model but still required in the database
+2. Additional fields (`total_days`, `present_days`, `absent_days`, `excused_days`, `late_days`) were added to the table schema but not included in INSERT queries
+
+**Solution**:
+
+1. **Updated MonthlyReportService._calculate_grade_summary()** (`src/attendance/services.py:304-391`):
+   - Added automatic calculation of `academic_year` based on Venezuelan school calendar (September-July cycle)
+   - Implemented logic: if month ≥ September, use "YYYY-YYYY+1", otherwise "YYYY-1-YYYY"
+   - Added calculation of missing fields:
+     - `total_days` = `working_days` (working days in the month)
+     - `present_days` = `attendance_sum` (total present attendance records)
+     - `absent_days` = `(total_students × working_days) - attendance_sum`
+   - Updated both INSERT and UPDATE operations to include all required fields
+
+2. **Updated MonthlyAttendanceSummary Model** (`src/models/tenant.py:771-795`):
+   - Uncommented `academic_year` field and updated from `String(10)` to `String(20)`
+   - Added all missing field definitions:
+     - `student_id` (nullable, for potential student-level summaries)
+     - `total_days`, `present_days`, `absent_days` (required fields)
+     - `excused_days`, `late_days` (nullable fields with default values)
+   - Added documentation comments for field purposes
+
+**Code Changes**:
+```python
+# Calculate academic year (Venezuelan school calendar)
+if month >= 9:
+    academic_year = f"{year}-{year+1}"
+else:
+    academic_year = f"{year-1}-{year}"
+
+# Calculate additional fields for compatibility
+total_days = working_days
+present_days = attendance_sum
+absent_days = max_possible_attendance - attendance_sum
+```
+
+**Testing Results**:
+- ✅ Successfully calculated 12 monthly summaries for October 2025
+- ✅ All required fields properly populated (verified via database query)
+- ✅ Sample data: Grade 0, academic_year="2025-2026", total_days=23, present_days=3, absent_days=250
+- ✅ Reports page loads and displays correctly
+- ✅ API endpoint returns success with grade-level attendance percentages
+
+**Database Verification**:
+```sql
+mysql> SELECT grade_level, academic_year, total_students, working_days,
+       total_days, present_days, absent_days, attendance_percentage
+       FROM monthly_attendance_summary
+       WHERE month=10 AND year=2025 LIMIT 3;
+
++-------------+---------------+----------------+--------------+------------+--------------+-------------+-----------------------+
+| grade_level | academic_year | total_students | working_days | total_days | present_days | absent_days | attendance_percentage |
++-------------+---------------+----------------+--------------+------------+--------------+-------------+-----------------------+
+|           0 | 2025-2026     |             11 |           23 |         23 |            3 |         250 |                  1.19 |
+|           1 | 2025-2026     |             10 |           23 |         23 |            0 |         230 |                  0.00 |
+|           2 | 2025-2026     |             18 |           23 |         23 |            0 |         414 |                  0.00 |
++-------------+---------------+----------------+--------------+------------+--------------+-------------+-----------------------+
+```
+
+**Files Modified**:
+- `src/attendance/services.py` - Added academic_year calculation and missing field population
+- `src/models/tenant.py` - Updated MonthlyAttendanceSummary model with all required fields
+
+**Result**: Monthly attendance report calculation now works correctly. The reports menu button successfully generates summaries with all required database fields populated.
+
+---
+
+## Git Commit History (Updated)
+
+1. `82303ef` - Initial production fixes (DB auth, URL routing, dark mode CSS)
+2. `a158696` - Complete database credentials update in auth service
+3. `7337ca8` - Attendance form redirects with /bischeduler prefix
+4. `492f5fb` - Add DOCTYPE to mark_attendance template
+5. *(pending)* - Fix monthly attendance summary SQL errors (academic_year and field additions)
+
+---
+
+**Last Updated**: October 15, 2025
+**Status**: ✅ All systems operational and production-ready
