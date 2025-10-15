@@ -301,6 +301,14 @@ class MonthlyReportService:
             )
         ).distinct().count()
 
+        # Determine academic year (Venezuelan school year runs September to July)
+        # If month is September (9) or later, academic year is current_year-next_year
+        # If month is before September, academic year is previous_year-current_year
+        if month >= 9:
+            academic_year = f"{year}-{year+1}"
+        else:
+            academic_year = f"{year-1}-{year}"
+
         # Calculate attendance for the month
         start_date = date(year, month, 1)
         _, last_day = monthrange(year, month)
@@ -323,6 +331,12 @@ class MonthlyReportService:
         average_attendance = Decimal(str(attendance_sum / working_days)) if working_days > 0 else Decimal('0')
         attendance_percentage = Decimal(str((attendance_sum / max_possible_attendance) * 100)) if max_possible_attendance > 0 else Decimal('0')
 
+        # Calculate additional fields for compatibility with table schema
+        # For grade-level summaries (not individual students):
+        total_days = working_days  # Total working days in the month
+        present_days = attendance_sum  # Total present attendance records
+        absent_days = max_possible_attendance - attendance_sum  # Total possible minus actual
+
         # Check if summary already exists
         existing = self.db.query(MonthlyAttendanceSummary).filter(
             and_(
@@ -334,11 +348,15 @@ class MonthlyReportService:
 
         if existing:
             # Update existing summary
+            existing.academic_year = academic_year
             existing.section_count = section_count
             existing.male_students = male_students
             existing.female_students = female_students
             existing.total_students = total_students
             existing.working_days = working_days
+            existing.total_days = total_days
+            existing.present_days = present_days
+            existing.absent_days = absent_days
             existing.attendance_sum = attendance_sum
             existing.average_attendance = average_attendance
             existing.attendance_percentage = attendance_percentage
@@ -351,11 +369,15 @@ class MonthlyReportService:
             # Create new summary
             summary = MonthlyAttendanceSummary(
                 grade_level=grade_level,
+                academic_year=academic_year,
                 section_count=section_count,
                 male_students=male_students,
                 female_students=female_students,
                 total_students=total_students,
                 working_days=working_days,
+                total_days=total_days,
+                present_days=present_days,
+                absent_days=absent_days,
                 attendance_sum=attendance_sum,
                 average_attendance=average_attendance,
                 attendance_percentage=attendance_percentage,
