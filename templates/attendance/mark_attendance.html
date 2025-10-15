@@ -22,7 +22,7 @@
                     <i class="bi bi-chevron-down"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="/bischeduler/attendance"><i class="bi bi-person-check"></i> Panel de Asistencia</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('attendance.index') }}"><i class="bi bi-person-check"></i> Panel de Asistencia</a></li>
                     <li><a class="dropdown-item" href="/bischeduler/dashboard"><i class="bi bi-speedometer2"></i> Dashboard Principal</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="/bischeduler/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
@@ -43,13 +43,13 @@
                         <h2><i class="bi bi-check-square"></i> Marcar Asistencia</h2>
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/bischeduler/attendance">Control de Asistencia</a></li>
+                                <li class="breadcrumb-item"><a href="{{ url_for('attendance.index') }}">Control de Asistencia</a></li>
                                 <li class="breadcrumb-item active">{{ section.name }}</li>
                             </ol>
                         </nav>
                     </div>
                     <div>
-                        <a href="/bischeduler/attendance" class="btn btn-outline-secondary">
+                        <a href="{{ url_for('attendance.index') }}" class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-left"></i> Volver
                         </a>
                     </div>
@@ -218,7 +218,7 @@
                         <button type="submit" class="btn btn-primary btn-lg">
                             <i class="bi bi-save"></i> Guardar Asistencia
                         </button>
-                        <a href="/bischeduler/attendance" class="btn btn-outline-secondary btn-lg ms-3">
+                        <a href="{{ url_for('attendance.index') }}" class="btn btn-outline-secondary btn-lg ms-3">
                             <i class="bi bi-x-circle"></i> Cancelar
                         </a>
                     </div>
