@@ -125,7 +125,7 @@ class Section(Base):
     educational_level = Column(SQLEnum(EducationalLevel), default=EducationalLevel.BACHILLERATO)
     max_students = Column(Integer, default=35)
     current_students = Column(Integer, default=0)
-    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB
+    academic_year = Column(String(10), default='2025-2026')
     is_active = Column(Boolean, default=True)
 
     # Metadata
@@ -708,7 +708,7 @@ class Student(Base):
     address = Column(Text)
 
     # Academic status
-    # academic_year = Column(String(10), nullable=False)  # Commented out - not in DB  # "2025-2026"
+    academic_year = Column(String(20), default='2025-2026')  # "2025-2026"
     enrollment_date = Column(DateTime, default=datetime.now(timezone.utc))
     is_active = Column(Boolean, default=True)
 
