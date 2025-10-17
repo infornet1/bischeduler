@@ -7,12 +7,19 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📊%3C/text%3E%3C/svg%3E">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="/bischeduler/static/css/styles.css" rel="stylesheet">
-    <link href="/bischeduler/static/css/dark-mode.css" rel="stylesheet">
+    <link href="/bischeduler/static/css/styles.css?v=8" rel="stylesheet">
+    <link href="/bischeduler/static/css/dark-mode.css?v=8" rel="stylesheet">
+    <link href="/bischeduler/static/css/attendance.css?v=9" rel="stylesheet">
     <style>
         body {
-            background-color: var(--bg-secondary);
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            min-height: 100vh;
+            padding-top: 80px;
             color: var(--text-primary);
+        }
+
+        [data-theme="dark"] body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
         }
 
         .grade-row {
@@ -41,26 +48,151 @@
             color: var(--text-primary);
         }
 
+        .card {
+            background: var(--card-bg, rgba(255, 255, 255, 0.95)) !important;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+        }
+
         [data-theme="dark"] .card {
-            background-color: var(--card-bg);
-            border-color: var(--border-color);
+            background: var(--card-bg, rgba(30, 30, 30, 0.95)) !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1)) !important;
             color: var(--text-primary);
         }
 
-        .user-bar {
-            z-index: 1000;
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            backdrop-filter: blur(10px);
+        .container-fluid {
+            background-color: transparent;
+        }
+
+        /* User info styling */
+        .user-info {
             display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 10px 20px;
-            border-radius: 25px;
-            background: var(--card-bg);
-            box-shadow: 0 4px 15px var(--shadow-color-lg);
-            border: 1px solid var(--border-color);
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .user-info .user-name {
+            color: var(--text-primary, #212529);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .user-info .user-role {
+            color: var(--text-secondary, #6c757d);
+            font-size: 0.75rem;
+        }
+
+        [data-theme="dark"] .user-info .user-name {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .user-info .user-role {
+            color: var(--text-secondary, #b0b0b0) !important;
+        }
+
+        /* Text color fixes for light mode */
+        h2, h5, h6 {
+            color: #ffffff !important;
+        }
+
+        .card-title, .card-text {
+            color: var(--text-primary, #212529) !important;
+        }
+
+        .card-header h5 {
+            color: var(--text-primary, #212529) !important;
+        }
+
+        /* CRITICAL: Override all table text colors - Maximum priority */
+        body:not([data-theme="dark"]) .table,
+        body:not([data-theme="dark"]) .table *,
+        body:not([data-theme="dark"]) .table thead,
+        body:not([data-theme="dark"]) .table thead tr,
+        body:not([data-theme="dark"]) .table thead th,
+        body:not([data-theme="dark"]) .table tbody,
+        body:not([data-theme="dark"]) .table tbody tr,
+        body:not([data-theme="dark"]) .table tbody td,
+        body:not([data-theme="dark"]) .table tfoot,
+        body:not([data-theme="dark"]) .table tfoot tr,
+        body:not([data-theme="dark"]) .table tfoot td,
+        body:not([data-theme="dark"]) .table tfoot th,
+        body:not([data-theme="dark"]) .table tbody tr td strong,
+        body:not([data-theme="dark"]) .table tfoot tr td strong,
+        body:not([data-theme="dark"]) .table tfoot tr th strong,
+        body:not([data-theme="dark"]) .grade-row,
+        body:not([data-theme="dark"]) .grade-row *,
+        body:not([data-theme="dark"]) .table-secondary,
+        body:not([data-theme="dark"]) .table-secondary *,
+        body:not([data-theme="dark"]) .table.table-hover,
+        body:not([data-theme="dark"]) .table.table-hover *,
+        body:not([data-theme="dark"]) th.text-center,
+        body:not([data-theme="dark"]) td.text-center {
+            color: #212529 !important;
+            --bs-table-color: #212529 !important;
+        }
+
+        /* Dark mode text overrides */
+        [data-theme="dark"] h2,
+        [data-theme="dark"] h5,
+        [data-theme="dark"] h6 {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .card-title,
+        [data-theme="dark"] .card-text {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .card-header h5 {
+            color: var(--text-primary, #ffffff) !important;
+        }
+
+        [data-theme="dark"] .table,
+        [data-theme="dark"] .table * {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .table thead,
+        [data-theme="dark"] .table thead tr,
+        [data-theme="dark"] .table thead th {
+            color: #ffffff !important;
+            background-color: transparent !important;
+        }
+
+        [data-theme="dark"] .table tbody,
+        [data-theme="dark"] .table tbody tr,
+        [data-theme="dark"] .table tbody td {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .table tfoot,
+        [data-theme="dark"] .table tfoot tr,
+        [data-theme="dark"] .table tfoot td,
+        [data-theme="dark"] .table tfoot th {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .table tbody tr td strong,
+        [data-theme="dark"] .table tfoot tr td strong,
+        [data-theme="dark"] .table tfoot tr th strong {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .grade-row,
+        [data-theme="dark"] .grade-row * {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .table-secondary {
+            background-color: var(--bg-secondary, #2c2c2c) !important;
+        }
+
+        [data-theme="dark"] .table-secondary,
+        [data-theme="dark"] .table-secondary * {
+            color: #ffffff !important;
         }
     </style>
 </head>
@@ -71,6 +203,18 @@
             <div class="user-role">Reportes de Asistencia</div>
         </div>
         <div class="user-actions">
+            <div class="dropdown">
+                <button class="btn user-dropdown-toggle" type="button" id="userDropdown" aria-expanded="false">
+                    <i class="bi bi-person-circle"></i>
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ url_for('attendance.index') }}"><i class="bi bi-person-check"></i> Control de Asistencia</a></li>
+                    <li><a class="dropdown-item" href="/bischeduler/dashboard"><i class="bi bi-speedometer2"></i> Dashboard Principal</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item" onclick="handleLogout()"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</button></li>
+                </ul>
+            </div>
             <button class="btn btn-outline-primary btn-sm" onclick="toggleTheme()" title="Cambiar tema">
                 <i class="bi bi-moon-stars" id="theme-icon"></i>
             </button>
@@ -269,6 +413,13 @@
             });
         }
 
+        function handleLogout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user_info');
+            window.location.href = '/bischeduler/login';
+        }
+
         // Theme toggle
         function toggleTheme() {
             const html = document.documentElement;
@@ -283,6 +434,35 @@
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
         document.getElementById('theme-icon').className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+
+        // Manual dropdown functionality
+        window.addEventListener('load', function() {
+            const dropdownToggle = document.getElementById('userDropdown');
+            if (dropdownToggle) {
+                dropdownToggle.removeAttribute('data-bs-toggle');
+                const dropdownMenu = dropdownToggle.nextElementSibling;
+
+                dropdownToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const isOpen = dropdownMenu.classList.toggle('show');
+                    dropdownToggle.setAttribute('aria-expanded', isOpen);
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                        if (dropdownMenu.classList.contains('show')) {
+                            dropdownMenu.classList.remove('show');
+                            dropdownToggle.setAttribute('aria-expanded', 'false');
+                        }
+                    }
+                });
+
+                dropdownMenu.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+        });
     </script>
 </body>
 </html>
