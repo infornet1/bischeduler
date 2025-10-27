@@ -20,8 +20,9 @@ from werkzeug.utils import secure_filename
 from sqlalchemy.orm import Session
 from src.models.tenant import (
     Teacher, Student, Classroom, Subject, Section,
-    TimePeriod, ScheduleAssignment, AcademicPeriod
+    TimePeriod, ScheduleAssignment
 )
+# TODO: AcademicPeriod model needs to be created in tenant.py for schedule export functionality
 
 logger = logging.getLogger(__name__)
 
@@ -436,21 +437,11 @@ class ExcelIntegrationService:
     def export_schedule_to_excel(self, academic_period_id: Optional[int] = None) -> str:
         """Export complete schedule to Excel file with Venezuelan format"""
         try:
-            # Get academic period
-            if academic_period_id:
-                academic_period = self.db_session.query(AcademicPeriod).get(academic_period_id)
-            else:
-                academic_period = self.db_session.query(AcademicPeriod).filter(
-                    AcademicPeriod.is_active == True
-                ).first()
-
-            if not academic_period:
-                raise ExcelValidationError("No active academic period found")
+            # TODO: Implement AcademicPeriod model for full functionality
+            # For now, get all schedule assignments without period filtering
 
             # Get all schedule assignments
-            assignments = self.db_session.query(ScheduleAssignment).filter(
-                ScheduleAssignment.academic_period_id == academic_period.id
-            ).all()
+            assignments = self.db_session.query(ScheduleAssignment).all()
 
             # Get time periods
             time_periods = self.db_session.query(TimePeriod).order_by(TimePeriod.start_time).all()

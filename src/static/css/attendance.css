@@ -7,15 +7,153 @@
    BASE ATTENDANCE STYLES
    ============================================================================ */
 
+/* User Bar - Fixed positioning for attendance pages */
+.user-bar {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--card-bg, rgba(255, 255, 255, 0.95));
+    border-radius: 25px;
+    padding: 8px 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 1050;
+    max-width: calc(100vw - 40px);
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.user-info .user-name {
+    color: var(--text-primary, #212529);
+    font-weight: 500;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.user-info .user-role {
+    color: var(--text-secondary, #6c757d);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.user-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-dropdown-toggle {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 5px !important;
+    color: var(--text-primary, #212529) !important;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.user-dropdown-toggle:hover,
+.user-dropdown-toggle:focus,
+.user-dropdown-toggle:active {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--text-primary, #212529) !important;
+}
+
+/* Dropdown Menu Positioning */
+.user-bar .dropdown {
+    position: relative;
+}
+
+.user-bar .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: auto;
+    margin-top: 10px;
+    min-width: 250px;
+    max-width: 300px;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    z-index: 1060;
+}
+
+.user-bar .dropdown-menu.show {
+    display: block;
+}
+
+.user-bar .dropdown-item {
+    padding: 10px 20px;
+    color: var(--text-primary, #212529);
+    transition: background-color 0.2s;
+}
+
+.user-bar .dropdown-item:hover {
+    background-color: var(--hover-bg, rgba(0, 0, 0, 0.05));
+}
+
+.user-bar .dropdown-item i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+}
+
+/* Ensure dropdown stays within viewport */
+@media (max-width: 400px) {
+    .user-bar .dropdown-menu {
+        min-width: 200px;
+        right: -10px;
+    }
+}
+
+/* Ensure body has proper padding to prevent content from going under user-bar */
+body {
+    padding-top: 80px;
+    background: linear-gradient(135deg, #003366 0%, #004080 100%);
+    min-height: 100vh;
+}
+
 /* Mark Attendance Page */
 body.attendance-mark {
-    background-color: var(--bg-secondary) !important;
+    background: linear-gradient(135deg, #003366 0%, #004080 100%) !important;
+    min-height: 100vh;
+}
+
+/* Container backgrounds */
+.container-fluid {
+    background-color: transparent;
 }
 
 .quick-actions {
     position: sticky;
     top: 10px;
     z-index: 1000;
+    background: var(--card-bg, rgba(255, 255, 255, 0.95)) !important;
+}
+
+/* Attendance card hover effect (for dashboard cards) */
+.attendance-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.attendance-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="dark"] .attendance-card:hover {
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
 }
 
 .student-row {
@@ -34,18 +172,157 @@ body.attendance-mark {
    DARK MODE OVERRIDES
    ============================================================================ */
 
-[data-theme="dark"] body.attendance-mark {
-    background-color: var(--bg-primary) !important;
+/* User Bar Dark Mode */
+[data-theme="dark"] .user-bar {
+    background: var(--card-bg, rgba(30, 30, 30, 0.95)) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* Cards and Tables */
-[data-theme="dark"] .card,
+[data-theme="dark"] .user-info .user-name {
+    color: var(--text-primary, #ffffff) !important;
+}
+
+[data-theme="dark"] .user-info .user-role {
+    color: var(--text-secondary, #b0b0b0) !important;
+}
+
+[data-theme="dark"] .user-dropdown-toggle {
+    color: var(--text-primary, #ffffff) !important;
+}
+
+[data-theme="dark"] .user-dropdown-toggle:hover,
+[data-theme="dark"] .user-dropdown-toggle:focus,
+[data-theme="dark"] .user-dropdown-toggle:active {
+    color: var(--text-primary, #ffffff) !important;
+}
+
+/* Dropdown Menu Dark Mode */
+[data-theme="dark"] .user-bar .dropdown-menu {
+    background-color: var(--card-bg, #2d2d2d) !important;
+    border-color: var(--border-color, rgba(255, 255, 255, 0.1)) !important;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .user-bar .dropdown-item {
+    color: var(--text-primary, #ffffff) !important;
+}
+
+[data-theme="dark"] .user-bar .dropdown-item:hover {
+    background-color: var(--hover-bg, rgba(255, 255, 255, 0.1)) !important;
+}
+
+[data-theme="dark"] .user-bar .dropdown-divider {
+    border-color: var(--border-color, rgba(255, 255, 255, 0.1)) !important;
+}
+
+[data-theme="dark"] body.attendance-mark {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+    min-height: 100vh;
+}
+
+/* Dark mode body and container backgrounds */
+[data-theme="dark"] body {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+    min-height: 100vh;
+}
+
+[data-theme="dark"] .container-fluid {
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .row {
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .col,
+[data-theme="dark"] [class*="col-"] {
+    background-color: transparent !important;
+}
+
+/* Cards - Light Mode */
+.card {
+    background: var(--card-bg, rgba(255, 255, 255, 0.95)) !important;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+}
+
+/* Cards - Dark Mode */
+[data-theme="dark"] .card {
+    background: var(--card-bg, rgba(30, 30, 30, 0.95)) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1)) !important;
+}
+
+/* Light mode table text - force dark text with maximum specificity */
+.table,
+.table *,
+.table.table-hover,
+.table.table-hover *,
+.table thead,
+.table thead tr,
+.table thead th,
+.table tbody,
+.table tbody tr,
+.table tbody td,
+.table tbody tr.grade-row,
+.table tbody tr.grade-row td,
+.table tfoot,
+.table tfoot tr,
+.table tfoot td,
+.table tfoot th,
+th.text-center,
+td.text-center {
+    color: #212529 !important;
+}
+
+/* Override Bootstrap's table-hover */
+.table-hover tbody tr:hover,
+.table-hover tbody tr:hover td,
+.table-hover tbody tr:hover th {
+    color: #212529 !important;
+}
+
 [data-theme="dark"] .card-body,
-[data-theme="dark"] .table-responsive,
-[data-theme="dark"] .table {
-    background-color: var(--card-bg) !important;
+[data-theme="dark"] .table-responsive {
+    background-color: transparent !important;
     color: var(--text-primary) !important;
     border-color: var(--border-color) !important;
+}
+
+/* Dark mode table text - force white text */
+[data-theme="dark"] .table {
+    background-color: transparent !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .table,
+[data-theme="dark"] .table *,
+[data-theme="dark"] .table.table-hover,
+[data-theme="dark"] .table.table-hover *,
+[data-theme="dark"] .table thead,
+[data-theme="dark"] .table thead tr,
+[data-theme="dark"] .table thead th,
+[data-theme="dark"] .table tbody,
+[data-theme="dark"] .table tbody tr,
+[data-theme="dark"] .table tbody td,
+[data-theme="dark"] .table tbody tr.grade-row,
+[data-theme="dark"] .table tbody tr.grade-row td,
+[data-theme="dark"] .table tfoot,
+[data-theme="dark"] .table tfoot tr,
+[data-theme="dark"] .table tfoot td,
+[data-theme="dark"] .table tfoot th,
+[data-theme="dark"] th.text-center,
+[data-theme="dark"] td.text-center {
+    color: #ffffff !important;
+}
+
+/* Override Bootstrap's table-hover in dark mode */
+[data-theme="dark"] .table-hover tbody tr:hover,
+[data-theme="dark"] .table-hover tbody tr:hover td,
+[data-theme="dark"] .table-hover tbody tr:hover th {
+    color: #ffffff !important;
 }
 
 [data-theme="dark"] .card-header {
@@ -112,84 +389,103 @@ body.attendance-mark {
     color: var(--text-secondary) !important;
 }
 
-/* Table Content - Comprehensive Dark Mode */
-[data-theme="dark"] .table tbody td strong {
-    color: var(--text-primary) !important;
+/* Override Bootstrap badge backgrounds in dark mode */
+[data-theme="dark"] .badge.bg-primary {
+    background-color: var(--primary-color, #4D79A4) !important;
 }
 
-[data-theme="dark"] .table tbody td small,
-[data-theme="dark"] .table tbody td .text-muted {
-    color: var(--text-secondary) !important;
+[data-theme="dark"] .badge.bg-secondary {
+    background-color: var(--bg-secondary, #2c2c2c) !important;
 }
 
-/* Labels in tables */
-[data-theme="dark"] .table label,
-[data-theme="dark"] .form-check-label {
-    color: var(--text-primary) !important;
+/* Override Bootstrap button backgrounds */
+[data-theme="dark"] .btn-primary {
+    background-color: var(--primary-color, #4D79A4) !important;
+    border-color: var(--primary-color, #4D79A4) !important;
+    color: #ffffff !important;
 }
 
-/* Table hover - ensure text stays visible */
-[data-theme="dark"] .table-hover tbody tr:hover td {
-    color: var(--text-primary) !important;
+[data-theme="dark"] .btn-primary:hover,
+[data-theme="dark"] .btn-primary:focus,
+[data-theme="dark"] .btn-primary:active {
+    background-color: var(--secondary-color, #7C9EC2) !important;
+    border-color: var(--secondary-color, #7C9EC2) !important;
 }
 
-[data-theme="dark"] .table-hover tbody tr:hover td strong {
-    color: var(--text-primary) !important;
+[data-theme="dark"] .btn-outline-primary {
+    color: var(--primary-color, #4D79A4) !important;
+    border-color: var(--primary-color, #4D79A4) !important;
+    background-color: transparent !important;
 }
 
-[data-theme="dark"] .table-hover tbody tr:hover td small,
-[data-theme="dark"] .table-hover tbody tr:hover td .text-muted {
-    color: var(--text-secondary) !important;
+[data-theme="dark"] .btn-outline-primary:hover,
+[data-theme="dark"] .btn-outline-primary:focus,
+[data-theme="dark"] .btn-outline-primary:active {
+    background-color: var(--primary-color, #4D79A4) !important;
+    border-color: var(--primary-color, #4D79A4) !important;
+    color: #ffffff !important;
+}
+
+/* Text colors */
+[data-theme="dark"] .text-primary {
+    color: var(--primary-color, #4D79A4) !important;
+}
+
+[data-theme="dark"] .text-muted {
+    color: var(--text-secondary, #a0a0a0) !important;
+}
+
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+    color: var(--text-primary, #e0e0e0) !important;
+}
+
+[data-theme="dark"] p {
+    color: var(--text-primary, #e0e0e0) !important;
 }
 
 /* ============================================================================
-   NUCLEAR OPTION - Maximum Specificity for All Table Content
+   RESPONSIVE STYLES
    ============================================================================ */
 
-/* Force ALL table cell content to use correct colors */
-html[data-theme="dark"] .table td,
-html[data-theme="dark"] .table td *,
-html[data-theme="dark"] .table th,
-html[data-theme="dark"] .table th * {
-    color: var(--text-primary) !important;
+@media (max-width: 768px) {
+    .user-bar {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin: 10px;
+        width: calc(100% - 20px);
+        max-width: none;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    body {
+        padding-top: 20px;
+    }
+
+    .user-info {
+        order: 1;
+        align-items: flex-start;
+    }
+
+    .user-actions {
+        order: 2;
+    }
 }
 
-/* Table rows background */
-html[data-theme="dark"] .table tbody tr,
-html[data-theme="dark"] table.table tbody tr {
-    background-color: var(--card-bg) !important;
-}
+@media (max-width: 576px) {
+    .user-bar {
+        padding: 10px 15px;
+        gap: 10px;
+    }
 
-/* Table cells with maximum specificity */
-html[data-theme="dark"] .table tbody td,
-html[data-theme="dark"] table.table tbody td,
-html[data-theme="dark"] .table tbody tr td,
-html[data-theme="dark"] table.table tbody tr td {
-    color: var(--text-primary) !important;
-    background-color: transparent !important;
-    border-color: var(--border-color) !important;
-}
-
-/* Secondary text in tables */
-html[data-theme="dark"] .table td small,
-html[data-theme="dark"] .table td .text-muted {
-    color: var(--text-secondary) !important;
-}
-
-/* Table hover with maximum specificity */
-html[data-theme="dark"] .table-hover tbody tr:hover,
-html[data-theme="dark"] table.table-hover tbody tr:hover {
-    background-color: var(--hover-bg) !important;
-}
-
-html[data-theme="dark"] .table-hover tbody tr:hover td,
-html[data-theme="dark"] table.table-hover tbody tr:hover td,
-html[data-theme="dark"] .table-hover tbody tr:hover > td {
-    color: var(--text-primary) !important;
-    background-color: transparent !important;
-}
-
-html[data-theme="dark"] .table-hover tbody tr:hover td *,
-html[data-theme="dark"] table.table-hover tbody tr:hover td * {
-    color: var(--text-primary) !important;
+    .user-info .user-name,
+    .user-info .user-role {
+        font-size: 0.8rem;
+    }
 }
