@@ -37,11 +37,14 @@ The legacy `scheduler` app (DB `gestion_horarios`) is decommissioned — its ngi
 | bischeduler (horarios) | none | ✅ N/A — no account (this app) |
 | scheduler (`gestion_horarios`) | no auth (decommissioned) | ✅ N/A |
 
-### Still PENDING
-- 🔴 **OS account `dbongianni`** — still has shell + `webdev` write access to production code. Highest remaining risk. Not yet locked.
-- 🔴 **Admin password rotation** — nothing rotated yet:
-  - Priority 1 (shared/reused): `admin@ueipab.edu.ve` (this app + control_asistencias), `admin@sistema.com` (minutas).
-  - Priority 2: named admin accounts across apps (policy rotation after departure).
-  - Priority 3: app secrets readable from disk; MySQL `root` currently has no password.
+### ✅ Completed 2026-07-13
+- **OS account `dbongianni`** — LOCKED: login shell set to `/usr/sbin/nologin` and account locked (`passwd -S` → `L`). `webdev` group membership retained by decision. Verified no processes/cron/services/sessions ran as this user.
+- **Shared/generic admin password rotated** — `admin@ueipab.edu.ve` (this app, sole `platform_admin`) re-hashed with werkzeug `pbkdf2:sha256`; new hash verified. Distinct from control_asistencias's password (cross-app reuse eliminated). Plaintext delivered out-of-band; **not recorded here**.
 
-> Note: this repo's audit commit could not be pushed to `infornet1/bischeduler` (403 — stored credential `Ueipabdev1` lacks write access). Pending a credential with access to the `infornet1` org.
+### Still pending
+- Named/personal admin accounts — intentionally **not** rotated (scope limited to shared accounts by decision).
+- App secrets exposed to prior filesystem access — not yet rotated.
+- MySQL `root` has no password.
+- Rotate the `infornet1` GitHub PAT exposed during this work.
+
+> Note: earlier the audit commit was blocked (403); it was subsequently pushed to `infornet1/bischeduler` after a credential with org write access was provided.
