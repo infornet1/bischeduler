@@ -24,3 +24,24 @@ The legacy `scheduler` app (DB `gestion_horarios`) is decommissioned — its ngi
 
 ## Follow-up (tracked separately)
 - [ ] Rotate superadmin password: `admin@ueipab.edu.ve` (role `platform_admin`) — note this email is also an admin in control_asistencias; verify credentials are not reused across apps.
+
+---
+
+## Status recap — 2026-07-13 (cross-app offboarding)
+
+### Daniel — application account access
+| App | Account | Status |
+|---|---|---|
+| control_asistencias | profesor `id_usuario=2` | ✅ DISABLED (`activo=0`) |
+| control_minutas | none | ✅ N/A — no account |
+| bischeduler (horarios) | none | ✅ N/A — no account (this app) |
+| scheduler (`gestion_horarios`) | no auth (decommissioned) | ✅ N/A |
+
+### Still PENDING
+- 🔴 **OS account `dbongianni`** — still has shell + `webdev` write access to production code. Highest remaining risk. Not yet locked.
+- 🔴 **Admin password rotation** — nothing rotated yet:
+  - Priority 1 (shared/reused): `admin@ueipab.edu.ve` (this app + control_asistencias), `admin@sistema.com` (minutas).
+  - Priority 2: named admin accounts across apps (policy rotation after departure).
+  - Priority 3: app secrets readable from disk; MySQL `root` currently has no password.
+
+> Note: this repo's audit commit could not be pushed to `infornet1/bischeduler` (403 — stored credential `Ueipabdev1` lacks write access). Pending a credential with access to the `infornet1` org.
